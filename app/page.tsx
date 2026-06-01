@@ -212,8 +212,7 @@ function Workspace({
     setUploadState("uploading");
     setUploadMessage("");
 
-    const safeName = file.name.replace(/[^\w.\-\u4e00-\u9fa5]+/g, "_");
-    const storagePath = `${user.id}/${Date.now()}-${safeName}`;
+    const storagePath = buildStoragePath(user.id, file.name);
     const { error: uploadError } = await supabase.storage.from("research-files").upload(storagePath, file, {
       cacheControl: "3600",
       upsert: false,
@@ -222,6 +221,7 @@ function Workspace({
     if (uploadError) {
       setUploadState("error");
       setUploadMessage(`上传失败：${uploadError.message}`);
+      event.target.value = "";
       return;
     }
 
@@ -237,6 +237,7 @@ function Workspace({
     if (insertError) {
       setUploadState("error");
       setUploadMessage(`文件已上传，但元数据保存失败：${insertError.message}`);
+      event.target.value = "";
       return;
     }
 
@@ -588,4 +589,23 @@ function formatBytes(size: number | null) {
   if (!size) return "unknown size";
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
   return `${(size / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function buildStoragePath(userId: string, filename: string) {
+  const dotIndex = filename.lastIndexOf(".");
+  const rawBase = dotIndex > 0 ? filename.slice(0, dotIndex) : filename;
+  const rawExtension = dotIndex > 0 ? filename.slice(dotIndex + 1) : "";
+  const base =
+    rawBase
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 90)
+      .replace(/-+$/g, "") || "document";
+  const extension = rawExtension.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 12);
+  const uniquePrefix = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
+
+  return `${userId}/${uniquePrefix}-${base}${extension ? `.${extension}` : ""}`;
 }
