@@ -7,7 +7,7 @@ The secure app is a Next.js project and should be deployed on Vercel, not GitHub
 Recommended production branch:
 
 ```text
-next-supabase-secure
+main
 ```
 
 ## Required Environment Variables

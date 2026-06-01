@@ -14,6 +14,28 @@ type AiState = {
 
 const thesisKeywords = researchProject.keywords;
 
+const deskTasks = [
+  {
+    title: "把文献先分成三类",
+    text: "wayfinding / signage design、VR evacuation、EEG cognitive load。先建立能支撑 Introduction 的证据框架。",
+  },
+  {
+    title: "核对图纸与图注",
+    text: "优先统一标识可读范围文字，避免 Methods 里出现 0-5m、0-8m、8-12m 的口径冲突。",
+  },
+  {
+    title: "整理 3×3×2 条件表",
+    text: "把地图、标识方案、音频负荷、Unity marker 和 EEG 同步关系整理成可直接写入论文的表。",
+  },
+];
+
+const workflowSteps = [
+  { title: "读文献", text: "摘要、变量、任务范式、EEG 指标和局限先做成双语卡片。" },
+  { title: "定材料", text: "图纸、图注、Unity 日志、LSL marker 和 .xdf 文件逐项对齐。" },
+  { title: "跑分析", text: "先固定行为指标，再接 EEG 预处理和事件锁定分析。" },
+  { title: "写论文", text: "Methods 先成型，再补 Introduction 和 Discussion 的证据链。" },
+];
+
 export default function HomePage() {
   const hasConfig = hasSupabaseBrowserConfig();
   const supabase = useMemo(() => (hasConfig ? getSupabaseBrowserClient() : null), [hasConfig]);
@@ -121,7 +143,7 @@ function LoginScreen({ supabase }: { supabase: SupabaseClient }) {
       <section className="auth-panel">
         <Brand />
         <div className="auth-copy">
-          <p className="eyebrow">安全版登录</p>
+          <p className="eyebrow">私人工作台</p>
           <h1>进入私人论文研究空间</h1>
           <p>这里将用于真实论文 PDF、实验数据、EEG 分析笔记和 AI 研究助手。</p>
         </div>
@@ -155,13 +177,13 @@ function LoginScreen({ supabase }: { supabase: SupabaseClient }) {
         </form>
 
         <p className="auth-warning">
-          当前版本使用 Supabase Auth。请在 Supabase Dashboard 里创建用户，并关闭公开注册或只邀请可信用户。
+          这里只允许已创建账号的用户进入。真实论文、实验数据和分析笔记都应该留在私人空间里。
         </p>
       </section>
 
       <aside className="auth-aside">
-        <PreviewCard title="Private Storage" text="论文 PDF 和实验文件进入 Supabase 私有 bucket，由 RLS 控制访问。" />
-        <PreviewCard title="Backend AI API" text="OpenAI API key 只放在 Vercel 环境变量里，前端不会暴露密钥。" />
+        <PreviewCard title="今日工作" text="先整理文献证据、图纸口径和实验条件表，再进入写作。" />
+        <PreviewCard title="研究原则" text="所有结论都回到上传材料和真实分析结果，不替研究编造发现。" />
       </aside>
     </main>
   );
@@ -299,26 +321,26 @@ function Workspace({
         <Brand />
         <nav className="nav-list" aria-label="Workspace navigation">
           <a className="nav-item is-active" href="#overview">
-            项目总览
-          </a>
-          <a className="nav-item" href="#blueprint">
-            研究蓝图
-          </a>
-          <a className="nav-item" href="#materials">
-            图纸索引
+            今天
           </a>
           <a className="nav-item" href="#files">
-            私有论文库
+            资料库
+          </a>
+          <a className="nav-item" href="#blueprint">
+            实验设计
+          </a>
+          <a className="nav-item" href="#materials">
+            图纸与刺激
           </a>
           <a className="nav-item" href="#ai">
-            AI 研究助手
+            研究助理
           </a>
           <a className="nav-item" href="#pipeline">
-            分析流程
+            写作流程
           </a>
         </nav>
         <div className="side-note">
-          <span className="note-label">登录用户</span>
+          <span className="note-label">当前账号</span>
           <p>{user.email}</p>
         </div>
       </aside>
@@ -326,11 +348,11 @@ function Workspace({
       <section className="workspace">
         <header className="topbar">
           <div>
-            <p className="eyebrow">安全版 v0.2</p>
-            <h1>真实数据准备区</h1>
+            <p className="eyebrow">研究桌面</p>
+            <h1>Metro Rescue 论文工作台</h1>
           </div>
           <div className="top-actions">
-            <span className="status-pill compact">Supabase Auth</span>
+            <span className="status-pill compact">私人空间</span>
             <button className="secondary-button" onClick={signOut}>
               退出
             </button>
@@ -338,41 +360,56 @@ function Workspace({
         </header>
 
         <section className="view is-visible" id="overview">
-          <div className="section-head">
-            <div>
-              <p className="eyebrow">Research workspace</p>
-              <h2>VR 地铁逃生 + EEG 认知负荷论文工作台</h2>
-            </div>
-            <span className="status-pill">私有访问</span>
+          <div className="desk-layout">
+            <section className="desk-panel desk-primary">
+              <p className="eyebrow">今天先做什么</p>
+              <h2>把材料整理成可以写进论文的证据</h2>
+              <p className="desk-lead">
+                这里不是展示系统功能的地方，而是每天打开后能立刻接着做研究的桌面。先把文献、图纸、实验条件和数据口径理顺，再进入分析与英文写作。
+              </p>
+              <div className="task-list">
+                {deskTasks.map((task, index) => (
+                  <article className="task-row" key={task.title}>
+                    <span>{index + 1}</span>
+                    <div>
+                      <strong>{task.title}</strong>
+                      <p>{task.text}</p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+
+            <aside className="desk-panel desk-side">
+              <p className="eyebrow">资料状态</p>
+              <dl className="status-list">
+                <div>
+                  <dt>已入库文件</dt>
+                  <dd>{documents.length}</dd>
+                </div>
+                <div>
+                  <dt>当前材料</dt>
+                  <dd>{selectedDocument?.filename ?? "尚未选择"}</dd>
+                </div>
+                <div>
+                  <dt>实验结构</dt>
+                  <dd>{researchProject.design.totalConditions} 个条件</dd>
+                </div>
+              </dl>
+              <div className="keyword-row compact quiet">
+                {thesisKeywords.map((keyword) => (
+                  <span key={keyword}>{keyword}</span>
+                ))}
+              </div>
+            </aside>
           </div>
-
-          <div className="metric-grid">
-            <Metric label="私有文件" value={documents.length} text="受 Supabase RLS 保护的论文、数据和笔记。" />
-            <Metric label="存储模式" value="RLS" text="用户只能访问自己路径下的文件。" />
-            <Metric label="AI 密钥" value="Server" text="OpenAI API key 只在后端环境变量中使用。" />
-            <Metric label="部署目标" value="Vercel" text="Next.js API routes 需要服务端运行环境。" />
-          </div>
-
-          <div className="keyword-row">
-            {thesisKeywords.map((keyword) => (
-              <span key={keyword}>{keyword}</span>
-            ))}
-          </div>
-        </section>
-
-        <section className="view is-visible" id="blueprint">
-          <ProjectBlueprint />
-        </section>
-
-        <section className="view is-visible" id="materials">
-          <MaterialsPanel />
         </section>
 
         <section className="view is-visible" id="files">
           <div className="section-head">
             <div>
-              <p className="eyebrow">Private storage</p>
-              <h2>私有论文与数据文件</h2>
+              <p className="eyebrow">资料库</p>
+              <h2>论文、图纸和实验数据</h2>
             </div>
             <label className="file-button">
               <input type="file" accept=".pdf,.csv,.xlsx,.mat,.set,.edf,.txt,.md,.svg,.xdf,.jsonl" onChange={handleUpload} />
@@ -396,29 +433,38 @@ function Workspace({
                   </button>
                 ))
               ) : (
-                <p className="muted">还没有文件。建议先上传 9 张 SVG 图纸、研究图注 md、Unity 日志样例和 EEG .xdf 文件。</p>
+                <p className="muted">还没有文件。建议先放入核心文献 PDF、研究图注、9 张 SVG 图纸、Unity 日志样例和 EEG .xdf 文件。</p>
               )}
             </section>
 
-            <section className="work-panel">
+            <section className="work-panel document-detail">
+              <p className="eyebrow">当前选中</p>
               <h3>{selectedDocument?.filename ?? "尚未选择文件"}</h3>
-              <p className="muted">文件不会公开暴露。需要访问时会生成 5 分钟有效的临时签名链接。</p>
+              <p className="muted">材料保持私有。需要阅读原文件时，会生成一个短时间有效的临时链接。</p>
               <button
                 className="secondary-button"
                 disabled={!selectedDocument}
                 onClick={() => selectedDocument && openSignedUrl(selectedDocument)}
               >
-                打开临时链接
+                打开文件
               </button>
             </section>
           </div>
         </section>
 
+        <section className="view is-visible" id="blueprint">
+          <ProjectBlueprint />
+        </section>
+
+        <section className="view is-visible" id="materials">
+          <MaterialsPanel />
+        </section>
+
         <section className="view is-visible" id="ai">
           <div className="section-head">
             <div>
-              <p className="eyebrow">Backend AI API</p>
-              <h2>AI 研究助手</h2>
+              <p className="eyebrow">研究助理</p>
+              <h2>把材料变成笔记、表格和英文段落</h2>
             </div>
             <button className="primary-button" onClick={runAiAssistant} disabled={aiState.status === "loading"}>
               {aiState.status === "loading" ? "分析中..." : "运行 AI"}
@@ -433,9 +479,9 @@ function Workspace({
             <section className="work-panel ai-output">
               <h3>输出</h3>
               <p className="muted">
-                这个请求会经过 Next.js API route，并验证 Supabase 登录 token。没有登录的人不能调用。
+                适合让它整理文献矩阵、Methods 草稿、图注、marker 说明和分析计划。不要让它替真实结果下结论。
               </p>
-              <pre>{aiState.output || "配置 OPENAI_API_KEY 后，这里会显示 AI 输出。"}</pre>
+              <pre>{aiState.output || "运行后，这里会显示整理结果。"}</pre>
             </section>
           </div>
         </section>
@@ -443,15 +489,14 @@ function Workspace({
         <section className="view is-visible" id="pipeline">
           <div className="section-head">
             <div>
-              <p className="eyebrow">Analysis pipeline</p>
-              <h2>下一步分析模块</h2>
+              <p className="eyebrow">写作流程</p>
+              <h2>从材料到论文草稿</h2>
             </div>
           </div>
-          <div className="dashboard-grid">
-            <PipelineCard title="PDF 解析" text="上传 PDF 后抽取摘要、方法、样本、指标、局限和引用信息。" />
-            <PipelineCard title="EEG 数据" text="为 .edf/.set/.mat 文件生成 MNE-Python 与 EEGLAB 预处理脚本。" />
-            <PipelineCard title="文献矩阵" text="把多篇论文抽取成双语矩阵，支撑 Introduction 和 Discussion。" />
-            <PipelineCard title="论文写作" text="只根据上传文件和分析结果生成英文草稿，保留中文解释。" />
+          <div className="workflow-list">
+            {workflowSteps.map((step, index) => (
+              <PipelineCard key={step.title} index={index + 1} title={step.title} text={step.text} />
+            ))}
           </div>
         </section>
       </section>
@@ -487,13 +532,12 @@ function ProjectBlueprint() {
     <div className="blueprint-stack">
       <div className="section-head">
         <div>
-          <p className="eyebrow">Project design</p>
-          <h2>Metro Rescue 研究蓝图</h2>
+          <p className="eyebrow">实验设计</p>
+          <h2>Metro Rescue 的条件、marker 与同步关系</h2>
         </div>
-        <span className="status-pill">{researchProject.design.totalConditions} 个实验组合</span>
       </div>
 
-      <div className="metric-grid">
+      <div className="condition-grid">
         <Metric label="地图布局" value={researchProject.design.maps.length} text={researchProject.design.maps.join(" / ")} />
         <Metric label="标识方案" value={researchProject.design.signatures.length} text={researchProject.design.signatures.join(" / ")} />
         <Metric label="音频条件" value={researchProject.design.audio.length} text={researchProject.design.audio.join(" / ")} />
@@ -531,10 +575,10 @@ function MaterialsPanel() {
     <div className="blueprint-stack">
       <div className="section-head">
         <div>
-          <p className="eyebrow">Private research materials</p>
-          <h2>图纸与图注索引</h2>
+          <p className="eyebrow">图纸与刺激材料</p>
+          <h2>9 张平面图和论文图表线索</h2>
         </div>
-        <span className="status-pill">不要提交到 public repo</span>
+        <span className="status-pill">待核对图例半径</span>
       </div>
 
       <div className="materials-grid">
@@ -544,7 +588,7 @@ function MaterialsPanel() {
               {item.map} / {item.signature}
             </span>
             <strong>{item.file}</strong>
-            <p>{item.signs} 个实验标识点。建议上传到 Supabase private Storage，并与图注记录绑定。</p>
+            <p>{item.signs} 个实验标识点。建议放入私人资料库，并与图注记录绑定。</p>
           </article>
         ))}
       </div>
@@ -576,9 +620,10 @@ function Metric({ label, value, text }: { label: string; value: number | string;
   );
 }
 
-function PipelineCard({ title, text }: { title: string; text: string }) {
+function PipelineCard({ index, title, text }: { index?: number; title: string; text: string }) {
   return (
     <article className="work-panel">
+      {index ? <span className="step-number">{index}</span> : null}
       <h3>{title}</h3>
       <p className="muted">{text}</p>
     </article>

@@ -2,7 +2,7 @@
 
 面向 EEG + VR 实验型研究生论文的中文优先研究工作台。
 
-当前 `next-supabase-secure` 分支是安全版 Next.js 应用，包含 Supabase Auth、私有文件存储和后端 AI API route。旧的 GitHub Pages 静态版保留在 `legacy-static/` 目录中。
+当前 `main` 分支是正式部署的 Next.js 应用，包含 Supabase Auth、私有文件存储和后端 AI API route。旧的 GitHub Pages 静态版保留在 `legacy-static/` 目录中。
 
 ## 功能
 
@@ -16,6 +16,16 @@
 - 图纸与图注索引
 - LSL marker / EEG 同步逻辑
 - 材料一致性提醒
+
+## 项目 Wiki
+
+长期上下文、设计原则、部署方式和研究决策记录在：
+
+```text
+docs/PROJECT_WIKI.md
+```
+
+后续继续开发前先读这个文件，并在重要需求或决策变化后更新它。
 
 ## 本地开发
 
@@ -42,7 +52,7 @@ http://localhost:3000
 ## Vercel 部署
 
 1. 在 Vercel 导入 GitHub repo。
-2. 选择 `next-supabase-secure` 分支。
+2. 使用 `main` 分支。
 3. 添加环境变量：
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
