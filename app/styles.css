@@ -1056,6 +1056,23 @@ textarea {
   align-items: end;
 }
 
+.design-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.design-strip span {
+  min-height: 30px;
+  padding: 6px 10px;
+  border: 1px solid #cddbd5;
+  border-radius: 999px;
+  background: #f6faf7;
+  color: var(--green);
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
 .batch-layout {
   display: grid;
   grid-template-columns: minmax(320px, 0.9fr) minmax(0, 1.1fr);

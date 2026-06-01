@@ -37,6 +37,7 @@ type SeedKnowledgeStats = {
 
 type LibraryFilter = "all" | "literature" | "raw-data" | "analysis" | "notes";
 type JobViewFilter = "all" | "active" | "completed" | "failed" | "stale";
+type DensityLevel = "low" | "medium" | "high";
 
 type HtmlReportArtifact = {
   storagePath: string;
@@ -113,6 +114,13 @@ const jobViewFilters: Array<{ id: JobViewFilter; label: string }> = [
   { id: "failed", label: "失败" },
   { id: "stale", label: "疑似卡住" },
 ];
+
+const densityLevels: DensityLevel[] = ["low", "medium", "high"];
+const densityLabels: Record<DensityLevel, string> = {
+  low: "低密度",
+  medium: "中密度",
+  high: "高密度",
+};
 
 export default function HomePage() {
   const hasConfig = hasSupabaseBrowserConfig();
@@ -508,7 +516,7 @@ function Workspace({
   async function runSubjectBatchAnalysis(documentIds = selectedBatchIds, subjectId = batchSubjectId) {
     const uniqueDocumentIds = Array.from(new Set(documentIds));
     if (uniqueDocumentIds.length < 2) {
-      setJobMessage("被试批量分析至少需要选择 2 个 XDF；正式数据建议同一被试 3 个 run 一起提交。");
+      setJobMessage("被试批量分析至少需要选择 2 个 XDF；正式数据建议同一被试的低/中/高密度 3 个 run 一起提交。");
       return;
     }
 
@@ -535,7 +543,7 @@ function Workspace({
       return;
     }
 
-    setJobMessage(payload.warning ?? `已提交 ${uniqueDocumentIds.length} 个 XDF 的被试批量分析任务。`);
+    setJobMessage(payload.warning ?? `已提交 ${uniqueDocumentIds.length} 个 XDF 的被试密度条件批量分析任务。`);
     await loadAnalysisJobs();
     setJobLoading(false);
   }
@@ -1079,18 +1087,29 @@ function SubjectBatchPanel({
   onRunSelected: () => void;
   onRunGroup: (group: { subjectId: string; documents: ResearchDocument[] }) => void;
 }) {
+  const selectedCoverage = summarizeDensityCoverage(documents.filter((document) => selectedIds.includes(document.id)));
+
   return (
     <section className="work-panel subject-batch-panel">
       <div className="analysis-head">
         <div>
           <p className="eyebrow">被试批量分析</p>
-          <h3>同一被试的多个 XDF 一起分析</h3>
+          <h3>同一被试的低 / 中 / 高密度 XDF 一起分析</h3>
         </div>
-        <span className="status-pill compact">{selectedIds.length} 个已选</span>
+        <span className="status-pill compact">
+          {selectedIds.length} 个已选{selectedIds.length ? ` · ${selectedCoverage.label}` : ""}
+        </span>
       </div>
       <p className="muted">
-        正式实验建议每名被试 3 个 run 一起提交。系统会先逐 run 做 EEG + Unity marker QC，再汇总成被试内 run 表，供后续组内/组间 mixed-effects model 使用。
+        正式数据按 90 名被试 × 3 个密度条件组织。每个被试建议一次提交低密度、中密度、高密度 3 个 XDF；报告会输出被试内密度表和主 planned contrast：中密度 - 低/高密度平均。
       </p>
+      <div className="design-strip" aria-label="分析设计">
+        <span>90 被试</span>
+        <span>3 密度条件</span>
+        <span>270 个 XDF</span>
+        <span>组内因素：density</span>
+        <span>主假设：中密度最高</span>
+      </div>
       <div className="batch-controls">
         <label>
           被试编号
@@ -1120,7 +1139,9 @@ function SubjectBatchPanel({
               />
               <span>
                 <strong>{document.filename}</strong>
-                <small>{formatBytes(document.size_bytes)} · {inferSubjectIdFromFilename(document.filename)}</small>
+                <small>
+                  {formatBytes(document.size_bytes)} · {inferSubjectIdFromFilename(document.filename)} · {formatDensityLabel(inferDensityLevelFromFilename(document.filename))}
+                </small>
               </span>
             </label>
           ))}
@@ -1128,20 +1149,24 @@ function SubjectBatchPanel({
         <div className="subject-group-list">
           <strong>按文件名推断的被试组</strong>
           {groups.length ? (
-            groups.map((group) => (
-              <article className="subject-group-card" key={group.subjectId}>
-                <div>
-                  <span className={group.documents.length === 3 ? "state-chip completed" : "state-chip warning"}>
-                    {group.documents.length} 个 XDF
-                  </span>
-                  <h4>{group.subjectId}</h4>
-                  <p>{group.documents.map((document) => inferRunLabelFromFilename(document.filename)).join(" / ")}</p>
-                </div>
-                <button className="secondary-button" disabled={jobLoading || group.documents.length < 2} onClick={() => onRunGroup(group)}>
-                  分析此被试
-                </button>
-              </article>
-            ))
+            groups.map((group) => {
+              const coverage = summarizeDensityCoverage(group.documents);
+              return (
+                <article className="subject-group-card" key={group.subjectId}>
+                  <div>
+                    <span className={coverage.complete && group.documents.length === 3 ? "state-chip completed" : "state-chip warning"}>
+                      {coverage.complete ? "密度完整" : `${group.documents.length}/3 XDF`}
+                    </span>
+                    <h4>{group.subjectId}</h4>
+                    <p>条件：{coverage.label}</p>
+                    <p>{group.documents.map((document) => inferRunLabelFromFilename(document.filename)).join(" / ")}</p>
+                  </div>
+                  <button className="secondary-button" disabled={jobLoading || group.documents.length < 2} onClick={() => onRunGroup(group)}>
+                    提交此被试
+                  </button>
+                </article>
+              );
+            })
           ) : (
             <p className="muted">还没有 XDF 文件。上传后会按文件名中的 sub- 编号推断分组。</p>
           )}
@@ -1482,7 +1507,7 @@ function groupXdfDocumentsBySubject(documents: ResearchDocument[]) {
   return Array.from(grouped.entries())
     .map(([subjectId, groupDocuments]) => ({
       subjectId,
-      documents: groupDocuments.sort((a, b) => inferRunLabelFromFilename(a.filename).localeCompare(inferRunLabelFromFilename(b.filename))),
+      documents: groupDocuments.sort((a, b) => compareXdfConditionOrder(a.filename, b.filename)),
     }))
     .sort((a, b) => a.subjectId.localeCompare(b.subjectId));
 }
@@ -1501,4 +1526,47 @@ function inferRunLabelFromFilename(filename: string) {
   const signatureMatch = filename.match(/signature[-_]?([A-Za-z0-9]+)/i);
   if (signatureMatch?.[1]) return `signature-${signatureMatch[1]}`;
   return formatDocumentKind({ filename });
+}
+
+function inferDensityLevelFromFilename(filename: string): DensityLevel | null {
+  const normalized = filename.toLowerCase().replace(/_/g, "-");
+  if (/中等?密度|中密度|medium[-\s_]?density|density[-\s_]?medium|density[-\s_]?mid|condition[-\s_]?medium|level[-\s_]?2/.test(normalized)) {
+    return "medium";
+  }
+  if (/低密度|low[-\s_]?density|density[-\s_]?low|condition[-\s_]?low|level[-\s_]?1/.test(normalized)) {
+    return "low";
+  }
+  if (/高密度|high[-\s_]?density|density[-\s_]?high|condition[-\s_]?high|level[-\s_]?3/.test(normalized)) {
+    return "high";
+  }
+
+  const tokens = new Set(normalized.match(/[a-z0-9]+|[\u4e00-\u9fff]+/g) ?? []);
+  if (["medium", "mid", "med", "middle", "中", "中等"].some((token) => tokens.has(token))) return "medium";
+  if (["low", "lo", "sparse", "light", "低"].some((token) => tokens.has(token))) return "low";
+  if (["high", "hi", "dense", "heavy", "高"].some((token) => tokens.has(token))) return "high";
+  return null;
+}
+
+function formatDensityLabel(level: DensityLevel | null) {
+  return level ? densityLabels[level] : "密度待标注";
+}
+
+function summarizeDensityCoverage(documents: ResearchDocument[]) {
+  const levels = documents.map((document) => inferDensityLevelFromFilename(document.filename)).filter((level): level is DensityLevel => Boolean(level));
+  const uniqueLevels = Array.from(new Set(levels)).sort((a, b) => densityLevels.indexOf(a) - densityLevels.indexOf(b));
+  const label = uniqueLevels.length ? uniqueLevels.map((level) => densityLabels[level]).join(" / ") : "密度待标注";
+  return {
+    levels: uniqueLevels,
+    label,
+    complete: densityLevels.every((level) => uniqueLevels.includes(level)),
+  };
+}
+
+function compareXdfConditionOrder(a: string, b: string) {
+  const densityA = inferDensityLevelFromFilename(a);
+  const densityB = inferDensityLevelFromFilename(b);
+  const densityIndexA = densityA ? densityLevels.indexOf(densityA) : densityLevels.length;
+  const densityIndexB = densityB ? densityLevels.indexOf(densityB) : densityLevels.length;
+  if (densityIndexA !== densityIndexB) return densityIndexA - densityIndexB;
+  return inferRunLabelFromFilename(a).localeCompare(inferRunLabelFromFilename(b));
 }

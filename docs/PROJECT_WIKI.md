@@ -162,11 +162,14 @@ git push origin main
 
 研究假设与统计口径：
 
-- 当前核心假设可以写成：检验 Signature2 是否相对 Signature1 和 Signature3 带来更高认知负荷。
-- 论文里不要直接写成已经证明 Signature2 更高；应写成 planned contrast，并等待 EEG/行为数据支持。
-- 建议 trial-level mixed model：`Load ~ Signature + Metro + Audio + TrialOrder + (1 | Subject)`。
-- 主 planned contrast：Signature2 vs Signature1/Signature3 平均值，即 `[-1, 2, -1]`；同时报告 S2-S1 与 S2-S3。
-- 需要另建 `signature_manipulation_table.csv`，记录每个 Signature 的贴图、文字信息密度、出口数量、箭头数量、决策相关性、冗余度、歧义度和朝向说明。
+- 当前核心假设更新为密度条件假设：中等密度场景可能带来最高认知负荷，而不是简单的线性“越密越高”。
+- 论文里不要直接写成已经证明中密度更高；应写成 planned contrast，并等待 EEG/行为数据支持。
+- 正式实验结构：90 名被试 × 3 个密度条件（低密度 / 中密度 / 高密度）= 270 个 LabRecorder XDF run。
+- 组内因素：`Density`。每名被试应尽量同时提交 3 个 XDF，使 worker 能生成被试内密度条件表。
+- 主 planned contrast：`medium - mean(low, high)`，权重为 `low:-1, medium:2, high:-1`。同时报告 medium-low 与 medium-high 的方向和置信区间。
+- 建议 trial/run-level mixed model：`Load ~ Density + RunOrder + Map + (1 + Density | Subject)`。
+- 如有组间变量，建议模型：`Load ~ Density * Group + RunOrder + Map + (1 + Density | Subject)`。Group 必须来自 subject metadata，例如组别、年龄、性别、VR 经验、专业背景、实验顺序或 counterbalance。
+- 需要另建 `density_condition_table.csv` 或在 Unity marker 中稳定写入 `density=low|medium|high`，记录每个 run 的密度条件、场景编号、标识数量、文字信息量、箭头数量、决策相关性、冗余度、歧义度和呈现顺序。
 
 XDF 测试数据：
 
@@ -236,12 +239,12 @@ XDF worker 目前输出：
 
 - 文献与论文：只做文献知识库。上传 PDF 后生成/更新“知识卡片”，卡片包含研究问题、方法、EEG/行为指标、主要发现、局限、可用于论文哪个章节等。AI 写作助手必须优先读取这些卡片，并用论文标题或文件名引用来源。
 - XDF 原始数据：只放 LabRecorder `.xdf`、EEG 原始文件和正式实验数据。XDF 高级分析只处理这里的 EEG stream + Unity marker stream。
-- 分析脚本与输出：放 Python/MATLAB/notebook、trial_features、event_features、中间统计表和写作产物。后续 90 名被试 × 3 trials = 270 个实验文件，应走批量上传和批量提交 XDF 队列。
+- 分析脚本与输出：放 Python/MATLAB/notebook、trial_features、event_features、中间统计表和写作产物。后续 90 名被试 × 3 个密度条件 = 270 个实验文件，应走批量上传和批量提交 XDF 队列。
 - 场景平面图与导向标识配置暂时不作为主要界面模块展示，避免干扰当前文献库和 XDF 分析主线。
 - 不把真实论文 PDF、XDF、EEG 原始数据或被试数据提交到公开 GitHub repo 的 `data` 目录。公开 GitHub 只保存代码、schema、wiki 和可公开的模板；私有数据优先放 Supabase private Storage。
 - GitHub Actions 的 `SUPABASE_SERVICE_ROLE_KEY` 可以使用新版 `sb_secret_...` 或旧版 JWT `service_role`。worker 请求头需要区分两者：新版 secret key 只放 `apikey`，旧版 JWT 才放 `Authorization: Bearer ...`。
 - 文件管理界面必须以“文件为中心”呈现分析状态：XDF 文件旁边直接显示未提交、排队、运行、完成、失败、疑似卡住；任务队列支持状态筛选和进度条。270 个实验文件不能只靠一串卡片堆叠。
-- XDF 正式分析必须支持“被试批量任务”：同一被试的 2-3 个 XDF run 一起提交，先逐 run 做 QC，再汇总成 subject-level run table。组内因素包括 Signature、Metro/map、audio/cognitive-load；组间因素需要用户额外提供 subject metadata 表，例如 subject_id、group、age、sex、VR experience、实验顺序/分组等。
+- XDF 正式分析必须支持“被试批量任务”：同一被试的低/中/高密度 3 个 XDF run 一起提交，先逐 run 做 QC，再汇总成 subject-level density table。核心组内因素是 Density；Metro/map、run order、signage version 可作为控制变量或辅助解释字段。组间因素需要用户额外提供 subject metadata 表，例如 subject_id、group、age、sex、VR experience、专业背景、实验顺序/分组等。
 - 运行完成、失败、配置错误、疑似卡住的任务应该能从界面删除，避免历史错误任务堆积影响判断。
 - XDF worker 的正式输出不要在 dashboard 内长篇展示；生成自包含 HTML report，存入 Supabase private Storage，并在任务列表中提供下载入口。页面只显示队列状态、进度和下载按钮。
 - 信息架构：研究资料库只做文件管理、打开文件和文献知识卡片；XDF 被试批量分析、任务队列、HTML 报告下载应集中放在“数据分析与论文写作”，避免同一分析入口在两个模块重复出现。
@@ -357,7 +360,7 @@ AI 不应该：
 2. 文献矩阵：按 wayfinding / VR evacuation / EEG cognitive load 分类，并支持写作助手引用来源
 3. XDF 质控：stream 检查、session 切分、marker 完整性、EEG stream 选择
 4. EEG 分析：MNE-Python / EEGLAB 预处理脚本模板和 trial/event-level 特征表
-5. 批量实验数据：支持 90 名被试 × 3 次实验的 XDF 上传、排队和结果汇总
+5. 批量实验数据：支持 90 名被试 × 3 个密度条件的 XDF 上传、排队和结果汇总
 6. 写作模块：英文 Methods、Introduction 证据链、Discussion 风险点
 7. 场景与标识配置：当前暂不作为主界面模块，未来确有需要再恢复
 

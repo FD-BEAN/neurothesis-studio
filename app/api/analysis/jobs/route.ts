@@ -14,6 +14,18 @@ type DeleteJobsBody = {
 };
 
 const DEFAULT_WORKFLOW = "analysis-worker.yml";
+const DENSITY_ANALYSIS_DESIGN = {
+  expectedSubjects: 90,
+  runsPerSubject: 3,
+  expectedTotalRuns: 270,
+  withinSubjectFactor: "density",
+  densityLevels: ["low", "medium", "high"],
+  primaryHypothesis: "medium density has the highest cognitive load",
+  primaryContrast: {
+    name: "medium_minus_low_high_mean",
+    weights: { low: -1, medium: 2, high: -1 },
+  },
+};
 
 export async function GET(request: Request) {
   const auth = await authenticate(request);
@@ -76,7 +88,7 @@ export async function POST(request: Request) {
   }
 
   if (isSubjectBatch && requestedDocumentIds.length < 2) {
-    return NextResponse.json({ error: "被试批量分析至少需要 2 个 XDF；正式数据建议 3 个 run 一起提交。" }, { status: 400 });
+    return NextResponse.json({ error: "被试批量分析至少需要 2 个 XDF；正式数据建议同一被试的低/中/高密度 3 个 run 一起提交。" }, { status: 400 });
   }
 
   const resolvedAnalysisType = isSubjectBatch ? "subject_batch" : analysisType || "advanced_python";
@@ -87,6 +99,13 @@ export async function POST(request: Request) {
         subjectId: subjectId?.trim() || inferSubjectId(representativeDocument.filename),
         documentIds: requestedDocumentIds,
         filenames: documents.map((document) => document.filename),
+        design: DENSITY_ANALYSIS_DESIGN,
+        conditions: documents.map((document) => ({
+          documentId: document.id,
+          filename: document.filename,
+          density: inferDensityLevel(document.filename),
+          runLabel: inferRunLabel(document.filename),
+        })),
       }
     : null;
 
@@ -162,7 +181,7 @@ export async function POST(request: Request) {
     .update({
       status: "queued",
       status_message: batchPayload
-        ? `已触发 GitHub Actions：被试 ${batchPayload.subjectId} 的 ${documents.length} 个 XDF 将一起分析。`
+        ? `已触发 GitHub Actions：被试 ${batchPayload.subjectId} 的 ${documents.length} 个 XDF 将按低/中/高密度一起分析。`
         : "已触发 GitHub Actions XDF Python worker。",
     })
     .eq("id", job.id)
@@ -303,4 +322,31 @@ function inferSubjectId(filename: string) {
   const subjectMatch = filename.match(/(?:subject|subj|participant|p)[-_]?([A-Za-z0-9]+)/i);
   if (subjectMatch?.[1]) return `sub-${subjectMatch[1]}`;
   return "subject-unknown";
+}
+
+function inferRunLabel(filename: string) {
+  const runMatch = filename.match(/run-([A-Za-z0-9]+)/i);
+  if (runMatch?.[1]) return `run-${runMatch[1]}`;
+  const signatureMatch = filename.match(/signature[-_]?([A-Za-z0-9]+)/i);
+  if (signatureMatch?.[1]) return `signature-${signatureMatch[1]}`;
+  return getExtension(filename).toUpperCase() || "file";
+}
+
+function inferDensityLevel(filename: string) {
+  const normalized = filename.toLowerCase().replace(/_/g, "-");
+  if (/中等?密度|中密度|medium[-\s_]?density|density[-\s_]?medium|density[-\s_]?mid|condition[-\s_]?medium|level[-\s_]?2/.test(normalized)) {
+    return "medium";
+  }
+  if (/低密度|low[-\s_]?density|density[-\s_]?low|condition[-\s_]?low|level[-\s_]?1/.test(normalized)) {
+    return "low";
+  }
+  if (/高密度|high[-\s_]?density|density[-\s_]?high|condition[-\s_]?high|level[-\s_]?3/.test(normalized)) {
+    return "high";
+  }
+
+  const tokens = new Set(normalized.match(/[a-z0-9]+|[\u4e00-\u9fff]+/g) ?? []);
+  if (["medium", "mid", "med", "middle", "中", "中等"].some((token) => tokens.has(token))) return "medium";
+  if (["low", "lo", "sparse", "light", "低"].some((token) => tokens.has(token))) return "low";
+  if (["high", "hi", "dense", "heavy", "高"].some((token) => tokens.has(token))) return "high";
+  return null;
 }

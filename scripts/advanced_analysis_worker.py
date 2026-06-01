@@ -48,6 +48,13 @@ BEHAVIOR_EVENTS = [
     "u_turn_detected",
     "route_backtrack_detected",
 ]
+DENSITY_LEVELS = ("low", "medium", "high")
+DENSITY_LABELS = {
+    "low": "低密度",
+    "medium": "中密度",
+    "high": "高密度",
+}
+PRIMARY_CONTRAST_WEIGHTS = {"low": -1.0, "medium": 2.0, "high": -1.0}
 
 
 class SupabaseRest:
@@ -276,7 +283,7 @@ def render_html_report(report: dict[str, Any], job: dict[str, Any], generated_at
     parts.extend(
         [
             "<section class='card'><h2>后续统计建模提醒</h2>",
-            "<p>该 HTML 是 QC 与特征提取报告，适合检查 XDF、marker、EEG 覆盖和 run-level 指标。正式论文结论仍需要把所有被试汇总为 trial-level / event-level 表，再做 mixed-effects model 与 planned contrasts。</p>",
+            "<p>该 HTML 是 QC 与特征提取报告，适合检查 XDF、Unity marker、EEG 覆盖和 run-level 指标。正式论文结论需要把所有被试汇总为 subject-level / trial-level 表，再检验密度条件的组内主效应、主 planned contrast：中密度 - 低/高密度平均，以及必要的组间交互。</p>",
             "</section>",
             "<details class='card'><summary>机器可读 JSON 摘要</summary>",
             f"<pre>{h(json.dumps(to_jsonable(report), ensure_ascii=False, indent=2))}</pre>",
@@ -387,7 +394,7 @@ def run_subject_batch_job(client: SupabaseRest, job: dict[str, Any], run_url: st
     batch = extract_batch_payload(job)
     document_ids = batch.get("documentIds", [])
     if len(document_ids) < 2:
-        raise RuntimeError("subject_batch 任务缺少 documentIds；至少需要 2 个 XDF，正式数据推荐 3 个 run。")
+        raise RuntimeError("subject_batch 任务缺少 documentIds；至少需要 2 个 XDF，正式数据推荐低/中/高密度 3 个 run。")
 
     id_filter = ",".join(document_ids)
     documents = client.select_many("research_documents", f"id=in.({id_filter})&select=*")
@@ -407,7 +414,7 @@ def run_subject_batch_job(client: SupabaseRest, job: dict[str, Any], run_url: st
                 job["id"],
                 {
                     "status": "running",
-                    "status_message": f"正在分析被试 {batch.get('subjectId', 'unknown')}：{index}/{len(ordered_documents)} {document['filename']}",
+                    "status_message": f"正在分析被试 {batch.get('subjectId', 'unknown')} 的密度条件 run：{index}/{len(ordered_documents)} {document['filename']}",
                     "github_run_url": run_url,
                 },
             )
@@ -432,90 +439,112 @@ def extract_batch_payload(job: dict[str, Any]) -> dict[str, Any]:
 
 def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]], reports: list[dict[str, Any]]) -> dict[str, Any]:
     subject_id = batch.get("subjectId") or infer_subject_id(documents[0]["filename"])
-    run_rows = [extract_run_summary(document, report) for document, report in zip(documents, reports)]
+    run_rows = sort_run_rows_by_density([extract_run_summary(document, report) for document, report in zip(documents, reports)])
     maps = sorted({row.get("map", "") for row in run_rows if row.get("map")})
     signatures = sorted({row.get("signature", "") for row in run_rows if row.get("signature")})
     audio_levels = sorted({row.get("audio", "") for row in run_rows if row.get("audio")})
+    density_levels = sorted({row.get("density", "") for row in run_rows if row.get("density")}, key=density_sort_key)
+    complete_density_set = set(DENSITY_LEVELS).issubset(set(density_levels))
     completed_runs = sum(1 for row in run_rows if row.get("has_completion") == "yes")
     durations = [to_float(row.get("duration_s")) for row in run_rows]
     durations = [value for value in durations if value is not None]
+    contrast_rows, contrast_json = compute_density_planned_contrasts(run_rows)
     notes = []
 
     if len(run_rows) != 3:
-        notes.append(f"当前被试批次包含 {len(run_rows)} 个 XDF；正式设计预期每名被试 3 个实验 run。")
-    if len(signatures) < min(3, len(run_rows)):
-        notes.append("当前批次没有覆盖 3 个不同 Signature；如果文件名或 marker 没写清楚条件，需要补 subject-run 条件表。")
-    if not audio_levels:
-        notes.append("未从 marker 中稳定识别 audio 条件；组间/组内模型需要明确 cognitive load/audio 条件编码。")
-    notes.append("组内因素建议包含 Signature、Metro/map、audio/cognitive-load；组间因素需要额外上传 subject-level 分组表，例如 group、sex、age、VR experience 或实验顺序。")
-    notes.append("当前批量报告仍属于 QC + 特征提取，不直接给显著性结论；正式结果需要汇总所有被试后做 mixed-effects model。")
+        notes.append(f"当前被试批次包含 {len(run_rows)} 个 XDF；正式设计预期每名被试 3 个密度条件 run：低密度、中密度、高密度。")
+    if not complete_density_set:
+        notes.append(f"当前批次密度条件覆盖为 {format_density_coverage(run_rows)}；如果文件名或 Unity marker 没写 density/condition，需要补 subject-run 条件表。")
+    if completed_runs != len(run_rows):
+        notes.append("部分 run 缺少可识别的完成时长；正式统计前需要确认 map_start/trial_start 到 evacuation_complete 的窗口。")
+    if not contrast_rows:
+        notes.append("未能计算中密度 planned contrast；通常是低/中/高密度没有全部识别，或对应指标缺失。")
+    notes.append("单个被试报告只计算方向性 contrast，不报告显著性；显著性需要 90 名被试的 subject-level contrast 或 trial-level mixed-effects model。")
+    notes.append("组内因素主轴为 density；组间因素需要额外上传 subject metadata，例如 group、sex、age、VR experience、专业背景、实验顺序或 counterbalance。")
+    notes.append("正式主检验建议预注册为：中密度认知负荷高于低密度与高密度平均，contrast weights = low:-1, medium:2, high:-1。")
 
     return {
         "title": f"{subject_id} 被试批量 XDF 分析",
         "kind": "Subject Batch XDF",
         "subjectId": subject_id,
         "sourceDocumentIds": [document["id"] for document in documents],
-        "summary": "该报告把同一被试的多个 XDF run 作为一个被试内单元处理：先逐文件完成 EEG + Unity marker QC，再汇总 run-level 行为、EEG 频带和事件窗指标，为后续组内/组间混合效应建模准备数据。",
+        "design": {
+            "expected_subjects": 90,
+            "runs_per_subject": 3,
+            "expected_total_runs": 270,
+            "within_subject_factor": "density",
+            "density_levels": list(DENSITY_LEVELS),
+            "primary_hypothesis": "medium density produces the highest cognitive load",
+            "primary_contrast_weights": PRIMARY_CONTRAST_WEIGHTS,
+        },
+        "densityContrasts": contrast_json,
+        "summary": "该报告把同一被试的低/中/高密度 XDF run 作为一个被试内单元处理：先逐文件完成 EEG + Unity marker QC，再汇总 run-level 行为、EEG 频带和事件窗指标，并计算主 planned contrast（中密度 - 低/高密度平均）。",
         "metrics": [
             {"label": "被试编号", "value": str(subject_id)},
-            {"label": "XDF run", "value": str(len(run_rows))},
+            {"label": "XDF run", "value": f"{len(run_rows)}/3"},
             {"label": "完整 run", "value": f"{completed_runs}/{len(run_rows)}"},
+            {"label": "密度条件", "value": f"{len(density_levels)}/3", "text": format_density_coverage(run_rows)},
             {"label": "地图条件", "value": str(len(maps)), "text": " / ".join(maps) or "-"},
-            {"label": "Signature 条件", "value": str(len(signatures)), "text": " / ".join(signatures) or "-"},
-            {"label": "Audio 条件", "value": str(len(audio_levels)), "text": " / ".join(audio_levels) or "-"},
+            {"label": "标识版本", "value": str(len(signatures)), "text": " / ".join(signatures) or "-"},
+            {"label": "附加条件", "value": str(len(audio_levels)), "text": " / ".join(audio_levels) or "-"},
             {"label": "平均时长", "value": fmt_seconds(float(np.mean(durations)) if durations else None)},
         ],
         "charts": [
             {
                 "type": "bar",
-                "title": "run 完成时长",
-                "xLabel": "run",
+                "title": "密度条件完成时长",
+                "xLabel": "density/run",
                 "yLabel": "seconds",
                 "data": [
-                    {"label": row["run_label"], "value": safe_chart_value(to_float(row.get("duration_s")))}
+                    {"label": condition_label(row), "value": safe_chart_value(to_float(row.get("duration_s")))}
                     for row in run_rows
                 ],
             },
             {
                 "type": "bar",
                 "title": "行为负荷代理指标",
-                "xLabel": "run",
+                "xLabel": "density/run",
                 "yLabel": "count",
                 "data": [
-                    {"label": row["run_label"], "value": safe_chart_value(to_float(row.get("behavior_load_proxy")))}
+                    {"label": condition_label(row), "value": safe_chart_value(to_float(row.get("behavior_load_proxy")))}
                     for row in run_rows
                 ],
             },
             {
                 "type": "bar",
                 "title": "EEG load proxy",
-                "xLabel": "run",
+                "xLabel": "density/run",
                 "yLabel": "index",
                 "data": [
-                    {"label": row["run_label"], "value": safe_chart_value(to_float(row.get("eeg_load_proxy")))}
+                    {"label": condition_label(row), "value": safe_chart_value(to_float(row.get("eeg_load_proxy")))}
                     for row in run_rows
                 ],
             },
         ],
         "tables": [
             {
-                "title": "被试内 run 汇总",
+                "title": "被试内密度条件汇总",
                 "columns": [
                     "file",
+                    "density",
                     "subject",
                     "session",
                     "map",
-                    "signature",
-                    "audio",
+                    "signage/version",
+                    "extra_condition",
                     "duration_s",
                     "distance_m",
                     "exit",
                     "behavior_load_proxy",
                     "eeg_load_proxy",
+                    "theta_alpha_ratio",
+                    "frontal_theta_4_7",
+                    "posterior_alpha_8_12",
                 ],
                 "rows": [
                     [
                         row["file"],
+                        row["density_label"],
                         row["subject"],
                         row["session"],
                         row["map"],
@@ -526,20 +555,27 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
                         row["exit_label"],
                         row["behavior_load_proxy"],
                         row["eeg_load_proxy"],
+                        row["theta_alpha_ratio"],
+                        row["frontal_theta_4_7"],
+                        row["posterior_alpha_8_12"],
                     ]
                     for row in run_rows
                 ],
             },
             {
-                "title": "混合效应模型数据结构建议",
-                "columns": ["字段", "层级", "用途"],
+                "title": "主 planned contrast：中密度是否最高",
+                "columns": ["contrast", "metric", "low", "medium", "high", "estimate", "direction"],
+                "rows": contrast_rows or [["medium - mean(low, high)", "-", "-", "-", "-", "-", "缺少完整密度条件或指标"]],
+            },
+            {
+                "title": "90 被试全样本统计模型建议",
+                "columns": ["分析层级", "模型/检验", "解释口径"],
                 "rows": [
-                    ["subject", "被试间", "随机截距；必要时加入 Signature/audio 随机斜率"],
-                    ["run/order", "被试内", "控制练习、疲劳和顺序效应"],
-                    ["signature", "被试内", "导向标识方案主效应与 planned contrast"],
-                    ["map/metro", "被试内", "场景布局复杂度控制变量或固定效应"],
-                    ["audio/cognitive_load", "被试内或组间，取决于实验安排", "认知负荷操控；需要明确你的正式设计"],
-                    ["group", "被试间", "如果存在实验组/对照组、专业背景、VR经验等，需要单独上传 subject metadata"],
+                    ["被试内主检验", "对每名被试计算 contrast = medium - (low + high) / 2，再对 90 个 contrast 做 one-sample test 或等价 mixed model contrast", "直接回答中密度是否显著高于低/高平均"],
+                    ["trial/run-level mixed model", "Load ~ Density + RunOrder + Map + (1 + Density | Subject)", "Density 是组内固定效应；Subject 是随机效应"],
+                    ["组间差异", "Load ~ Density * Group + RunOrder + Map + (1 + Density | Subject)", "Group 需要来自被试元数据；重点看 Density:Group 交互"],
+                    ["多指标控制", "EEG load proxy、theta/alpha、frontal theta、posterior alpha、completion time、behavior_load_proxy 分开报告；主指标优先，其他作为 convergent evidence", "避免把多个探索性指标都写成主结论"],
+                    ["结论判定", "先看主 contrast 的方向、置信区间和 p 值；再看 low vs medium、medium vs high 成对比较", "只有全样本显著后才能写成结果支持假设"],
                 ],
             },
         ],
@@ -553,6 +589,14 @@ def extract_run_summary(document: dict[str, Any], report: dict[str, Any]) -> dic
     behavior = extract_metric_table(report, ["trial_duration_s", "horizontal_distance_m", "exit_label", "behavior_load_proxy"])
     eeg = extract_metric_table(report, ["eeg_load_proxy", "frontal_theta_4_7", "posterior_alpha_8_12", "theta_alpha_ratio"])
     file = document["filename"]
+    density = infer_density_level(
+        file,
+        session_parts.get("session", ""),
+        session_parts.get("map", ""),
+        session_parts.get("signature", ""),
+        session_parts.get("audio", ""),
+        metrics.get("主 trial", ""),
+    )
     return {
         "file": file,
         "run_label": infer_run_label(file),
@@ -561,11 +605,16 @@ def extract_run_summary(document: dict[str, Any], report: dict[str, Any]) -> dic
         "map": session_parts.get("map", ""),
         "signature": session_parts.get("signature", ""),
         "audio": session_parts.get("audio", ""),
+        "density": density,
+        "density_label": density_display(density) if density else "待标注",
         "duration_s": behavior.get("trial_duration_s", "-"),
         "horizontal_distance_m": behavior.get("horizontal_distance_m", "-"),
         "exit_label": behavior.get("exit_label", "-"),
         "behavior_load_proxy": behavior.get("behavior_load_proxy", "-"),
         "eeg_load_proxy": eeg.get("eeg_load_proxy", "-"),
+        "theta_alpha_ratio": eeg.get("theta_alpha_ratio", "-"),
+        "frontal_theta_4_7": eeg.get("frontal_theta_4_7", "-"),
+        "posterior_alpha_8_12": eeg.get("posterior_alpha_8_12", "-"),
         "has_completion": "yes" if behavior.get("trial_duration_s") not in (None, "", "-") else "no",
     }
 
@@ -581,6 +630,113 @@ def extract_metric_table(report: dict[str, Any], wanted: list[str]) -> dict[str,
             if key in wanted_set and len(row) > 1:
                 values[key] = str(row[1])
     return values
+
+
+def infer_density_level(*values: Any) -> str:
+    import re
+
+    text = " ".join(str(value or "") for value in values).lower()
+    compact = text.replace("_", "-")
+
+    if re.search(r"中等?密度|中密度|medium[-\s_]?density|density[-\s_]?medium|density[-\s_]?mid|condition[-\s_]?medium|level[-\s_]?2", compact):
+        return "medium"
+    if re.search(r"低密度|low[-\s_]?density|density[-\s_]?low|condition[-\s_]?low|level[-\s_]?1", compact):
+        return "low"
+    if re.search(r"高密度|high[-\s_]?density|density[-\s_]?high|condition[-\s_]?high|level[-\s_]?3", compact):
+        return "high"
+
+    tokens = set(re.findall(r"[a-z0-9]+|[\u4e00-\u9fff]+", compact))
+    if tokens & {"medium", "mid", "med", "middle", "中", "中等"}:
+        return "medium"
+    if tokens & {"low", "lo", "sparse", "light", "低"}:
+        return "low"
+    if tokens & {"high", "hi", "dense", "heavy", "高"}:
+        return "high"
+    return ""
+
+
+def density_display(level: str) -> str:
+    return DENSITY_LABELS.get(level, level or "待标注")
+
+
+def density_sort_key(level: str) -> int:
+    try:
+        return DENSITY_LEVELS.index(level)
+    except ValueError:
+        return len(DENSITY_LEVELS)
+
+
+def sort_run_rows_by_density(rows: list[dict[str, str]]) -> list[dict[str, str]]:
+    if any(row.get("density") for row in rows):
+        return sorted(rows, key=lambda row: (density_sort_key(row.get("density", "")), row.get("run_label", ""), row.get("file", "")))
+    return rows
+
+
+def condition_label(row: dict[str, str]) -> str:
+    density = row.get("density", "")
+    if density:
+        return density_display(density)
+    return row.get("run_label") or row.get("file", "")[:18]
+
+
+def format_density_coverage(rows: list[dict[str, str]]) -> str:
+    levels = [row.get("density", "") for row in rows if row.get("density")]
+    if not levels:
+        return "未识别"
+    unique = sorted(set(levels), key=density_sort_key)
+    return " / ".join(density_display(level) for level in unique)
+
+
+def compute_density_planned_contrasts(rows: list[dict[str, str]]) -> tuple[list[list[str]], list[dict[str, Any]]]:
+    metrics = [
+        ("eeg_load_proxy", "EEG load proxy"),
+        ("theta_alpha_ratio", "theta/alpha ratio"),
+        ("frontal_theta_4_7", "frontal theta"),
+        ("posterior_alpha_8_12", "posterior alpha"),
+        ("behavior_load_proxy", "behavior load proxy"),
+        ("duration_s", "completion time"),
+    ]
+    table_rows: list[list[str]] = []
+    json_rows: list[dict[str, Any]] = []
+
+    for metric_key, metric_label in metrics:
+        values_by_density: dict[str, list[float]] = {level: [] for level in DENSITY_LEVELS}
+        for row in rows:
+            density = row.get("density", "")
+            value = to_float(row.get(metric_key))
+            if density in values_by_density and value is not None:
+                values_by_density[density].append(value)
+
+        if not all(values_by_density[level] for level in DENSITY_LEVELS):
+            continue
+
+        means = {level: float(np.mean(values_by_density[level])) for level in DENSITY_LEVELS}
+        estimate = means["medium"] - (means["low"] + means["high"]) / 2.0
+        direction = "支持假设方向" if estimate > 0 else "反向或不支持"
+        table_rows.append(
+            [
+                "medium - mean(low, high)",
+                metric_label,
+                fmt(means["low"]),
+                fmt(means["medium"]),
+                fmt(means["high"]),
+                fmt(estimate),
+                direction,
+            ]
+        )
+        json_rows.append(
+            {
+                "contrast": "medium - mean(low, high)",
+                "metric": metric_key,
+                "metricLabel": metric_label,
+                "means": means,
+                "estimate": estimate,
+                "direction": direction,
+                "weights": PRIMARY_CONTRAST_WEIGHTS,
+            }
+        )
+
+    return table_rows, json_rows
 
 
 def parse_session_label(label: str) -> dict[str, str]:
