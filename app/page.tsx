@@ -29,6 +29,9 @@ type LiteratureKnowledgeEntry = {
   card: LiteratureKnowledgeCard | null;
 };
 
+type LibraryFilter = "all" | "literature" | "raw-data" | "analysis" | "notes";
+type JobViewFilter = "all" | "active" | "completed" | "failed" | "stale";
+
 type DataAnalysisReport = {
   title: string;
   kind: string;
@@ -118,6 +121,22 @@ const documentCategories = [
     description: "读书笔记、讨论记录、图表说明和写作备忘。",
     extensions: ["txt"],
   },
+];
+
+const libraryFilters: Array<{ id: LibraryFilter; label: string }> = [
+  { id: "all", label: "全部" },
+  { id: "literature", label: "文献" },
+  { id: "raw-data", label: "XDF/原始数据" },
+  { id: "analysis", label: "分析产物" },
+  { id: "notes", label: "笔记" },
+];
+
+const jobViewFilters: Array<{ id: JobViewFilter; label: string }> = [
+  { id: "all", label: "全部任务" },
+  { id: "active", label: "进行中" },
+  { id: "completed", label: "已完成" },
+  { id: "failed", label: "失败" },
+  { id: "stale", label: "疑似卡住" },
 ];
 
 export default function HomePage() {
@@ -301,6 +320,10 @@ function Workspace({
   const [knowledgeEntries, setKnowledgeEntries] = useState<LiteratureKnowledgeEntry[]>([]);
   const [knowledgeLoading, setKnowledgeLoading] = useState(false);
   const [knowledgeMessage, setKnowledgeMessage] = useState("");
+  const [libraryQuery, setLibraryQuery] = useState("");
+  const [libraryFilter, setLibraryFilter] = useState<LibraryFilter>("all");
+  const [jobViewFilter, setJobViewFilter] = useState<JobViewFilter>("all");
+  const [jobsLastLoadedAt, setJobsLastLoadedAt] = useState<string | null>(null);
 
   useEffect(() => {
     void loadDocuments();
@@ -318,19 +341,50 @@ function Workspace({
   }, [selectedDocument?.id]);
 
   const groupedDocuments = useMemo(
-    () =>
-      documentCategories
+    () => {
+      const query = libraryQuery.trim().toLowerCase();
+      return documentCategories
         .filter((category) => category.id !== "materials")
         .map((category) => ({
           ...category,
-          documents: documents.filter((document) => getDocumentCategory(document).id === category.id),
-        })),
-    [documents],
+          documents: documents.filter((document) => {
+            const documentCategory = getDocumentCategory(document);
+            const matchesCategory = libraryFilter === "all" || documentCategory.id === libraryFilter;
+            const matchesQuery =
+              !query ||
+              document.filename.toLowerCase().includes(query) ||
+              document.storage_path.toLowerCase().includes(query);
+            return documentCategory.id === category.id && matchesCategory && matchesQuery;
+          }),
+        }));
+    },
+    [documents, libraryFilter, libraryQuery],
   );
   const selectedCategory = selectedDocument ? getDocumentCategory(selectedDocument) : null;
   const selectedDocumentIsXdf = selectedDocument ? isXdfDocument(selectedDocument) : false;
   const selectedDocumentIsLiterature = selectedDocument ? isLiteratureDocument(selectedDocument) : false;
   const totalStoredBytes = documents.reduce((total, document) => total + (document.size_bytes ?? 0), 0);
+  const filteredDocumentCount = groupedDocuments.reduce((total, group) => total + group.documents.length, 0);
+  const xdfDocuments = useMemo(() => documents.filter(isXdfDocument), [documents]);
+  const latestJobByDocumentId = useMemo(() => buildLatestJobByDocumentId(analysisJobs), [analysisJobs]);
+  const selectedDocumentJobs = useMemo(
+    () =>
+      selectedDocument
+        ? analysisJobs
+            .filter((job) => job.document_id === selectedDocument.id)
+            .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
+        : [],
+    [analysisJobs, selectedDocument],
+  );
+  const xdfJobStats = useMemo(() => getXdfJobStats(analysisJobs), [analysisJobs]);
+  const filteredXdfJobs = useMemo(
+    () =>
+      analysisJobs
+        .filter(isXdfAnalysisJob)
+        .filter((job) => filterJobForView(job, jobViewFilter))
+        .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at)),
+    [analysisJobs, jobViewFilter],
+  );
 
   async function loadDocuments() {
     const { data, error } = await supabase
@@ -362,6 +416,7 @@ function Workspace({
 
     const payload = (await response.json()) as { jobs?: ResearchAnalysisJob[] };
     setAnalysisJobs(payload.jobs ?? []);
+    setJobsLastLoadedAt(new Date().toISOString());
   }
 
   async function loadKnowledgeBase() {
@@ -550,7 +605,6 @@ function Workspace({
   }
 
   async function queueAllXdfAnalyses() {
-    const xdfDocuments = documents.filter(isXdfDocument);
     if (!xdfDocuments.length) {
       setJobMessage("当前还没有 XDF 文件。请先批量上传 LabRecorder .xdf。");
       return;
@@ -709,34 +763,78 @@ function Workspace({
           <div className="section-head">
             <div>
               <p className="eyebrow">研究资料库</p>
-              <h2>文献知识库、XDF 原始数据与分析产物分区管理</h2>
+              <h2>文件、XDF 分析任务与结果状态</h2>
             </div>
-            <label className="file-button">
-              <input
-                type="file"
-                multiple
-                accept=".pdf,.doc,.docx,.csv,.tsv,.xlsx,.mat,.set,.edf,.txt,.md,.svg,.png,.jpg,.jpeg,.xdf,.json,.jsonl,.py,.m,.ipynb"
-                onChange={handleUpload}
-              />
-              {uploadState === "uploading" ? "上传中..." : "批量上传文件"}
-            </label>
+            <div className="top-actions">
+              <button className="secondary-button" onClick={loadAnalysisJobs}>
+                刷新状态
+              </button>
+              <label className="file-button">
+                <input
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx,.csv,.tsv,.xlsx,.mat,.set,.edf,.txt,.md,.svg,.png,.jpg,.jpeg,.xdf,.json,.jsonl,.py,.m,.ipynb"
+                  onChange={handleUpload}
+                />
+                {uploadState === "uploading" ? "上传中..." : "批量上传文件"}
+              </label>
+            </div>
           </div>
 
           {uploadMessage ? <p className={`notice ${uploadState}`}>{uploadMessage}</p> : null}
 
-          <div className="library-summary">
-            {groupedDocuments.map((group) => (
-              <article className="library-card" key={group.id}>
-                <span>{group.documents.length}</span>
-                <strong>{group.label}</strong>
-                <p>{group.description}</p>
-              </article>
-            ))}
+          <div className="library-status-grid">
+            <StatusMetric label="总文件" value={documents.length} text={formatBytes(totalStoredBytes)} />
+            <StatusMetric label="XDF 文件" value={xdfDocuments.length} text="EEG + Unity marker 原始数据" />
+            <StatusMetric label="进行中" value={xdfJobStats.active} text="pending / queued / running" />
+            <StatusMetric label="已完成" value={xdfJobStats.completed} text="可以查看结果" />
+            <StatusMetric label="失败/需处理" value={xdfJobStats.failed + xdfJobStats.stale} text="失败或长时间未更新" tone="warn" />
           </div>
 
-          <div className="library-layout">
-            <section className="work-panel document-list structured-list">
-              {documents.length ? (
+          <div className="manager-toolbar">
+            <label className="search-field">
+              文件检索
+              <input
+                type="search"
+                value={libraryQuery}
+                placeholder="按文件名、subject、run、扩展名搜索"
+                onChange={(event) => setLibraryQuery(event.target.value)}
+              />
+            </label>
+            <div className="segmented-control" aria-label="资料类型筛选">
+              {libraryFilters.map((filter) => (
+                <button
+                  className={libraryFilter === filter.id ? "is-active" : ""}
+                  key={filter.id}
+                  onClick={() => setLibraryFilter(filter.id)}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+            <div className="segmented-control" aria-label="任务状态筛选">
+              {jobViewFilters.map((filter) => (
+                <button
+                  className={jobViewFilter === filter.id ? "is-active" : ""}
+                  key={filter.id}
+                  onClick={() => setJobViewFilter(filter.id)}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="library-layout manager-layout">
+            <section className="work-panel document-list structured-list file-browser">
+              <div className="panel-title-row">
+                <div>
+                  <p className="eyebrow">资料列表</p>
+                  <h3>{filteredDocumentCount} 个匹配文件</h3>
+                </div>
+                <span className="status-pill compact">最近刷新 {jobsLastLoadedAt ? new Date(jobsLastLoadedAt).toLocaleTimeString("zh-CN") : "-"}</span>
+              </div>
+              {filteredDocumentCount ? (
                 groupedDocuments.map((group) =>
                   group.documents.length ? (
                     <div className="document-group" key={group.id}>
@@ -750,11 +848,18 @@ function Workspace({
                           key={document.id}
                           onClick={() => setSelectedDocument(document)}
                         >
-                          <strong>{document.filename}</strong>
-                          <span>
-                            {formatDocumentKind(document)} · {formatBytes(document.size_bytes)} ·{" "}
-                            {new Date(document.created_at).toLocaleDateString("zh-CN")}
-                          </span>
+                          <div className="document-item-main">
+                            <strong>{document.filename}</strong>
+                            <span>
+                              {formatDocumentKind(document)} · {formatBytes(document.size_bytes)} ·{" "}
+                              {new Date(document.created_at).toLocaleDateString("zh-CN")}
+                            </span>
+                          </div>
+                          <DocumentStatusBadge
+                            document={document}
+                            job={latestJobByDocumentId.get(document.id) ?? null}
+                            knowledgeCard={knowledgeEntries.find((entry) => entry.document.id === document.id)?.card ?? null}
+                          />
                         </button>
                       ))}
                     </div>
@@ -762,15 +867,21 @@ function Workspace({
                 )
               ) : (
                 <p className="muted">
-                  还没有文件。上传后会按文献知识库、XDF 原始数据、分析脚本与输出、研究笔记分区显示。
+                  {documents.length
+                    ? "没有符合当前搜索或筛选条件的文件。可以换一个关键词，或切回“全部”。"
+                    : "还没有文件。上传后会按文献知识库、XDF 原始数据、分析脚本与输出、研究笔记分区显示。"}
                 </p>
               )}
             </section>
 
-            <section className="work-panel document-detail">
-              <p className="eyebrow">当前选中</p>
-              <h3>{selectedDocument?.filename ?? "尚未选择文件"}</h3>
-              {selectedCategory ? <span className="category-badge">{selectedCategory.label}</span> : null}
+            <section className="work-panel document-detail inspector-panel">
+              <div className="analysis-head">
+                <div>
+                  <p className="eyebrow">当前选中</p>
+                  <h3>{selectedDocument?.filename ?? "尚未选择文件"}</h3>
+                </div>
+                {selectedCategory ? <span className="category-badge">{selectedCategory.label}</span> : null}
+              </div>
               <dl className="file-meta">
                 <div>
                   <dt>文件类型</dt>
@@ -821,8 +932,19 @@ function Workspace({
                 </button>
               ) : null}
               {knowledgeMessage ? <p className="muted">{knowledgeMessage}</p> : null}
+              <SelectedDocumentJobs
+                jobs={selectedDocumentJobs}
+                selectedDocument={selectedDocument}
+                onOpenReport={(report) => setAnalysisState({ status: "done", report, error: "" })}
+              />
             </section>
           </div>
+
+          <AnalysisQueueOverview
+            jobs={filteredXdfJobs}
+            filter={jobViewFilter}
+            onOpenReport={(report) => setAnalysisState({ status: "done", report, error: "" })}
+          />
         </section>
 
         <section className="view is-visible" id="blueprint">
@@ -913,6 +1035,160 @@ function PreviewCard({ title, text }: { title: string; text: string }) {
     <div className="auth-preview-card">
       <span>{title}</span>
       <strong>{text}</strong>
+    </div>
+  );
+}
+
+function StatusMetric({
+  label,
+  value,
+  text,
+  tone = "default",
+}: {
+  label: string;
+  value: number | string;
+  text: string;
+  tone?: "default" | "warn";
+}) {
+  return (
+    <article className={`status-metric ${tone}`}>
+      <span>{label}</span>
+      <strong>{value}</strong>
+      <p>{text}</p>
+    </article>
+  );
+}
+
+function DocumentStatusBadge({
+  document,
+  job,
+  knowledgeCard,
+}: {
+  document: ResearchDocument;
+  job: ResearchAnalysisJob | null;
+  knowledgeCard: LiteratureKnowledgeCard | null;
+}) {
+  if (isXdfDocument(document)) {
+    if (!job) return <span className="state-chip muted-state">未提交</span>;
+    return <span className={`state-chip ${getJobTone(job)}`}>{isStaleJob(job) ? "疑似卡住" : formatJobStatus(job.status)}</span>;
+  }
+
+  if (isLiteratureDocument(document)) {
+    return <span className={`state-chip ${knowledgeCard ? "completed" : "muted-state"}`}>{knowledgeCard ? "已入库" : "未入库"}</span>;
+  }
+
+  return <span className="state-chip muted-state">资料</span>;
+}
+
+function SelectedDocumentJobs({
+  jobs,
+  selectedDocument,
+  onOpenReport,
+}: {
+  jobs: ResearchAnalysisJob[];
+  selectedDocument: ResearchDocument | null;
+  onOpenReport: (report: DataAnalysisReport) => void;
+}) {
+  if (!selectedDocument || !isXdfDocument(selectedDocument)) return null;
+
+  return (
+    <section className="selected-job-panel">
+      <div className="panel-title-row">
+        <div>
+          <p className="eyebrow">当前文件任务</p>
+          <h4>XDF 分析状态</h4>
+        </div>
+        <span className="status-pill compact">{jobs.length} 次提交</span>
+      </div>
+      {jobs.length ? (
+        <div className="compact-job-list">
+          {jobs.slice(0, 4).map((job) => {
+            const report = isDataAnalysisReport(job.result_json) ? job.result_json : null;
+            return (
+              <article className="compact-job" key={job.id}>
+                <div className="compact-job-head">
+                  <span className={`state-chip ${getJobTone(job)}`}>{isStaleJob(job) ? "疑似卡住" : formatJobStatus(job.status)}</span>
+                  <small>{new Date(job.created_at).toLocaleString("zh-CN")}</small>
+                </div>
+                <ProgressBar value={getJobProgress(job)} tone={getJobTone(job)} />
+                <p>{getJobMessage(job)}</p>
+                <div className="job-actions inline">
+                  {job.github_run_url ? (
+                    <a className="secondary-link" href={job.github_run_url} target="_blank" rel="noreferrer">
+                      GitHub Run
+                    </a>
+                  ) : null}
+                  <button className="secondary-button" disabled={!report} onClick={() => report && onOpenReport(report)}>
+                    查看结果
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="muted">这个 XDF 还没有提交高级分析。提交后会在这里显示排队、运行、完成或失败状态。</p>
+      )}
+    </section>
+  );
+}
+
+function AnalysisQueueOverview({
+  jobs,
+  filter,
+  onOpenReport,
+}: {
+  jobs: ResearchAnalysisJob[];
+  filter: JobViewFilter;
+  onOpenReport: (report: DataAnalysisReport) => void;
+}) {
+  return (
+    <section className="work-panel queue-overview">
+      <div className="analysis-head">
+        <div>
+          <p className="eyebrow">XDF 队列</p>
+          <h3>{jobViewFilters.find((item) => item.id === filter)?.label ?? "任务"} · {jobs.length}</h3>
+        </div>
+        <p className="muted compact-note">疑似卡住表示任务超过 10 分钟没有状态回写，通常需要查看 GitHub Actions 或重新提交。</p>
+      </div>
+      {jobs.length ? (
+        <div className="queue-table">
+          {jobs.map((job) => {
+            const report = isDataAnalysisReport(job.result_json) ? job.result_json : null;
+            return (
+              <article className="queue-row" key={job.id}>
+                <div>
+                  <strong>{job.research_documents?.filename ?? job.document_id}</strong>
+                  <span>{new Date(job.created_at).toLocaleString("zh-CN")}</span>
+                </div>
+                <span className={`state-chip ${getJobTone(job)}`}>{isStaleJob(job) ? "疑似卡住" : formatJobStatus(job.status)}</span>
+                <ProgressBar value={getJobProgress(job)} tone={getJobTone(job)} />
+                <div className="job-actions">
+                  {job.github_run_url ? (
+                    <a className="secondary-link" href={job.github_run_url} target="_blank" rel="noreferrer">
+                      GitHub
+                    </a>
+                  ) : null}
+                  <button className="secondary-button" disabled={!report} onClick={() => report && onOpenReport(report)}>
+                    结果
+                  </button>
+                </div>
+                <p>{getJobMessage(job)}</p>
+              </article>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="muted">当前筛选下没有 XDF 分析任务。</p>
+      )}
+    </section>
+  );
+}
+
+function ProgressBar({ value, tone }: { value: number; tone: string }) {
+  return (
+    <div className={`progress-bar ${tone}`} aria-label={`分析进度 ${value}%`}>
+      <i style={{ width: `${value}%` }} />
     </div>
   );
 }
@@ -1431,6 +1707,72 @@ function isDataAnalysisReport(value: unknown): value is DataAnalysisReport {
   if (!value || typeof value !== "object") return false;
   const candidate = value as Partial<DataAnalysisReport>;
   return Boolean(candidate.title && candidate.kind && candidate.summary && Array.isArray(candidate.metrics));
+}
+
+function buildLatestJobByDocumentId(jobs: ResearchAnalysisJob[]) {
+  const map = new Map<string, ResearchAnalysisJob>();
+  for (const job of jobs) {
+    const current = map.get(job.document_id);
+    if (!current || Date.parse(job.created_at) > Date.parse(current.created_at)) {
+      map.set(job.document_id, job);
+    }
+  }
+  return map;
+}
+
+function getXdfJobStats(jobs: ResearchAnalysisJob[]) {
+  const xdfJobs = jobs.filter(isXdfAnalysisJob);
+  return {
+    active: xdfJobs.filter((job) => isActiveJob(job) && !isStaleJob(job)).length,
+    completed: xdfJobs.filter((job) => job.status === "completed").length,
+    failed: xdfJobs.filter((job) => job.status === "failed" || job.status === "configuration_required").length,
+    stale: xdfJobs.filter(isStaleJob).length,
+  };
+}
+
+function filterJobForView(job: ResearchAnalysisJob, filter: JobViewFilter) {
+  if (filter === "all") return true;
+  if (filter === "active") return isActiveJob(job) && !isStaleJob(job);
+  if (filter === "completed") return job.status === "completed";
+  if (filter === "failed") return job.status === "failed" || job.status === "configuration_required";
+  if (filter === "stale") return isStaleJob(job);
+  return true;
+}
+
+function isActiveJob(job: ResearchAnalysisJob) {
+  return job.status === "pending" || job.status === "queued" || job.status === "running";
+}
+
+function isStaleJob(job: ResearchAnalysisJob) {
+  if (!isActiveJob(job)) return false;
+  const reference = Date.parse(job.updated_at || job.created_at);
+  return Number.isFinite(reference) && Date.now() - reference > 10 * 60 * 1000;
+}
+
+function getJobTone(job: ResearchAnalysisJob) {
+  if (isStaleJob(job)) return "stale";
+  if (job.status === "completed") return "completed";
+  if (job.status === "failed") return "failed";
+  if (job.status === "configuration_required") return "warning";
+  if (job.status === "running") return "running";
+  if (job.status === "queued" || job.status === "pending") return "queued";
+  return "muted-state";
+}
+
+function getJobProgress(job: ResearchAnalysisJob) {
+  if (job.status === "completed") return 100;
+  if (job.status === "failed" || job.status === "configuration_required" || isStaleJob(job)) return 100;
+  if (job.status === "running") return 72;
+  if (job.status === "queued") return 42;
+  if (job.status === "pending") return 18;
+  return 0;
+}
+
+function getJobMessage(job: ResearchAnalysisJob) {
+  if (isStaleJob(job)) {
+    return "超过 10 分钟没有状态回写。可能是 GitHub Actions 失败、Secret 不匹配，或 worker 启动前报错；建议查看 GitHub Actions 后重新提交。";
+  }
+  return job.status_message || job.error_message || "等待 worker 更新任务状态。";
 }
 
 function formatJobStatus(status: ResearchAnalysisJob["status"]) {
