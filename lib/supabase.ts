@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 export type ResearchDocument = {
   id: string;
@@ -10,6 +10,8 @@ export type ResearchDocument = {
   notes: string | null;
   created_at: string;
 };
+
+let browserClient: SupabaseClient | null = null;
 
 export function hasSupabaseBrowserConfig() {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && getSupabasePublishableKey());
@@ -23,12 +25,14 @@ export function getSupabaseBrowserClient() {
     throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL or Supabase publishable key.");
   }
 
-  return createClient(url, publishableKey, {
+  browserClient ??= createClient(url, publishableKey, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
     },
   });
+
+  return browserClient;
 }
 
 export function getSupabaseServerClient() {
