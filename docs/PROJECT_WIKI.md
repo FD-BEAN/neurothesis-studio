@@ -243,6 +243,7 @@ XDF worker 目前输出：
 - XDF 正式分析必须支持“被试批量任务”：同一被试的 2-3 个 XDF run 一起提交，先逐 run 做 QC，再汇总成 subject-level run table。组内因素包括 Signature、Metro/map、audio/cognitive-load；组间因素需要用户额外提供 subject metadata 表，例如 subject_id、group、age、sex、VR experience、实验顺序/分组等。
 - 运行完成、失败、配置错误、疑似卡住的任务应该能从界面删除，避免历史错误任务堆积影响判断。
 - XDF worker 的正式输出不要在 dashboard 内长篇展示；生成自包含 HTML report，存入 Supabase private Storage，并在任务列表中提供下载入口。页面只显示队列状态、进度和下载按钮。
+- 信息架构：研究资料库只做文件管理、打开文件、文献知识卡片和轻量摘要；XDF 被试批量分析、任务队列、HTML 报告下载应集中放在“数据分析与论文写作”，避免同一分析入口在两个模块重复出现。
 
 用户提供的 XDF 报告脚本参考：
 

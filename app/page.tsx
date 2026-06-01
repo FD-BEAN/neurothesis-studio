@@ -381,15 +381,6 @@ function Workspace({
   );
   const inferredSubjectGroups = useMemo(() => groupXdfDocumentsBySubject(xdfDocuments), [xdfDocuments]);
   const latestJobByDocumentId = useMemo(() => buildLatestJobByDocumentId(analysisJobs), [analysisJobs]);
-  const selectedDocumentJobs = useMemo(
-    () =>
-      selectedDocument
-        ? analysisJobs
-            .filter((job) => getJobDocumentIds(job).includes(selectedDocument.id))
-            .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
-        : [],
-    [analysisJobs, selectedDocument],
-  );
   const xdfJobStats = useMemo(() => getXdfJobStats(analysisJobs), [analysisJobs]);
   const filteredXdfJobs = useMemo(
     () =>
@@ -600,45 +591,6 @@ function Workspace({
     await runDataAnalysis();
   }
 
-  async function runAdvancedAnalysis() {
-    if (!selectedDocument) {
-      setJobMessage("请先在研究资料库中选择一个文件。");
-      return;
-    }
-
-    if (!selectedDocumentIsXdf) {
-      setJobMessage("XDF 高级分析只处理 LabRecorder .xdf，也就是 EEG stream + Unity marker stream。PDF、CSV、SVG 和研究说明请使用即时摘要或 AI 助手。");
-      return;
-    }
-
-    setJobLoading(true);
-    setJobMessage("");
-
-    const response = await fetch("/api/analysis/jobs", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({
-        documentId: selectedDocument.id,
-        analysisType: "advanced_python",
-      }),
-    });
-
-    const payload = (await response.json()) as { job?: ResearchAnalysisJob; error?: string; warning?: string };
-
-    if (!response.ok && !payload.job) {
-      setJobMessage(payload.error ?? "XDF 高级分析任务创建失败。");
-      setJobLoading(false);
-      return;
-    }
-
-    setJobMessage(payload.warning ?? "XDF 高级分析任务已提交。");
-    await loadAnalysisJobs();
-    setJobLoading(false);
-  }
-
   async function runSubjectBatchAnalysis(documentIds = selectedBatchIds, subjectId = batchSubjectId) {
     const uniqueDocumentIds = Array.from(new Set(documentIds));
     if (uniqueDocumentIds.length < 2) {
@@ -670,36 +622,6 @@ function Workspace({
     }
 
     setJobMessage(payload.warning ?? `已提交 ${uniqueDocumentIds.length} 个 XDF 的被试批量分析任务。`);
-    await loadAnalysisJobs();
-    setJobLoading(false);
-  }
-
-  async function queueAllXdfAnalyses() {
-    if (!xdfDocuments.length) {
-      setJobMessage("当前还没有 XDF 文件。请先批量上传 LabRecorder .xdf。");
-      return;
-    }
-
-    setJobLoading(true);
-    setJobMessage(`正在提交 ${xdfDocuments.length} 个 XDF 分析任务...`);
-
-    let submitted = 0;
-    for (const document of xdfDocuments) {
-      const response = await fetch("/api/analysis/jobs", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          documentId: document.id,
-          analysisType: "advanced_python",
-        }),
-      });
-      if (response.ok) submitted += 1;
-    }
-
-    setJobMessage(`已提交 ${submitted}/${xdfDocuments.length} 个 XDF 分析任务。`);
     await loadAnalysisJobs();
     setJobLoading(false);
   }
@@ -916,17 +838,6 @@ function Workspace({
                 </button>
               ))}
             </div>
-            <div className="segmented-control" aria-label="任务状态筛选">
-              {jobViewFilters.map((filter) => (
-                <button
-                  className={jobViewFilter === filter.id ? "is-active" : ""}
-                  key={filter.id}
-                  onClick={() => setJobViewFilter(filter.id)}
-                >
-                  {filter.label}
-                </button>
-              ))}
-            </div>
           </div>
 
           <div className="library-layout manager-layout">
@@ -1030,46 +941,9 @@ function Workspace({
                       ? "查看即时 XDF 摘要"
                       : "生成摘要"}
               </button>
-              {selectedDocumentIsXdf ? (
-                <button className="secondary-button" disabled={jobLoading} onClick={runAdvancedAnalysis}>
-                  {jobLoading ? "提交中..." : "运行 XDF 高级分析"}
-                </button>
-              ) : null}
               {knowledgeMessage ? <p className="muted">{knowledgeMessage}</p> : null}
-              <SelectedDocumentJobs
-                jobs={selectedDocumentJobs}
-                selectedDocument={selectedDocument}
-                onDownloadReport={downloadJobHtmlReport}
-              />
             </section>
           </div>
-
-          <SubjectBatchPanel
-            documents={xdfDocuments}
-            groups={inferredSubjectGroups}
-            selectedIds={selectedBatchIds}
-            subjectId={batchSubjectId}
-            jobLoading={jobLoading}
-            onSubjectIdChange={setBatchSubjectId}
-            onToggleDocument={toggleBatchDocument}
-            onClear={() => setSelectedBatchIds([])}
-            onRunSelected={() => runSubjectBatchAnalysis()}
-            onRunGroup={(group) => {
-              setBatchSubjectId(group.subjectId);
-              setSelectedBatchIds(group.documents.map((document) => document.id));
-              void runSubjectBatchAnalysis(
-                group.documents.map((document) => document.id),
-                group.subjectId,
-              );
-            }}
-          />
-
-          <AnalysisQueueOverview
-            jobs={filteredXdfJobs}
-            filter={jobViewFilter}
-            onDeleteJobs={deleteAnalysisJobs}
-            onDownloadReport={downloadJobHtmlReport}
-          />
         </section>
 
         <section className="view is-visible" id="blueprint">
@@ -1113,27 +987,43 @@ function Workspace({
               <button className="secondary-button" onClick={loadAnalysisJobs}>
                 刷新任务
               </button>
-              <button className="secondary-button" disabled={jobLoading} onClick={queueAllXdfAnalyses}>
-                批量提交 XDF
-              </button>
-              <button className="secondary-button" disabled={!selectedDocumentIsXdf || jobLoading} onClick={runAdvancedAnalysis}>
-                {jobLoading ? "提交中..." : "XDF 高级分析"}
-              </button>
               <button className="primary-button" disabled={!selectedDocument || analysisState.status === "loading"} onClick={runDataAnalysis}>
                 {analysisState.status === "loading" ? "分析中..." : "即时摘要"}
               </button>
             </div>
           </div>
           {jobMessage ? <p className="notice">{jobMessage}</p> : null}
+          <SubjectBatchPanel
+            documents={xdfDocuments}
+            groups={inferredSubjectGroups}
+            selectedIds={selectedBatchIds}
+            subjectId={batchSubjectId}
+            jobLoading={jobLoading}
+            onSubjectIdChange={setBatchSubjectId}
+            onToggleDocument={toggleBatchDocument}
+            onClear={() => setSelectedBatchIds([])}
+            onRunSelected={() => runSubjectBatchAnalysis()}
+            onRunGroup={(group) => {
+              setBatchSubjectId(group.subjectId);
+              setSelectedBatchIds(group.documents.map((document) => document.id));
+              void runSubjectBatchAnalysis(
+                group.documents.map((document) => document.id),
+                group.subjectId,
+              );
+            }}
+          />
+          <AnalysisQueueOverview
+            jobs={filteredXdfJobs}
+            filter={jobViewFilter}
+            onFilterChange={setJobViewFilter}
+            onDeleteJobs={deleteAnalysisJobs}
+            onDownloadReport={downloadJobHtmlReport}
+          />
           <div className="workflow-list">
             {analysisModules.map((module) => (
               <PipelineCard key={module.title} title={module.title} text={module.text} />
             ))}
           </div>
-          <AnalysisJobsPanel
-            jobs={analysisJobs}
-            onDownloadReport={downloadJobHtmlReport}
-          />
           <AnalysisResultPanel state={analysisState} selectedDocument={selectedDocument} />
         </section>
       </section>
@@ -1205,67 +1095,16 @@ function DocumentStatusBadge({
   return <span className="state-chip muted-state">资料</span>;
 }
 
-function SelectedDocumentJobs({
-  jobs,
-  selectedDocument,
-  onDownloadReport,
-}: {
-  jobs: ResearchAnalysisJob[];
-  selectedDocument: ResearchDocument | null;
-  onDownloadReport: (job: ResearchAnalysisJob) => void;
-}) {
-  if (!selectedDocument || !isXdfDocument(selectedDocument)) return null;
-
-  return (
-    <section className="selected-job-panel">
-      <div className="panel-title-row">
-        <div>
-          <p className="eyebrow">当前文件任务</p>
-          <h4>XDF 分析状态</h4>
-        </div>
-        <span className="status-pill compact">{jobs.length} 次提交</span>
-      </div>
-      {jobs.length ? (
-        <div className="compact-job-list">
-          {jobs.slice(0, 4).map((job) => {
-            const reportArtifact = getJobHtmlReport(job);
-            return (
-              <article className="compact-job" key={job.id}>
-                <div className="compact-job-head">
-                  <span className={`state-chip ${getJobTone(job)}`}>{isStaleJob(job) ? "疑似卡住" : formatJobStatus(job.status)}</span>
-                  <small>{new Date(job.created_at).toLocaleString("zh-CN")}</small>
-                </div>
-                <ProgressBar value={getJobProgress(job)} tone={getJobTone(job)} />
-                <p>{getJobMessage(job)}</p>
-                <div className="job-actions inline">
-                  {job.github_run_url ? (
-                    <a className="secondary-link" href={job.github_run_url} target="_blank" rel="noreferrer">
-                      GitHub Run
-                    </a>
-                  ) : null}
-                  <button className="secondary-button" disabled={!reportArtifact} onClick={() => onDownloadReport(job)}>
-                    {reportArtifact ? "下载 HTML" : job.status === "completed" ? "需重新生成" : "等待报告"}
-                  </button>
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      ) : (
-        <p className="muted">这个 XDF 还没有提交高级分析。提交后会在这里显示排队、运行、完成或失败状态。</p>
-      )}
-    </section>
-  );
-}
-
 function AnalysisQueueOverview({
   jobs,
   filter,
+  onFilterChange,
   onDeleteJobs,
   onDownloadReport,
 }: {
   jobs: ResearchAnalysisJob[];
   filter: JobViewFilter;
+  onFilterChange: (filter: JobViewFilter) => void;
   onDeleteJobs: (jobIds: string[]) => void;
   onDownloadReport: (job: ResearchAnalysisJob) => void;
 }) {
@@ -1284,6 +1123,17 @@ function AnalysisQueueOverview({
             清理当前列表
           </button>
         </div>
+      </div>
+      <div className="segmented-control" aria-label="任务状态筛选">
+        {jobViewFilters.map((item) => (
+          <button
+            className={filter === item.id ? "is-active" : ""}
+            key={item.id}
+            onClick={() => onFilterChange(item.id)}
+          >
+            {item.label}
+          </button>
+        ))}
       </div>
       {jobs.length ? (
         <div className="queue-table">
@@ -1632,65 +1482,6 @@ function AnalysisResultPanel({
           ))}
         </div>
       ) : null}
-    </section>
-  );
-}
-
-function AnalysisJobsPanel({
-  jobs,
-  onDownloadReport,
-}: {
-  jobs: ResearchAnalysisJob[];
-  onDownloadReport: (job: ResearchAnalysisJob) => void;
-}) {
-  const xdfJobs = jobs.filter(isXdfAnalysisJob);
-  const hiddenLegacyJobs = jobs.length - xdfJobs.length;
-
-  return (
-    <section className="work-panel analysis-jobs-panel">
-      <div className="analysis-head">
-        <div>
-          <p className="eyebrow">XDF 高级分析</p>
-          <h3>后台任务</h3>
-        </div>
-        <span className="status-pill compact">{xdfJobs.length} 个任务</span>
-      </div>
-      {hiddenLegacyJobs ? (
-        <p className="muted">
-          已隐藏 {hiddenLegacyJobs} 个旧的非 XDF 后台任务。XDF 高级分析只显示 LabRecorder .xdf 的 EEG + Unity marker 分析任务。
-        </p>
-      ) : null}
-      {xdfJobs.length ? (
-        <div className="job-list">
-          {xdfJobs.map((job) => {
-            const reportArtifact = getJobHtmlReport(job);
-
-            return (
-              <article className="job-item" key={job.id}>
-                <div>
-                  <strong>{getJobDisplayTitle(job)}</strong>
-                  <span>
-                    {formatJobStatus(job.status)} · {new Date(job.created_at).toLocaleString("zh-CN")}
-                  </span>
-                  <p>{job.status_message || job.error_message || "等待 worker 更新任务状态。"}</p>
-                </div>
-                <div className="job-actions">
-                  {job.github_run_url ? (
-                    <a className="secondary-link" href={job.github_run_url} target="_blank" rel="noreferrer">
-                      GitHub Run
-                    </a>
-                  ) : null}
-                  <button className="secondary-button" disabled={!reportArtifact} onClick={() => onDownloadReport(job)}>
-                    {reportArtifact ? "下载 HTML" : job.status === "completed" ? "需重新生成" : "等待报告"}
-                  </button>
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      ) : (
-        <p className="muted">还没有 XDF 高级分析任务。选择 LabRecorder .xdf 文件后，可以提交到 GitHub Actions Python worker。</p>
-      )}
     </section>
   );
 }
