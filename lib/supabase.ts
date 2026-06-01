@@ -11,6 +11,22 @@ export type ResearchDocument = {
   created_at: string;
 };
 
+export type ResearchAnalysisJob = {
+  id: string;
+  user_id: string;
+  document_id: string;
+  analysis_type: string;
+  status: "pending" | "queued" | "running" | "completed" | "failed" | "configuration_required";
+  status_message: string | null;
+  result_json: unknown | null;
+  error_message: string | null;
+  github_run_url: string | null;
+  created_at: string;
+  updated_at: string;
+  completed_at: string | null;
+  research_documents?: Pick<ResearchDocument, "filename" | "storage_path" | "mime_type" | "size_bytes"> | null;
+};
+
 let browserClient: SupabaseClient | null = null;
 
 export function hasSupabaseBrowserConfig() {

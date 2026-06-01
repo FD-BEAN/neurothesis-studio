@@ -63,6 +63,24 @@ python scripts\xdf_qc.py C:\path\to\file.xdf
 - Markdown / TXT：文本规模和研究关键词频次。
 - XDF：先生成质控入口说明；正式二进制解析需要本地 `scripts/xdf_qc.py` 或后续 Python worker。
 
+## 高级 Python 分析
+
+点击 `运行高级 Python 分析` 会创建 `research_analysis_jobs` 任务，并触发 GitHub Actions 中的 Python worker。worker 会下载 Supabase private Storage 中的文件，运行 `pandas / pyxdf / scipy / statsmodels` 分析，再把 JSON 报告写回 Supabase。
+
+需要配置：
+
+- Supabase SQL Editor 重新运行 `supabase/schema.sql`，创建 `research_analysis_jobs`。
+- Vercel Environment Variables:
+  - `GITHUB_ANALYSIS_REPO`
+  - `GITHUB_ANALYSIS_WORKFLOW`
+  - `GITHUB_ANALYSIS_REF`
+  - `GITHUB_ANALYSIS_TOKEN`
+- GitHub repo `Settings > Secrets and variables > Actions`:
+  - `SUPABASE_URL`
+  - `SUPABASE_SERVICE_ROLE_KEY`
+
+`SUPABASE_SERVICE_ROLE_KEY` 只能放在 GitHub Actions Secret，不要放进前端代码或提交到 GitHub。
+
 ## Supabase 设置
 
 1. 新建 Supabase project。
@@ -87,6 +105,10 @@ python scripts\xdf_qc.py C:\path\to\file.xdf
    - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
    - `OPENAI_API_KEY`
    - `OPENAI_MODEL`
+   - `GITHUB_ANALYSIS_REPO`
+   - `GITHUB_ANALYSIS_WORKFLOW`
+   - `GITHUB_ANALYSIS_REF`
+   - `GITHUB_ANALYSIS_TOKEN`
 4. Deploy。
 
 ## 隐私提醒

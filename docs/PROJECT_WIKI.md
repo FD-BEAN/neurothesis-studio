@@ -27,6 +27,8 @@ NeuroThesis Studio 是给中国研究生使用的私人论文研究工作台，�
 - Private files: Supabase Storage bucket `research-files`
 - File metadata: Supabase table `research_documents`
 - AI backend: Next.js API route `/api/ai/research-assistant`
+- Lightweight analysis: Next.js API route `/api/data/analyze`
+- Advanced analysis: GitHub Actions Python worker `.github/workflows/analysis-worker.yml`
 - Deployment: Vercel Hobby
 - Source control: GitHub repo `FD-BEAN/neurothesis-studio`
 - Production branch: `main`
@@ -37,6 +39,15 @@ NeuroThesis Studio 是给中国研究生使用的私人论文研究工作台，�
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 - `OPENAI_API_KEY`
 - `OPENAI_MODEL`
+- `GITHUB_ANALYSIS_REPO`
+- `GITHUB_ANALYSIS_WORKFLOW`
+- `GITHUB_ANALYSIS_REF`
+- `GITHUB_ANALYSIS_TOKEN`
+
+GitHub Actions secrets:
+
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
 
 不要提交：
 
@@ -187,6 +198,38 @@ XDF 测试数据：
 2. 后端任务调用 Python worker 运行 `scripts/xdf_qc.py`。
 3. 把 JSON 质控结果保存到数据库，例如 `research_analysis_reports`。
 4. 前端展示 stream 表、session 表、event count、marker 时间轴和 EEG 时长概览。
+
+## 高级 Python 分析 worker
+
+第二层分析链路已经按异步 job 设计：
+
+- 数据表：`research_analysis_jobs`
+- 创建任务 API：`/api/analysis/jobs`
+- 运行环境：GitHub Actions `analysis-worker.yml`
+- Worker 脚本：`scripts/advanced_analysis_worker.py`
+- Python 依赖：`scripts/analysis_requirements.txt`
+
+任务流程：
+
+1. 用户在资料库选择文件并点击高级 Python 分析。
+2. Vercel API 用当前 Supabase access token 验证文件归属，并写入 `research_analysis_jobs`。
+3. Vercel API 用 `GITHUB_ANALYSIS_TOKEN` 触发 GitHub Actions workflow。
+4. Python worker 用 GitHub Secret 中的 `SUPABASE_SERVICE_ROLE_KEY` 下载 private Storage 文件。
+5. Worker 输出 JSON 报告并写回 `result_json`。
+6. 前端轮询任务表，完成后可查看结果。
+
+当前 Python worker 支持：
+
+- CSV / TSV / JSON / JSONL：`pandas` 描述统计、分类分布、坐标散点、event count、Metro Rescue 标识坐标口径检查。
+- 如果表格里有 `subject`、`signature` 和可识别 outcome，如 `load`、`theta_alpha_ratio`、`completion_time`，worker 会尝试 `statsmodels` MixedLM；条件不足时退回或跳过。
+- XDF：`pyxdf` 读取 stream、marker、session、event count、EEG stream 数量和完整 trial 检查。
+- SVG / TXT / MD：元素或关键词检查。
+
+限制：
+
+- GitHub Actions 不是实时交互内核，适合“提交任务、稍后看结果”。
+- 大型 EEG 预处理、滤波、ICA、epoch、bandpower 与 MNE 报告可以继续在这个 worker 上扩展，但需要明确数据量和运行时间。
+- `SUPABASE_SERVICE_ROLE_KEY` 只允许放在 GitHub Actions Secret，不放在 Vercel 前端环境变量，也不写入仓库。
 
 ## 已发现的研究口径问题
 

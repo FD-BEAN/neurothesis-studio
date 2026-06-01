@@ -769,6 +769,12 @@ textarea {
   gap: 18px;
 }
 
+.analysis-jobs-panel {
+  margin-top: 20px;
+  display: grid;
+  gap: 16px;
+}
+
 .analysis-head {
   display: flex;
   justify-content: space-between;
@@ -943,6 +949,60 @@ textarea {
   line-height: 1.55;
 }
 
+.job-list {
+  display: grid;
+  gap: 12px;
+}
+
+.job-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+}
+
+.job-item strong,
+.job-item span {
+  display: block;
+}
+
+.job-item span {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.job-item p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.job-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.secondary-link {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  font-size: 0.84rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+}
+
 @media (max-width: 1080px) {
   .auth-screen,
   .app-shell {
@@ -1000,6 +1060,14 @@ textarea {
   .analysis-head,
   .bar-row {
     grid-template-columns: 1fr;
+  }
+
+  .job-item {
+    grid-template-columns: 1fr;
+  }
+
+  .job-actions {
+    justify-content: flex-start;
   }
 
   .analysis-head {

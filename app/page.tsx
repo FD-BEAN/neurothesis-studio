@@ -2,7 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { Session, SupabaseClient, User } from "@supabase/supabase-js";
-import { getSupabaseBrowserClient, hasSupabaseBrowserConfig, type ResearchDocument } from "@/lib/supabase";
+import {
+  getSupabaseBrowserClient,
+  hasSupabaseBrowserConfig,
+  type ResearchAnalysisJob,
+  type ResearchDocument,
+} from "@/lib/supabase";
 import { metroAiPrompt, researchProject } from "@/lib/researchProject";
 
 type UploadState = "idle" | "uploading" | "done" | "error";
@@ -289,9 +294,18 @@ function Workspace({
     report: null,
     error: "",
   });
+  const [analysisJobs, setAnalysisJobs] = useState<ResearchAnalysisJob[]>([]);
+  const [jobMessage, setJobMessage] = useState("");
+  const [jobLoading, setJobLoading] = useState(false);
 
   useEffect(() => {
     void loadDocuments();
+    void loadAnalysisJobs();
+    const intervalId = window.setInterval(() => {
+      void loadAnalysisJobs();
+    }, 15000);
+
+    return () => window.clearInterval(intervalId);
   }, []);
 
   useEffect(() => {
@@ -323,6 +337,22 @@ function Workspace({
     const nextDocuments = (data ?? []) as ResearchDocument[];
     setDocuments(nextDocuments);
     setSelectedDocument((current) => current ?? nextDocuments[0] ?? null);
+  }
+
+  async function loadAnalysisJobs() {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token ?? session.access_token;
+
+    const response = await fetch("/api/analysis/jobs", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) return;
+
+    const payload = (await response.json()) as { jobs?: ResearchAnalysisJob[] };
+    setAnalysisJobs(payload.jobs ?? []);
   }
 
   async function handleUpload(event: React.ChangeEvent<HTMLInputElement>) {
@@ -436,6 +466,40 @@ function Workspace({
     }
 
     setAnalysisState({ status: "done", report: payload.report, error: "" });
+  }
+
+  async function runAdvancedAnalysis() {
+    if (!selectedDocument) {
+      setJobMessage("请先在研究资料库中选择一个文件。");
+      return;
+    }
+
+    setJobLoading(true);
+    setJobMessage("");
+
+    const response = await fetch("/api/analysis/jobs", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        documentId: selectedDocument.id,
+        analysisType: "advanced_python",
+      }),
+    });
+
+    const payload = (await response.json()) as { job?: ResearchAnalysisJob; error?: string; warning?: string };
+
+    if (!response.ok && !payload.job) {
+      setJobMessage(payload.error ?? "高级 Python 分析任务创建失败。");
+      setJobLoading(false);
+      return;
+    }
+
+    setJobMessage(payload.warning ?? "高级 Python 分析任务已提交。");
+    await loadAnalysisJobs();
+    setJobLoading(false);
   }
 
   async function signOut() {
@@ -625,6 +689,9 @@ function Workspace({
               <button className="primary-button" disabled={!selectedDocument} onClick={runDataAnalysis}>
                 生成分析摘要
               </button>
+              <button className="secondary-button" disabled={!selectedDocument || jobLoading} onClick={runAdvancedAnalysis}>
+                {jobLoading ? "提交中..." : "运行高级 Python 分析"}
+              </button>
             </section>
           </div>
         </section>
@@ -669,15 +736,28 @@ function Workspace({
               <p className="eyebrow">数据分析与论文写作</p>
               <h2>分析产物与写作材料</h2>
             </div>
-            <button className="primary-button" disabled={!selectedDocument || analysisState.status === "loading"} onClick={runDataAnalysis}>
-              {analysisState.status === "loading" ? "分析中..." : "分析当前文件"}
-            </button>
+            <div className="top-actions">
+              <button className="secondary-button" onClick={loadAnalysisJobs}>
+                刷新任务
+              </button>
+              <button className="secondary-button" disabled={!selectedDocument || jobLoading} onClick={runAdvancedAnalysis}>
+                {jobLoading ? "提交中..." : "高级 Python 分析"}
+              </button>
+              <button className="primary-button" disabled={!selectedDocument || analysisState.status === "loading"} onClick={runDataAnalysis}>
+                {analysisState.status === "loading" ? "分析中..." : "即时摘要"}
+              </button>
+            </div>
           </div>
+          {jobMessage ? <p className="notice">{jobMessage}</p> : null}
           <div className="workflow-list">
             {analysisModules.map((module) => (
               <PipelineCard key={module.title} title={module.title} text={module.text} />
             ))}
           </div>
+          <AnalysisJobsPanel
+            jobs={analysisJobs}
+            onOpenReport={(report) => setAnalysisState({ status: "done", report, error: "" })}
+          />
           <AnalysisResultPanel state={analysisState} selectedDocument={selectedDocument} />
         </section>
       </section>
@@ -919,6 +999,57 @@ function AnalysisResultPanel({
   );
 }
 
+function AnalysisJobsPanel({
+  jobs,
+  onOpenReport,
+}: {
+  jobs: ResearchAnalysisJob[];
+  onOpenReport: (report: DataAnalysisReport) => void;
+}) {
+  return (
+    <section className="work-panel analysis-jobs-panel">
+      <div className="analysis-head">
+        <div>
+          <p className="eyebrow">高级 Python 分析</p>
+          <h3>后台任务</h3>
+        </div>
+        <span className="status-pill compact">{jobs.length} 个任务</span>
+      </div>
+      {jobs.length ? (
+        <div className="job-list">
+          {jobs.map((job) => {
+            const report = isDataAnalysisReport(job.result_json) ? job.result_json : null;
+
+            return (
+              <article className="job-item" key={job.id}>
+                <div>
+                  <strong>{job.research_documents?.filename ?? job.document_id}</strong>
+                  <span>
+                    {formatJobStatus(job.status)} · {new Date(job.created_at).toLocaleString("zh-CN")}
+                  </span>
+                  <p>{job.status_message || job.error_message || "等待 worker 更新任务状态。"}</p>
+                </div>
+                <div className="job-actions">
+                  {job.github_run_url ? (
+                    <a className="secondary-link" href={job.github_run_url} target="_blank" rel="noreferrer">
+                      GitHub Run
+                    </a>
+                  ) : null}
+                  <button className="secondary-button" disabled={!report} onClick={() => report && onOpenReport(report)}>
+                    查看结果
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="muted">还没有高级分析任务。选择一个文件后可以提交到 GitHub Actions Python worker。</p>
+      )}
+    </section>
+  );
+}
+
 function BarChart({
   chart,
 }: {
@@ -1080,4 +1211,23 @@ function buildStoragePath(userId: string, filename: string) {
 
 function formatCompactNumber(value: number) {
   return Number.isInteger(value) ? String(value) : value.toFixed(2);
+}
+
+function isDataAnalysisReport(value: unknown): value is DataAnalysisReport {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<DataAnalysisReport>;
+  return Boolean(candidate.title && candidate.kind && candidate.summary && Array.isArray(candidate.metrics));
+}
+
+function formatJobStatus(status: ResearchAnalysisJob["status"]) {
+  const labels: Record<ResearchAnalysisJob["status"], string> = {
+    pending: "等待中",
+    queued: "已排队",
+    running: "运行中",
+    completed: "已完成",
+    failed: "失败",
+    configuration_required: "需要配置",
+  };
+
+  return labels[status] ?? status;
 }
