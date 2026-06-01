@@ -81,20 +81,20 @@ export const researchProject = {
     },
     {
       title: "数据同步",
-      items: ["samples.csv", "events.csv", "replay.jsonl", "MetroRescueMarkers", ".xdf"],
-      detail: "Unity 本地日志与 LabRecorder 同步数据共同支撑行为-EEG 对齐。",
+      items: ["MetroRescueMarkers", "Mitsar EEG", ".xdf", "session_start", "evacuation_complete"],
+      detail: "LabRecorder 文件需要先完成 stream 检查、会话切分和任务覆盖质量评估，再进入 EEG 分析。",
     },
   ],
   qualityAlerts: [
     {
-      title: "场景图图例半径口径需要统一",
-      detail:
-        "图注文档和 SVG 元数据均指向 clear radius = 8 m、blur end radius = 12 m；但 SVG 底部可见图例写成 Blue 0-5m / Orange 5-8m。建议统一为 0-8m clear、8-12m blur/fade、12m+ intended unreadable。",
-    },
-    {
       title: "Signature 方案需要记录差异定义",
       detail:
-        "9 张 SVG 的标识点数量和位置按地图保持一致，Signature1/2/3 更可能代表标识贴图、信息设计或朝向配置差异。应用里应补充每个 Signature 的操控定义，避免方法部分解释不充分。",
+        "当前场景平面图显示同一地图内 Signature1/2/3 的标识点数量和位置一致。论文方法部分需要另建操控表，说明三套 Signature 在贴图、信息密度、箭头数、出口数、冗余度或歧义度上的差异。",
+    },
+    {
+      title: "XDF 文件需要先做会话级质量检查",
+      detail:
+        "测试文件中出现过同一 XDF 混入不同 subject/session 的 marker、缺少 session_start/map_start 的 trial，以及重复 Mitsar EEG stream。正式分析前必须输出 xdf_quality_report。",
     },
   ],
 };

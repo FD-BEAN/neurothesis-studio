@@ -9,6 +9,8 @@ desktop.ini
 # Temporary files
 *.tmp
 *.log
+work/
+__pycache__/
 
 # Next.js
 .next/

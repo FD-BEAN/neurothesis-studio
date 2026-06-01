@@ -27,8 +27,8 @@ const workspaceModules = [
   },
   {
     href: "#materials",
-    title: "实验材料",
-    text: "VR 场景平面图、导向标识方案、可读范围和图注口径。",
+    title: "场景与标识配置",
+    text: "L1 平面图、导向标识位置、可读范围和图注口径。",
   },
   {
     href: "#ai",
@@ -38,11 +38,12 @@ const workspaceModules = [
   {
     href: "#pipeline",
     title: "数据分析与论文写作",
-    text: "行为数据、EEG 预处理、文献矩阵和英文论文段落。",
+    text: "XDF 质量检查、行为数据、EEG 预处理和英文论文段落。",
   },
 ];
 
 const analysisModules = [
+  { title: "XDF 质量检查", text: "检查 Mitsar EEG 与 MetroRescueMarkers，切分有效 session，并标注缺失开始/结束 marker 的文件。" },
   { title: "文献矩阵", text: "按 wayfinding、VR evacuation、EEG cognitive load 整理研究问题、方法和指标。" },
   { title: "行为数据", text: "整理 Unity 路径、停留、回退、决策点扫描和任务完成情况。" },
   { title: "EEG 预处理", text: "保留 MNE-Python 和 EEGLAB 的脚本入口，用于事件锁定和认知负荷分析。" },
@@ -58,7 +59,7 @@ const documentCategories = [
   },
   {
     id: "materials",
-    label: "实验材料",
+    label: "场景与标识材料",
     description: "VR 场景平面图、导向标识方案、图注和实验说明。",
     extensions: ["svg", "png", "jpg", "jpeg", "md"],
   },
@@ -191,7 +192,7 @@ function LoginScreen({ supabase }: { supabase: SupabaseClient }) {
         <div className="auth-copy">
           <p className="eyebrow">研究工作台</p>
           <h1>进入私人论文研究空间</h1>
-          <p>集中管理文献、实验材料、行为数据、EEG 文件、分析脚本和论文写作材料。</p>
+          <p>集中管理文献、场景与标识材料、行为数据、EEG 文件、分析脚本和论文写作材料。</p>
         </div>
 
         <form className="login-form" onSubmit={handleSubmit}>
@@ -228,7 +229,7 @@ function LoginScreen({ supabase }: { supabase: SupabaseClient }) {
       </section>
 
       <aside className="auth-aside">
-        <PreviewCard title="材料组织" text="按文献、实验材料、原始数据、分析产物和写作材料维护项目资料。" />
+        <PreviewCard title="资料结构" text="按文献、场景材料、原始数据、分析产物和写作材料维护项目资料。" />
         <PreviewCard title="写作原则" text="所有结论回到上传材料和真实分析结果，不替研究编造发现。" />
       </aside>
     </main>
@@ -387,7 +388,7 @@ function Workspace({
             实验设计
           </a>
           <a className="nav-item" href="#materials">
-            实验材料
+            场景与标识配置
           </a>
           <a className="nav-item" href="#ai">
             文献与写作助手
@@ -422,7 +423,7 @@ function Workspace({
               <p className="eyebrow">项目概览</p>
               <h2>VR 地铁撤离中的导向标识与 EEG 认知负荷研究</h2>
               <p className="summary-text">
-                按文献、实验配置、数据文件、分析结果和写作材料组织。各模块独立维护，也可以通过文献与写作助手串联整理。
+                按文献、实验设计、场景配置、数据文件、分析结果和写作材料分区管理，用于检索、分析和论文写作引用。
               </p>
               <div className="module-grid">
                 {workspaceModules.map((module) => (
@@ -467,7 +468,7 @@ function Workspace({
           <div className="section-head">
             <div>
               <p className="eyebrow">研究资料库</p>
-              <h2>文献、实验材料、原始数据与分析产物</h2>
+              <h2>文献、场景与标识材料、原始数据与分析产物</h2>
             </div>
             <label className="file-button">
               <input
@@ -519,7 +520,7 @@ function Workspace({
                 )
               ) : (
                 <p className="muted">
-                  还没有文件。建议按文献、实验材料、原始数据、分析脚本和研究笔记分批上传，便于后续检索和写作。
+                  还没有文件。上传后会按文献、场景与标识材料、原始数据、分析脚本和研究笔记分区显示。
                 </p>
               )}
             </section>
@@ -679,10 +680,10 @@ function MaterialsPanel() {
     <div className="blueprint-stack">
       <div className="section-head">
         <div>
-          <p className="eyebrow">实验材料</p>
+          <p className="eyebrow">场景与标识配置</p>
           <h2>场景平面图与导向标识配置</h2>
         </div>
-        <span className="status-pill">可读范围口径待统一</span>
+        <span className="status-pill">可读范围 8 m / 12 m</span>
       </div>
 
       <div className="materials-grid">
@@ -692,7 +693,7 @@ function MaterialsPanel() {
               {item.map} / {item.signature}
             </span>
             <strong>{item.file}</strong>
-            <p>{item.signs} 个导向标识点。建议放入研究资料库，并与图注记录绑定。</p>
+            <p>{item.signs} 个导向标识点；与条件表、图注和坐标表保持对应。</p>
           </article>
         ))}
       </div>

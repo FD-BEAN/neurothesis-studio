@@ -93,14 +93,14 @@ git push origin main
 
 - 不写“今天先做什么”
 - 不写“把材料整理成可以写进论文的证据”这类过度设计感句子
-- 用中性的模块名：研究资料库、实验设计、实验材料、文献与写作助手、数据分析与写作
-- UI 中优先使用“场景平面图”“导向标识方案”“实验材料”，少用笼统的“图纸”，不要使用“图纸与刺激材料”这种混合说法
+- 用中性的模块名：研究资料库、实验设计、场景与标识配置、文献与写作助手、数据分析与写作
+- UI 中优先使用“场景平面图”“导向标识配置”“场景与标识材料”，少用笼统的“图纸”，不要使用“图纸与刺激材料”这种混合说法
 - 用户自己决定研究顺序，系统只提供清楚入口
 
 研究资料库结构：
 
 - 文献与论文：已发表文献、综述、开题材料、论文草稿
-- 实验材料：VR 场景平面图、导向标识方案、图注、实验说明
+- 场景与标识材料：VR 场景平面图、导向标识方案、图注、实验说明
 - 原始数据：Unity 日志、LSL marker、EEG 文件、行为数据表
 - 分析脚本与输出：Python、MATLAB、notebook、统计表、中间结果
 - 研究笔记：读书笔记、讨论记录、图表说明、写作备忘
@@ -129,16 +129,52 @@ git push origin main
 
 注意：真实材料不要提交到 public repo。上传到 Supabase private Storage。
 
+## 2026-06-01 新材料检查结论
+
+这批材料包括 Unity 场景平面图、标识坐标表、场景尺度说明、研究介绍文档，以及两份 LabRecorder `.xdf` 测试数据。
+
+场景尺度与可读性口径：
+
+- Unity 单位按 1 unit = 1 m 处理。
+- L1 安全包络约为 x = -50..50、z = -28..52，约 100 m × 80 m。
+- 主站厅区域约 52 m × 30 m，墙高约 4.2 m。
+- 吊挂标识缩放后 y 约为 2.82-2.85 m。
+- 标识可读范围已统一为：0-8 m 清晰，8-12 m 模糊/渐隐，12 m 以外保留可见但不可读。新 SVG 图例已经显示 0-8m / 8-12m。
+- 场景平面图中的圆只表示距离和可读性范围，不模拟墙体遮挡；运行时 marker 还需要结合正反面判断。
+
+标识坐标表：
+
+- `signage_coordinates.csv` 是当前实验口径表，共 66 个标识点。
+- Metro1 每个 Signature 7 个点，Metro2 每个 Signature 8 个点，Metro3 每个 Signature 7 个点。
+- `signage_coordinates_all_scene_roots.csv` 共 69 行，包含 Metro1 的 `Service_Emergency` 旧 root；正式实验口径里 Metro1 的该点已排除，Metro2 的 Sign_08 保留。
+- 同一地图内 Signature1 / Signature2 / Signature3 的标识点数量与坐标一致，因此 SVG 和坐标表只能证明空间布局一致，不能证明三套 Signature 的操控差异。
+
+研究假设与统计口径：
+
+- 当前核心假设可以写成：检验 Signature2 是否相对 Signature1 和 Signature3 带来更高认知负荷。
+- 论文里不要直接写成已经证明 Signature2 更高；应写成 planned contrast，并等待 EEG/行为数据支持。
+- 建议 trial-level mixed model：`Load ~ Signature + Metro + Audio + TrialOrder + (1 | Subject)`。
+- 主 planned contrast：Signature2 vs Signature1/Signature3 平均值，即 `[-1, 2, -1]`；同时报告 S2-S1 与 S2-S3。
+- 需要另建 `signature_manipulation_table.csv`，记录每个 Signature 的贴图、文字信息密度、出口数量、箭头数量、决策相关性、冗余度、歧义度和朝向说明。
+
+XDF 测试数据：
+
+- `sub-P001_ses-S001_task-Default_run-001_eeg_old3.xdf` 更像一条完整测试 trial：包含 `MetroRescueMarkers` 与一个 `Mitsar` EEG stream；主 session 为 subject 005 / Metro2 / Signature3 / Low，marker 有 `session_start`、`trial_start`、`map_start` 和 `evacuation_complete`。
+- `sub-P001_ses-S001_task-Default_run-001_eeg.xdf` 包含 `MetroRescueMarkers` 和两个 `Mitsar` EEG stream；主 session 为 subject 006 / Metro3 / Signature1 / Low，有 `evacuation_complete`，但缺少完整开始 marker，并混入少量旧 subject/session marker。
+- 正式分析前必须先做 XDF 质控：列出 streams、选择 EEG stream、按 subject/session/map/signature/audio 切分 markers，确认开始与完成事件齐全，再导出 `xdf_quality_report`。
+
+当前产品应支持的下一步：
+
+- 研究资料库按文献、场景与标识材料、原始数据、分析脚本与输出、研究笔记分区显示。
+- 增加或保留 XDF 质控入口，用于判断一个文件是否能进入正式 EEG 预处理。
+- 不把 `.xdf`、未公开论文、真实实验日志提交到 GitHub；只保存脚本、schema、wiki 和 UI。
+
 ## 已发现的研究口径问题
 
-场景图图例半径口径需要统一：
+场景图图例半径口径已经基本统一：
 
-- 图注文档和 SVG 元数据指向 clear radius = 8m、blur end radius = 12m
-- SVG 可见图例曾出现 Blue 0-5m / Orange 5-8m
-- 建议统一为：
-  - 0-8m clear
-  - 8-12m blur/fade
-  - 12m+ intended unreadable
+- 以新材料为准：0-8m clear，8-12m blur/fade，12m+ intended unreadable。
+- 如果论文图注、Unity 配置或后续导出图再次出现 0-5m / 5-8m，应立即修正。
 
 Signature 方案需要补充定义：
 
@@ -188,10 +224,11 @@ AI 不应该：
 
 1. 文献库：PDF 自动摘要、关键词、方法、指标、局限、可引用句子
 2. 文献矩阵：按 wayfinding / VR evacuation / EEG cognitive load 分类
-3. 实验材料模块：把 SVG 场景平面图和图注结构化展示
-4. 实验条件表：3×3×2 条件、marker、数据文件命名统一
-5. EEG 分析：MNE-Python / EEGLAB 预处理脚本模板
-6. 写作模块：英文 Methods、Introduction 证据链、Discussion 风险点
+3. 场景与标识配置模块：把 SVG 场景平面图、坐标表、可读范围和图注结构化展示
+4. Signature 操控定义表：记录贴图、信息密度、箭头数、出口数、冗余度、歧义度和朝向
+5. XDF 质控：stream 检查、session 切分、marker 完整性、EEG stream 选择
+6. EEG 分析：MNE-Python / EEGLAB 预处理脚本模板
+7. 写作模块：英文 Methods、Introduction 证据链、Discussion 风险点
 
 ## 给后续开发者或 Codex 的提醒
 

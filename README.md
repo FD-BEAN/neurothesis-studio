@@ -8,13 +8,14 @@
 
 - 项目总览
 - Supabase 登录
-- 研究资料库：文献、实验材料、原始数据、分析脚本和写作材料
+- 研究资料库：文献、场景与标识材料、原始数据、分析脚本和写作材料
 - 私有 Storage 临时签名链接
 - 文献与写作助手后端接口
 - Metro Rescue 研究蓝图
 - 3 × 3 × 2 实验条件结构
-- 实验材料与图注索引
+- 场景与标识配置索引
 - LSL marker / EEG 同步逻辑
+- LabRecorder XDF 质量检查脚本
 - 材料一致性提醒
 
 ## 项目 Wiki
@@ -40,6 +41,16 @@ npm run dev
 ```text
 http://localhost:3000
 ```
+
+## XDF 质控
+
+LabRecorder 文件进入正式 EEG 分析前，可以先运行：
+
+```powershell
+python scripts\xdf_qc.py C:\path\to\file.xdf
+```
+
+脚本会检查 stream 数量、Mitsar EEG、MetroRescueMarkers、session 切分、开始/完成 marker 是否齐全。原始 `.xdf` 不要提交到 GitHub。
 
 ## Supabase 设置
 
