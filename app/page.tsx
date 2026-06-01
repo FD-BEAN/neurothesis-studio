@@ -501,6 +501,15 @@ function Workspace({
     setAnalysisState({ status: "done", report: payload.report, error: "" });
   }
 
+  async function runPrimaryDocumentAction() {
+    if (selectedDocumentIsLiterature) {
+      await buildLiteratureKnowledgeCard();
+      return;
+    }
+
+    await runDataAnalysis();
+  }
+
   async function runAdvancedAnalysis() {
     if (!selectedDocument) {
       setJobMessage("请先在研究资料库中选择一个文件。");
@@ -786,14 +795,26 @@ function Workspace({
               >
                 打开文件
               </button>
-              <button className="primary-button" disabled={!selectedDocument} onClick={runDataAnalysis}>
-                {selectedDocumentIsLiterature ? "文献入库说明" : selectedDocumentIsXdf ? "即时 XDF 入口" : "生成摘要"}
-              </button>
               {selectedDocumentIsLiterature ? (
-                <button className="secondary-button" disabled={knowledgeLoading} onClick={buildLiteratureKnowledgeCard}>
-                  {knowledgeLoading ? "生成中..." : "生成/更新知识卡片"}
-                </button>
+                <p className="muted">
+                  文献入库会抽取论文目的、方法、EEG/行为指标、主要发现、局限和可引用章节，生成结构化知识卡片供写作助手引用。
+                </p>
               ) : null}
+              <button
+                className="primary-button"
+                disabled={!selectedDocument || (selectedDocumentIsLiterature ? knowledgeLoading : analysisState.status === "loading")}
+                onClick={runPrimaryDocumentAction}
+              >
+                {selectedDocumentIsLiterature
+                  ? knowledgeLoading
+                    ? "生成知识卡片中..."
+                    : "生成/更新知识卡片"
+                  : analysisState.status === "loading"
+                    ? "生成中..."
+                    : selectedDocumentIsXdf
+                      ? "查看即时 XDF 摘要"
+                      : "生成摘要"}
+              </button>
               {selectedDocumentIsXdf ? (
                 <button className="secondary-button" disabled={jobLoading} onClick={runAdvancedAnalysis}>
                   {jobLoading ? "提交中..." : "运行 XDF 高级分析"}
