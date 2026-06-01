@@ -239,6 +239,12 @@ XDF worker 目前输出：
 - 场景平面图与导向标识配置暂时不作为主要界面模块展示，避免干扰当前文献库和 XDF 分析主线。
 - 不把真实论文 PDF、XDF、EEG 原始数据或被试数据提交到公开 GitHub repo 的 `data` 目录。公开 GitHub 只保存代码、schema、wiki 和可公开的模板；私有数据优先放 Supabase private Storage。
 
+用户提供的 XDF 报告脚本参考：
+
+- `xdf_report.py`：适合作为 XDF/marker/stream QC 报告参考，包括 primary EEG stream 选择、完整 session 选择、EEG 覆盖、事件数量、时间线、音频间隔、出口/距离字段和行为负荷代理指标。
+- `xdf_eeg_analysis_report.py`：适合作为 EEG 事件窗报告参考，包括 frontal theta、posterior alpha、theta/alpha ratio、sign_readable / decision_point_enter / audio_play 事件窗，以及跨 run 的 z-score/load index 汇总。
+- 当前 GitHub Actions worker 已吸收其中的核心思路：只处理 `.xdf`，输出 stream/session/behavior/EEG QC、trial-level 频带特征和事件锁定 EEG 表；后续可继续把 HTML 报告渲染与跨被试汇总页面接入前端。
+
 限制：
 
 - GitHub Actions 不是实时交互内核，适合“提交任务、稍后看结果”。

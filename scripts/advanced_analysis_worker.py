@@ -332,11 +332,24 @@ def build_session_table(sessions: list[dict[str, Any]]) -> dict[str, Any]:
 
 def build_behavior_table(rows: list[dict[str, Any]], window: dict[str, float] | None) -> dict[str, Any]:
     counts = Counter(row.get("event", "") for row in rows)
+    completion = find_first_event(rows, (END_EVENT,))
+    behavior_load_proxy = (
+        counts.get("dwell_detected", 0)
+        + counts.get("u_turn_detected", 0)
+        + counts.get("route_backtrack_detected", 0)
+        + counts.get("decision_scan_both_sides", 0)
+    )
+    duration_minutes = (window["duration_s"] / 60.0) if window and window.get("duration_s") else None
+    behavior_load_rate = behavior_load_proxy / duration_minutes if duration_minutes else None
     metrics = [
         ["trial_duration_s", fmt(window["duration_s"]) if window else "-"],
+        ["exit_label", completion.get("exit", "") if completion else "-"],
+        ["horizontal_distance_m", fmt(to_float(completion.get("horizontal_distance_m"))) if completion else "-"],
         ["time_to_first_sign_readable_s", fmt(first_event_latency(rows, "sign_readable", window))],
         ["time_to_first_decision_s", fmt(first_event_latency(rows, "decision_point_enter", window))],
         ["sign_readable_latency_from_visible_s", fmt(mean_sign_readable_latency(rows))],
+        ["behavior_load_proxy", str(behavior_load_proxy)],
+        ["behavior_load_proxy_per_min", fmt(behavior_load_rate)],
     ]
     metrics.extend([[event, str(counts.get(event, 0))] for event in BEHAVIOR_EVENTS])
 
