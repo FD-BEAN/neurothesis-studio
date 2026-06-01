@@ -250,6 +250,44 @@ XDF worker 目前输出：
 
 - `xdf_report.py`：适合作为 XDF/marker/stream QC 报告参考，包括 primary EEG stream 选择、完整 session 选择、EEG 覆盖、事件数量、时间线、音频间隔、出口/距离字段和行为负荷代理指标。
 - `xdf_eeg_analysis_report.py`：适合作为 EEG 事件窗报告参考，包括 frontal theta、posterior alpha、theta/alpha ratio、sign_readable / decision_point_enter / audio_play 事件窗，以及跨 run 的 z-score/load index 汇总。
+
+## 文献知识库策略
+
+2026-06-01 已将用户提供的 Metro Rescue KB v4 作为系统内置初始知识层接入写作助手。它不是用户界面上的“导入 bundle”功能，而是项目默认可用的 seed knowledge base：
+
+- 47 个 source cards
+- 20 条 claims
+- 8 个 mechanisms
+- 6 个 hypotheses
+- 8 个 analysis models
+- 6 个 required data tables
+- 7 个 risks/fixes
+- 6 个 writing blocks
+- 10 个 defense QA
+- 14 个 quote anchors
+
+公正评价：
+
+- 优点：这份 KB 已经把 PDF 从“文献堆”转换成了可写作、可建模、可答辩的中间知识层；尤其是 `Do_not_claim`、`How_to_use_in_Metro_Rescue`、`analysis_models` 和 `required data tables` 对论文非常有价值。
+- 风险：它不是完整全文 RAG，也不是最终参考文献库。当前内容多为 paraphrase 和短锚点，正式论文提交前，核心引用仍必须回到 PDF 核对页码、作者、年份、DOI 和原文表述。
+- 已修正：原始 `hypotheses` CSV/JSON 字段存在错位，接入 seed 时已修正为 `Prediction / Data_Table / Model_Formula / Sources / Note`。
+- 仍需增强：quote anchors 只有 14 条，少于 47 篇 source cards；后续核心 A 级文献应补页码锚点和可核验短引文。
+
+写作助手使用规则：
+
+- 默认先检索内置 seed KB，再合并用户新增文献知识卡。
+- 回答必须区分：文献证据、项目假设、用户真实实验结果。
+- 不得把 H1-H6 当成已经证明的结果；它们是待检验假设或分析计划。
+- 遇到 quote anchor 时，应提醒“最终论文前需要核对页码/原文”。
+
+未来新增论文的流程：
+
+1. 用户上传一篇新 PDF 到“文献与论文”。
+2. 系统生成该论文的结构化知识卡片。
+3. 新卡片作为 user-added literature card 参与写作助手检索。
+4. 下一阶段再升级为“待审核增量”：自动提出 candidate claims / mechanisms / quote anchors，由用户确认后合并进主知识库。
+
+当前版本先不做用户可见的 KB bundle 导入器；已有 KB 已经内置，新论文只需要按单篇文献逐步补充。
 - 当前 GitHub Actions worker 已吸收其中的核心思路：只处理 `.xdf`，输出 stream/session/behavior/EEG QC、trial-level 频带特征和事件锁定 EEG 表；后续可继续把 HTML 报告渲染与跨被试汇总页面接入前端。
 
 限制：

@@ -23,6 +23,18 @@ type LiteratureKnowledgeEntry = {
   card: LiteratureKnowledgeCard | null;
 };
 
+type SeedKnowledgeStats = {
+  sources: number;
+  claims: number;
+  mechanisms: number;
+  hypotheses: number;
+  analysisModels: number;
+  dataTables: number;
+  risksAndFixes: number;
+  writingBlocks: number;
+  quoteAnchors: number;
+};
+
 type LibraryFilter = "all" | "literature" | "raw-data" | "analysis" | "notes";
 type JobViewFilter = "all" | "active" | "completed" | "failed" | "stale";
 
@@ -281,6 +293,7 @@ function Workspace({
   const [jobMessage, setJobMessage] = useState("");
   const [jobLoading, setJobLoading] = useState(false);
   const [knowledgeEntries, setKnowledgeEntries] = useState<LiteratureKnowledgeEntry[]>([]);
+  const [seedKnowledgeStats, setSeedKnowledgeStats] = useState<SeedKnowledgeStats | null>(null);
   const [knowledgeLoading, setKnowledgeLoading] = useState(false);
   const [knowledgeMessage, setKnowledgeMessage] = useState("");
   const [libraryQuery, setLibraryQuery] = useState("");
@@ -387,8 +400,9 @@ function Workspace({
 
     if (!response.ok) return;
 
-    const payload = (await response.json()) as { cards?: LiteratureKnowledgeEntry[] };
+    const payload = (await response.json()) as { cards?: LiteratureKnowledgeEntry[]; seedStats?: SeedKnowledgeStats };
     setKnowledgeEntries(payload.cards ?? []);
+    setSeedKnowledgeStats(payload.seedStats ?? null);
   }
 
   async function handleUpload(event: React.ChangeEvent<HTMLInputElement>) {
@@ -877,7 +891,7 @@ function Workspace({
               <pre>{aiState.output || "运行后，这里会显示整理结果。"}</pre>
             </section>
           </div>
-          <LiteratureKnowledgePanel entries={knowledgeEntries} onRefresh={loadKnowledgeBase} />
+          <LiteratureKnowledgePanel entries={knowledgeEntries} seedStats={seedKnowledgeStats} onRefresh={loadKnowledgeBase} />
         </section>
 
         <section className="view is-visible" id="pipeline">
@@ -1286,9 +1300,11 @@ function Metric({ label, value, text }: { label: string; value: number | string;
 
 function LiteratureKnowledgePanel({
   entries,
+  seedStats,
   onRefresh,
 }: {
   entries: LiteratureKnowledgeEntry[];
+  seedStats: SeedKnowledgeStats | null;
   onRefresh: () => void;
 }) {
   const indexed = entries.filter((entry) => entry.card);
@@ -1308,17 +1324,23 @@ function LiteratureKnowledgePanel({
           </button>
         </div>
       </div>
+      {seedStats ? (
+        <p className="muted">
+          系统已接入 Metro Rescue 初始知识库：{seedStats.sources} 篇文献卡、{seedStats.claims} 条 claims、{seedStats.hypotheses} 个假设、
+          {seedStats.analysisModels} 个分析模型。新上传论文生成知识卡片后，会作为增量文献加入写作助手。
+        </p>
+      ) : null}
       {pending ? <p className="muted">{pending} 篇文献还没有知识卡片。请在资料库中选中文献后点击“生成/更新知识卡片”。</p> : null}
       {indexed.length ? (
         <div className="knowledge-grid">
           {indexed.map(({ document, card }) =>
             card ? (
               <article className="knowledge-card" key={document.id}>
-                <span>{card.evidenceLevel || "文献证据"}</span>
+                <span>{card.sourceGrade ? `Grade ${card.sourceGrade}` : card.evidenceLevel || "文献证据"}</span>
                 <h4>{card.title || document.filename}</h4>
                 <p>{card.researchQuestion}</p>
                 <div className="keyword-row compact quiet">
-                  {card.keywords.slice(0, 6).map((keyword) => (
+                  {(card.themeTags?.length ? card.themeTags : card.keywords).slice(0, 6).map((keyword) => (
                     <span key={`${document.id}-${keyword}`}>{keyword}</span>
                   ))}
                 </div>
@@ -1331,13 +1353,19 @@ function LiteratureKnowledgePanel({
                     <dt>可用于</dt>
                     <dd>{card.usableForSections.join(" / ")}</dd>
                   </div>
+                  {card.doNotClaim?.length ? (
+                    <div>
+                      <dt>边界</dt>
+                      <dd>{card.doNotClaim.slice(0, 2).join("；")}</dd>
+                    </div>
+                  ) : null}
                 </dl>
               </article>
             ) : null,
           )}
         </div>
       ) : (
-        <p className="muted">还没有文献知识卡片。上传论文后，先在文献区生成知识卡片，再让写作助手基于知识库回答。</p>
+        <p className="muted">还没有新增文献卡片。写作助手已经可以使用初始知识库；以后上传新论文后，再在文献区生成知识卡片作为增量补充。</p>
       )}
     </section>
   );

@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
+import { buildResearchKnowledgeContext, getSeedKnowledgeStats } from "@/lib/knowledgeBase";
 import { isLiteratureDocument, parseLiteratureCard } from "@/lib/literature";
 import { getSupabaseServerClient } from "@/lib/supabase";
 
@@ -45,7 +46,9 @@ export async function POST(request: Request) {
 
   const client = new OpenAI({ apiKey });
   const model = process.env.OPENAI_MODEL || "gpt-5.4-mini";
-  const knowledgeContext = await loadLiteratureKnowledgeContext(supabase, user.id);
+  const userCards = await loadLiteratureKnowledgeCards(supabase, user.id);
+  const knowledgeContext = buildResearchKnowledgeContext(prompt, userCards);
+  const seedStats = getSeedKnowledgeStats();
 
   const response = await client.responses.create({
     model,
@@ -53,11 +56,11 @@ export async function POST(request: Request) {
       {
         role: "system",
         content:
-          "You are a bilingual thesis research assistant for the Metro Rescue project: a VR subway evacuation study with 3 map layouts, 3 signage schemes, 2 audio-load conditions, Unity behavior logs, LSL marker streams, SmartBCI EEG, and LabRecorder .xdf synchronization. Use the supplied literature knowledge base first, cite paper filenames/titles when you rely on them, distinguish literature evidence from the user's own experimental results, and do not invent findings.",
+          "You are a bilingual thesis research assistant for the Metro Rescue project: a VR subway evacuation study with 3 map layouts, 3 signage schemes, 2 audio-load conditions, Unity behavior logs, LSL marker streams, SmartBCI EEG, and LabRecorder .xdf synchronization. Use the supplied built-in seed knowledge base and user-added literature cards first. Cite source IDs, paper titles, or filenames when you rely on them. Distinguish literature evidence, project-specific hypotheses, and the user's own experimental results. Do not invent findings, page numbers, or bibliographic details. If a quote anchor says it requires verification, say it needs page verification before final submission.",
       },
       {
         role: "user",
-        content: `Literature knowledge base:\n${knowledgeContext}\n\nCurrent file context:\n${context || "No file context provided."}\n\nTask:\n${prompt}`,
+        content: `Knowledge base inventory: ${seedStats.sources} seed source cards, ${seedStats.claims} claims, ${seedStats.mechanisms} mechanisms, ${seedStats.hypotheses} hypotheses, ${seedStats.analysisModels} analysis models, plus ${userCards.length} user-added literature cards.\n\nLiterature knowledge base:\n${knowledgeContext}\n\nCurrent file context:\n${context || "No file context provided."}\n\nTask:\n${prompt}`,
       },
     ],
   });
@@ -67,7 +70,7 @@ export async function POST(request: Request) {
   });
 }
 
-async function loadLiteratureKnowledgeContext(supabase: ReturnType<typeof getSupabaseServerClient>, userId: string) {
+async function loadLiteratureKnowledgeCards(supabase: ReturnType<typeof getSupabaseServerClient>, userId: string) {
   const { data } = await supabase
     .from("research_documents")
     .select("id,filename,mime_type,notes")
@@ -79,24 +82,5 @@ async function loadLiteratureKnowledgeContext(supabase: ReturnType<typeof getSup
     .filter(isLiteratureDocument)
     .map((document) => parseLiteratureCard(document.notes))
     .filter((card): card is NonNullable<typeof card> => Boolean(card));
-
-  if (!cards.length) {
-    return "No indexed literature cards yet. Ask the user to build literature knowledge cards before making literature-grounded claims.";
-  }
-
-  return cards
-    .map(
-      (card, index) => [
-        `[${index + 1}] ${card.title || card.filename}`,
-        `Filename: ${card.filename}`,
-        `Citation: ${card.citation}`,
-        `Research question: ${card.researchQuestion}`,
-        `Methods: ${card.methods}`,
-        `Measures: ${card.eegOrMeasures}`,
-        `Key findings: ${card.keyFindings.join("；")}`,
-        `Limitations: ${card.limitations.join("；")}`,
-        `Use for Metro Rescue: ${card.relevanceToMetroRescue.join("；")}`,
-      ].join("\n"),
-    )
-    .join("\n\n");
+  return cards;
 }

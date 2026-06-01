@@ -1,0 +1,1247 @@
+{
+  "version": "metro-rescue-kb-v4-pdf-free-seed",
+  "generated_from": "Metro Rescue KB v4 PDF-Free Research Bible",
+  "integrity_notes": [
+    "This seed contains paraphrased literature knowledge and source anchors, not PDF full text.",
+    "Use source cards and quote anchors for writing support; verify exact page numbers before final thesis submission.",
+    "Hypotheses are project-specific inferences unless marked as direct literature evidence."
+  ],
+  "sources": [
+    {
+      "Source_ID": "S001",
+      "Grade": "B",
+      "Depth": "Medium",
+      "Title": "Analysis of pedestrian wayfinding under herd effect in VR fire evacuation at indoor library: gender difference considered",
+      "Theme_Tags": "Social influence / herd effect / VR evacuation",
+      "Key_Takeaway_PDF_Free": "VR library/fire herd-effect study; pedestrians tend to follow majority crowd route; gender ratio/social composition can modulate route choice.",
+      "Method_or_Evidence": "Immersive VR library fire evacuation; multiple scenarios with NPC crowd patterns and gender-ratio cues.",
+      "How_to_use_in_Metro_Rescue": "Use only if adding social/NPC cues or discussing herd effects as a future confound.",
+      "Do_not_claim": "Do not use as primary signage/EEG evidence.",
+      "Thesis_Section": "Methods: VR/AR experimental validity",
+      "Filename": "1(2).pdf"
+    },
+    {
+      "Source_ID": "S002",
+      "Grade": "A",
+      "Depth": "High",
+      "Title": "Signage visibility analysis and optimization system using BIM-enabled virtual reality (VR) environments",
+      "Theme_Tags": "Signage visibility / BIM / VR",
+      "Key_Takeaway_PDF_Free": "BIM-enabled VR can evaluate signage visibility, coverage, placement, and occlusion in subway-like public spaces.",
+      "Method_or_Evidence": "BIM + game engine/VR signage visibility analysis; subway station case studies.",
+      "How_to_use_in_Metro_Rescue": "Supports adding visibility/coverage/FoV/obstruction variables beyond simple readable radius.",
+      "Do_not_claim": "Do not claim your current 8m/12m circles fully model visibility; they are a simplification.",
+      "Thesis_Section": "Methods: Signature manipulation / signage variables; Methods: VR/AR experimental validity",
+      "Filename": "1-s2.0-S1474034616301203-main(2).pdf"
+    },
+    {
+      "Source_ID": "S003",
+      "Grade": "B",
+      "Depth": "Medium",
+      "Title": "A Clarity-intensity model for evacuation panic by fNIRS and VR",
+      "Theme_Tags": "Panic / fNIRS / nonlinear stimulus response",
+      "Key_Takeaway_PDF_Free": "Panic/brain activation can vary nonlinearly with disaster stimulus clarity and intensity.",
+      "Method_or_Evidence": "VR disaster stimuli + fNIRS; quadratic clarity-intensity model.",
+      "How_to_use_in_Metro_Rescue": "Supports nonlinearity argument: cognitive/emotional response need not increase monotonically with information intensity.",
+      "Do_not_claim": "Do not treat fNIRS PFC activation as direct evidence for EEG theta/alpha.",
+      "Thesis_Section": "Theory/Measures: cognitive load, attention, uncertainty; Methods: VR/AR experimental validity",
+      "Filename": "A Clarity-intensity model for evacuation panic by fNIRS and VR(科研通-ablesci.com)(1).pdf"
+    },
+    {
+      "Source_ID": "S004",
+      "Grade": "B",
+      "Depth": "Medium",
+      "Title": "A quantitative comparison of virtual and physical experimental paradigms for the investigation of pedestrian responses in hostile emergencies",
+      "Theme_Tags": "VR validity / physical comparison",
+      "Key_Takeaway_PDF_Free": "VR can produce psychological and movement responses close to physical reality in hostile emergency paradigms.",
+      "Method_or_Evidence": "Quantitative comparison of VR and physical experiments for hostile emergency responses.",
+      "How_to_use_in_Metro_Rescue": "Use for VR ecological validity caveat and justification.",
+      "Do_not_claim": "Scenario is hostile attack, not signage evacuation; keep as methodology support.",
+      "Thesis_Section": "Methods: VR/AR experimental validity",
+      "Filename": "A quantitative comparison (1).pdf"
+    },
+    {
+      "Source_ID": "S005",
+      "Grade": "B",
+      "Depth": "Medium",
+      "Title": "A systematic review of methodologies for human behavior modelling and routing optimization in large-scale evacuation planning",
+      "Theme_Tags": "Review / evacuation modeling / routing optimization",
+      "Key_Takeaway_PDF_Free": "Human behavior modelling and routing optimization are often disconnected; ABM is common but routing models often overemphasize shortest paths.",
+      "Method_or_Evidence": "Systematic review of 100 large-scale evacuation planning papers.",
+      "How_to_use_in_Metro_Rescue": "Supports why Metro Rescue behavioral data matters for human-aware routing.",
+      "Do_not_claim": "Do not use for direct EEG/signage claim.",
+      "Thesis_Section": "Future work: simulation/digital twin/dynamic signs",
+      "Filename": "A systematic review of methodologies for human behavior modelling and routing optimization in large-scale evacuation planning(1).pdf"
+    },
+    {
+      "Source_ID": "S006",
+      "Grade": "A",
+      "Depth": "High",
+      "Title": "An empirical investigation on the impact of evacuation signages on individual behaviour in building evacuations",
+      "Theme_Tags": "Evacuation signage / VR / behavior",
+      "Key_Takeaway_PDF_Free": "Signage placement, spacing, height, and continuity affect adherence, speed, travel distance, and evacuation efficiency.",
+      "Method_or_Evidence": "VR evacuation signage experiment; examines ground/wall signage placements, distances, heights, and exit sign positioning.",
+      "How_to_use_in_Metro_Rescue": "Core support for Signature manipulation fields: spacing, height, continuity, sign location, route adherence, speed, distance.",
+      "Do_not_claim": "Do not reduce results to “more signs always better”; effects differ by sign type and spatial condition.",
+      "Thesis_Section": "Methods: Signature manipulation / signage variables; Methods: VR/AR experimental validity",
+      "Filename": "An empirical investigation on the impact of evacuation signages on individual behaviour in building evacuations(1).pdf"
+    },
+    {
+      "Source_ID": "S007",
+      "Grade": "A",
+      "Depth": "High",
+      "Title": "Assessing the compliance with the direction indicated by emergency evacuation signage",
+      "Theme_Tags": "Signage compliance / arrow / underground VR",
+      "Key_Takeaway_PDF_Free": "Compliance with evacuation signage depends on viewer-sign angle, arrow type, and sign placement; visible area ratio is useful.",
+      "Method_or_Evidence": "HMD VR underground square scenario; 60 participants; signage distance/angle/arrow type; confidence questionnaire.",
+      "How_to_use_in_Metro_Rescue": "Use to justify face/front-back, angle_to_sign, visible area/FoV, and arrow-direction variables.",
+      "Do_not_claim": "Do not assume readable distance alone predicts compliance.",
+      "Thesis_Section": "Methods: Signature manipulation / signage variables; Rationale: virtual metro/subway context; Methods: VR/AR experimental validity",
+      "Filename": "Assessing the compliance with the direction indicated by emergency (1).pdf"
+    },
+    {
+      "Source_ID": "S008",
+      "Grade": "B",
+      "Depth": "Medium",
+      "Title": "BIM-based augmented reality navigation for indoor emergency evacuation",
+      "Theme_Tags": "AR navigation / evacuation guidance",
+      "Key_Takeaway_PDF_Free": "BIM-based AR navigation can be intuitive and reduce restart/navigation time in emergency contexts, though may reduce walking speed slightly.",
+      "Method_or_Evidence": "AR vs 2D navigation; BIM-based system; eye tracking, walking speed, survey.",
+      "How_to_use_in_Metro_Rescue": "Future work/training application; supports XR emergency guidance.",
+      "Do_not_claim": "Not a static signage or EEG paper.",
+      "Thesis_Section": "Methods: VR/AR experimental validity",
+      "Filename": "BIM-based augmented reality navigation for indoor emergency evacuation(1).pdf"
+    },
+    {
+      "Source_ID": "S009",
+      "Grade": "A",
+      "Depth": "High",
+      "Title": "Behavioral, data-driven, agent-based evacuation simulation for building safety design using machine learning and discrete choice models",
+      "Theme_Tags": "ABM / ML / discrete choice / metro VR",
+      "Key_Takeaway_PDF_Free": "VR metro-station evacuation data can train ML/discrete-choice models of directional choices and then feed ABM simulations.",
+      "Method_or_Evidence": "Virtual metro station fire evacuation; social/environmental factors; ML + discrete choice + agent-based simulation.",
+      "How_to_use_in_Metro_Rescue": "Strong support for future route-choice model and decision-point feature extraction.",
+      "Do_not_claim": "Do not claim model transfers automatically to your Metro maps without validation.",
+      "Thesis_Section": "Rationale: virtual metro/subway context; Analysis: decision-point and route-choice modeling; Methods: VR/AR experimental validity; Future work: simulation/digital twin/dynamic signs",
+      "Filename": "Behavioral, data-driven, agent-based evacuation simulation for building (1).pdf"
+    },
+    {
+      "Source_ID": "S010",
+      "Grade": "C",
+      "Depth": "Low",
+      "Title": "Frozen in (e)motion: How reactive motor inhibition is influenced by the emotional content of stimuli",
+      "Theme_Tags": "Emotion / action inhibition",
+      "Key_Takeaway_PDF_Free": "Emotion can influence reactive motor inhibition, but this is not evacuation signage-specific.",
+      "Method_or_Evidence": "Review of emotional stimuli in stop-signal/action inhibition research.",
+      "How_to_use_in_Metro_Rescue": "Peripheral if discussing emotional arousal/action inhibition.",
+      "Do_not_claim": "Do not cite as central evacuation/wayfinding evidence.",
+      "Thesis_Section": "Background or archive",
+      "Filename": "CPIM_ETM_2021_BattagliaSerioScarpazzaDausilioBorgomaneri_FrozenEmotionReactiveMotorInhibitionInfluencedEmotionalContentStimuli(1).pdf"
+    },
+    {
+      "Source_ID": "S011",
+      "Grade": "A",
+      "Depth": "High",
+      "Title": "Characterization and future perspectives of Virtual Reality Evacuation Drills for safe built environments: A Systematic Literature Review",
+      "Theme_Tags": "VR evacuation drill review",
+      "Key_Takeaway_PDF_Free": "VR/IVR evacuation drills are promising but need better realism, emergency-system modelling, inclusiveness, NPCs, and sensory effects.",
+      "Method_or_Evidence": "Systematic review of VR/IVR evacuation drills.",
+      "How_to_use_in_Metro_Rescue": "Use for VR evacuation research background and limitations.",
+      "Do_not_claim": "Review-level evidence; not a direct test of your Signature hypothesis.",
+      "Thesis_Section": "Methods: VR/AR experimental validity",
+      "Filename": "Characterization and future perspectives of Virtual Reality Evacuation Drills for safe built environments A Systematic Literature Review(1).pdf"
+    },
+    {
+      "Source_ID": "S012",
+      "Grade": "B",
+      "Depth": "Medium",
+      "Title": "Classification of construction hazard-related perceptions using wearable EEG and virtual reality",
+      "Theme_Tags": "Wearable EEG / VR / hazard perception",
+      "Key_Takeaway_PDF_Free": "Wearable EEG in immersive VR can classify hazard perception; frontal channels and high-frequency bands may carry safety-relevant information.",
+      "Method_or_Evidence": "Construction hazard recognition in IVR; wearable EEG; classifier; AF3/F3/F4 and beta/gamma noted.",
+      "How_to_use_in_Metro_Rescue": "Supports feasibility of VR + wearable EEG in safety tasks.",
+      "Do_not_claim": "Do not use beta/gamma findings as proof for your theta/alpha workload index.",
+      "Thesis_Section": "Theory/Measures: cognitive load, attention, uncertainty; Methods: VR/AR experimental validity",
+      "Filename": "Classification of construction hazard-related perceptions using Wearable (1).pdf"
+    },
+    {
+      "Source_ID": "S013",
+      "Grade": "A",
+      "Depth": "High",
+      "Title": "Cognition-driven navigation assistive system for emergency indoor wayfinding (CogDNA): Proof of concept and evidence",
+      "Theme_Tags": "Cognitive load / adaptive navigation / pupil-gaze",
+      "Key_Takeaway_PDF_Free": "Emergency wayfinding systems can create cognitive overload when information is excessive; adaptive guidance can reduce workload/performance cost.",
+      "Method_or_Evidence": "CogDNA system; pupillometry/gaze-based cognitive load/fatigue; firefighter wayfinding experiment.",
+      "How_to_use_in_Metro_Rescue": "Core theory for information overload, adaptive information, and cognitive-load mechanism.",
+      "Do_not_claim": "It uses pupil/gaze, not EEG; cite as cognitive/wayfinding mechanism, not EEG evidence.",
+      "Thesis_Section": "Theory/Measures: cognitive load, attention, uncertainty",
+      "Filename": "Cognition-driven navigation assistive system for emergency indoor (1).pdf"
+    },
+    {
+      "Source_ID": "S014",
+      "Grade": "B",
+      "Depth": "Medium",
+      "Title": "Comparative analysis of fire evacuation decision-making in immersive vs. non-immersive virtual reality environments",
+      "Theme_Tags": "Immersive vs non-immersive VR / exit choice",
+      "Key_Takeaway_PDF_Free": "Immersive and non-immersive VR may yield similar overall decisions but immersion changes sensitivity to factors like distance, smoke, familiarity, and social influence.",
+      "Method_or_Evidence": "VR fire-evacuation exit-choice comparison; immersive vs non-immersive conditions.",
+      "How_to_use_in_Metro_Rescue": "If comparing HMD vs desktop preview or discussing immersion limitations.",
+      "Do_not_claim": "Do not pool desktop and HMD data without device/platform metadata.",
+      "Thesis_Section": "Analysis: decision-point and route-choice modeling; Methods: VR/AR experimental validity",
+      "Filename": "Comparative analysis of fire evacuation decision-making in immersive vs. non-immersive virtual reality environments(2).pdf"
+    },
+    {
+      "Source_ID": "S015",
+      "Grade": "B",
+      "Depth": "Medium",
+      "Title": "Be prepared: How training and emergency type affect evacuation behaviour",
+      "Theme_Tags": "Training / emergency type / VR",
+      "Key_Takeaway_PDF_Free": "Training and emergency type affect evacuation decisions; training improves preparedness and changes reliance on recommendations.",
+      "Method_or_Evidence": "Virtual office fire/active shooter experiment; 108 participants; video-based training.",
+      "How_to_use_in_Metro_Rescue": "Background for emergency preparedness/training and emergency type effects.",
+      "Do_not_claim": "Not directly about signage information density.",
+      "Thesis_Section": "Methods: VR/AR experimental validity",
+      "Filename": "Computer Assisted Learning - 2023 - Liu - Be prepared  How training and emergency type affect evacuation behaviour(1).pdf"
+    },
+    {
+      "Source_ID": "S016",
+      "Grade": "C",
+      "Depth": "Low",
+      "Title": "Crowdsourced virtual reality experimental approach in pedestrian and evacuation dynamics research: Part I",
+      "Theme_Tags": "Crowdsourced VR / PED methodology",
+      "Key_Takeaway_PDF_Free": "Crowdsourced VR offers a workflow for online pedestrian/evacuation dynamics experiments.",
+      "Method_or_Evidence": "Process model and CrowdVR platform.",
+      "How_to_use_in_Metro_Rescue": "Future work if expanding to remote/multi-participant VR.",
+      "Do_not_claim": "Not central to current lab EEG design.",
+      "Thesis_Section": "Methods: VR/AR experimental validity",
+      "Filename": "Crowdsourced virtual reality experimental approach in pedestrian and(1).pdf"
+    },
+    {
+      "Source_ID": "S017",
+      "Grade": "B",
+      "Depth": "Medium",
+      "Title": "Digital twin of buildings and occupants for emergency evacuation: Framework, technologies, applications and trends",
+      "Theme_Tags": "Digital twin / evacuation review",
+      "Key_Takeaway_PDF_Free": "Digital twin evacuation frameworks integrate building, occupants, sensing, updating, simulation, and decision-making loops.",
+      "Method_or_Evidence": "Review/framework; building and occupant digital twins.",
+      "How_to_use_in_Metro_Rescue": "Future-work framing: Metro Rescue data can calibrate occupant digital twins.",
+      "Do_not_claim": "Do not present Metro Rescue as a full digital twin unless real-time loop exists.",
+      "Thesis_Section": "Future work: simulation/digital twin/dynamic signs",
+      "Filename": "Digital twin of buildings and occupants for emergency evacuation(1).pdf"
+    },
+    {
+      "Source_ID": "S018",
+      "Grade": "B",
+      "Depth": "Medium",
+      "Title": "Digital twin of buildings and occupants for emergency evacuation: Framework, technologies, applications and trends",
+      "Theme_Tags": "Digital twin / evacuation review",
+      "Key_Takeaway_PDF_Free": "Duplicate/near-duplicate digital twin review; same use as S017.",
+      "Method_or_Evidence": "Review/framework duplicate.",
+      "How_to_use_in_Metro_Rescue": "Keep one duplicate in bibliography; mark duplicate to avoid double counting.",
+      "Do_not_claim": "Do not count as independent evidence if duplicate.",
+      "Thesis_Section": "Future work: simulation/digital twin/dynamic signs",
+      "Filename": "Digital twin of buildings and occupants for emergency evacuation_ Framework, technologies, applications and trends(1).pdf"
+    },
+    {
+      "Source_ID": "S019",
+      "Grade": "B",
+      "Depth": "Medium",
+      "Title": "Directed rooted forest based direction setting method: A step toward automated dynamic exit signs",
+      "Theme_Tags": "Dynamic exit signs / optimization",
+      "Key_Takeaway_PDF_Free": "Dynamic exit signs can be optimized using directed rooted forest methods for rapid feasible direction setting.",
+      "Method_or_Evidence": "Optimization method for automated dynamic exit signs.",
+      "How_to_use_in_Metro_Rescue": "Future dynamic-sign extension; method background.",
+      "Do_not_claim": "Not a human-subject behavioral result.",
+      "Thesis_Section": "Methods: Signature manipulation / signage variables; Analysis: decision-point and route-choice modeling; Future work: simulation/digital twin/dynamic signs",
+      "Filename": "Directed rooted forest based direction setting method A step (1).pdf"
+    },
+    {
+      "Source_ID": "S020",
+      "Grade": "A",
+      "Depth": "High",
+      "Title": "Evaluating the impact of attention shift intervention on human evacuation behavior in virtual environment",
+      "Theme_Tags": "Attention shift / metro VR / alarm modality",
+      "Key_Takeaway_PDF_Free": "Visual attention-shift interventions in VR metro evacuation can outperform auditory cues for keeping attention and reducing pre-evacuation re-engagement.",
+      "Method_or_Evidence": "VR metro station; auditory broadcasts vs visual text messages on handheld devices.",
+      "How_to_use_in_Metro_Rescue": "Core support for treating Audio as attention/modality factor, not mere nuisance.",
+      "Do_not_claim": "Do not claim your audio has same effect unless modality/content match.",
+      "Thesis_Section": "Theory/Measures: cognitive load, attention, uncertainty; Rationale: virtual metro/subway context; Methods: VR/AR experimental validity",
+      "Filename": "Evaluating the impact of attention shift intervention on evacuation response.pdf"
+    },
+    {
+      "Source_ID": "S021",
+      "Grade": "A",
+      "Depth": "High",
+      "Title": "Exit choice in built environment evacuation combining immersive virtual reality and discrete choice modelling",
+      "Theme_Tags": "Exit choice / discrete choice / IVR",
+      "Key_Takeaway_PDF_Free": "Exit choice in IVR is multi-attribute: familiarity, occupancy, distance, and smoke visibility trade off rather than one factor dominating.",
+      "Method_or_Evidence": "Immersive VR fire evacuation + discrete choice/random utility model.",
+      "How_to_use_in_Metro_Rescue": "Supports decision-point choice-set modelling and multi-attribute route choice.",
+      "Do_not_claim": "Do not explain route choice by nearest exit alone.",
+      "Thesis_Section": "Analysis: decision-point and route-choice modeling; Methods: VR/AR experimental validity",
+      "Filename": "Exit choice in built environment evacuation combining immersive virtual .pdf"
+    },
+    {
+      "Source_ID": "S022",
+      "Grade": "B",
+      "Depth": "Medium",
+      "Title": "Experimental study on evacuation behavior with guidance under high and low urgency conditions",
+      "Theme_Tags": "Guidance / urgency / controlled experiment",
+      "Key_Takeaway_PDF_Free": "Guidance improves evacuation, but its effect depends on stress/urgency and position relative to the guide/exit.",
+      "Method_or_Evidence": "Controlled evacuation experiments under high/low urgency and guidance positions.",
+      "How_to_use_in_Metro_Rescue": "Supports urgency/audio/stress as moderator of signage/guidance effectiveness.",
+      "Do_not_claim": "Human guide/sign guidance analogy should be stated cautiously.",
+      "Thesis_Section": "Methods: VR/AR experimental validity",
+      "Filename": "Experimental study on evacuation behavior with guidance under high and low urgency conditions.pdf"
+    },
+    {
+      "Source_ID": "S023",
+      "Grade": "B",
+      "Depth": "Medium",
+      "Title": "Fire propagation-driven dynamic intelligent evacuation model in multifloor hybrid buildings",
+      "Theme_Tags": "Dynamic evacuation / fire propagation",
+      "Key_Takeaway_PDF_Free": "Dynamic fire/smoke conditions require path re-planning and active guidance; static information may fail.",
+      "Method_or_Evidence": "Fire-propagation-driven dynamic intelligent evacuation model in multifloor buildings.",
+      "How_to_use_in_Metro_Rescue": "Future work/limitation: current static signs do not adapt to hazards.",
+      "Do_not_claim": "Simulation/framework, not direct human EEG behavior.",
+      "Thesis_Section": "Methods: VR/AR experimental validity; Future work: simulation/digital twin/dynamic signs",
+      "Filename": "Fire propagation-driven dynamic intelligent evacuation model in multifloor .pdf"
+    },
+    {
+      "Source_ID": "S024",
+      "Grade": "A",
+      "Depth": "High",
+      "Title": "Wayfinding and signage for people walking",
+      "Theme_Tags": "Wayfinding guideline / signage principles",
+      "Key_Takeaway_PDF_Free": "Wayfinding signage should be consistent, conspicuous, clear, continuous, and accessible.",
+      "Method_or_Evidence": "Transport guideline for pedestrian wayfinding and signage.",
+      "How_to_use_in_Metro_Rescue": "Use as normative basis for Signature manipulation table dimensions.",
+      "Do_not_claim": "Guideline, not experiment; use for design criteria, not statistical evidence.",
+      "Thesis_Section": "Methods: Signature manipulation / signage variables; Methods: VR/AR experimental validity",
+      "Filename": "Guideline-Wayfinding-and-signage-for-people-walking.pdf"
+    },
+    {
+      "Source_ID": "S025",
+      "Grade": "A",
+      "Depth": "High",
+      "Title": "How individuals sense environments during indoor emergency wayfinding: An eye-tracking investigation",
+      "Theme_Tags": "Eye-tracking / emergency wayfinding",
+      "Key_Takeaway_PDF_Free": "Visual attention is linked to route choice; familiarity, neighbor behavior, and exit visibility affect gaze and decisions.",
+      "Method_or_Evidence": "VR fire wayfinding + eye tracking; intersection route choice.",
+      "How_to_use_in_Metro_Rescue": "Core support for attention-allocation mechanism and head-yaw/gaze proxies.",
+      "Do_not_claim": "Eye tracking ≠ EEG; use as visual attention evidence.",
+      "Thesis_Section": "Theory/Measures: cognitive load, attention, uncertainty; Analysis: decision-point and route-choice modeling",
+      "Filename": "How individuals sense environments during indoor emergency wayfinding_ An eye-tracking investigation.pdf"
+    },
+    {
+      "Source_ID": "S026",
+      "Grade": "B",
+      "Depth": "Medium",
+      "Title": "Human interaction with virtual reality: investigating pre-evacuation efficiency in building emergency",
+      "Theme_Tags": "Pre-evacuation / VR / alarm",
+      "Key_Takeaway_PDF_Free": "High engagement in pre-emergency activities reduces immediate alarm compliance in VR.",
+      "Method_or_Evidence": "VR pre-evacuation study with low/high engagement conditions; worker participants.",
+      "How_to_use_in_Metro_Rescue": "Supports initial response latency and attention engagement effects.",
+      "Do_not_claim": "Not specific to signage content.",
+      "Thesis_Section": "Methods: VR/AR experimental validity",
+      "Filename": "Human interaction with virtual reality investigating pre-evacuation efficiency in building emergency.pdf"
+    },
+    {
+      "Source_ID": "S027",
+      "Grade": "A",
+      "Depth": "High",
+      "Title": "Identifying uncertainty states during wayfinding in indoor environments: An EEG classification study",
+      "Theme_Tags": "EEG / wayfinding uncertainty / VR",
+      "Key_Takeaway_PDF_Free": "EEG spectral features can help identify wayfinding uncertainty states in VR navigation.",
+      "Method_or_Evidence": "VR hospital wayfinding; uncertainty labels from controller input/observer annotation; EEG theta/alpha/beta; Random Forest ROC-AUC ~0.70.",
+      "How_to_use_in_Metro_Rescue": "Most direct EEG support for Signature2-as-uncertainty mechanism.",
+      "Do_not_claim": "Do not claim it proves your S2 effect; it proves EEG can index uncertainty states.",
+      "Thesis_Section": "Theory/Measures: cognitive load, attention, uncertainty; Methods: VR/AR experimental validity",
+      "Filename": "Identifying uncertainty states during wayfinding in indoor environments_ An EEG classification study.pdf"
+    },
+    {
+      "Source_ID": "S028",
+      "Grade": "A",
+      "Depth": "High",
+      "Title": "Individual wayfinding decisions under stress in indoor emergency situations: A theoretical framework and meta-analysis",
+      "Theme_Tags": "Theory / stress / wayfinding decision",
+      "Key_Takeaway_PDF_Free": "Indoor emergency wayfinding decisions involve cue perception, cognitive processing, stress, and strategies; signage and social majority strongly influence route choice, while conflicting information moderates effects.",
+      "Method_or_Evidence": "Theoretical framework + meta-analysis.",
+      "How_to_use_in_Metro_Rescue": "Core theory chapter source for stress/cognition/wayfinding decision.",
+      "Do_not_claim": "Meta-analysis aggregates varied paradigms; use for framework, not exact effect prediction.",
+      "Thesis_Section": "Methods: Signature manipulation / signage variables; Analysis: decision-point and route-choice modeling",
+      "Filename": "Individual wayfinding decisions under stress in indoor emergency .pdf"
+    },
+    {
+      "Source_ID": "S029",
+      "Grade": "B",
+      "Depth": "Medium",
+      "Title": "Investigating the interplay of bottom-up and top-down attention in hazard recognition: Insights from IVR, eye-tracking and EEG",
+      "Theme_Tags": "Attention / IVR / ET / EEG",
+      "Key_Takeaway_PDF_Free": "Bottom-up stimuli and top-down training jointly shape hazard recognition attention, measurable by IVR + eye-tracking + EEG/ERP.",
+      "Method_or_Evidence": "IVR construction hazard recognition; augmented stimuli/toolbox meeting; ET + EEG.",
+      "How_to_use_in_Metro_Rescue": "Supports interpreting signage as bottom-up cue and task goal/trial order as top-down attention.",
+      "Do_not_claim": "Construction hazard recognition, not evacuation signage.",
+      "Thesis_Section": "Theory/Measures: cognitive load, attention, uncertainty; Methods: VR/AR experimental validity",
+      "Filename": "Investigating the interplay of bottom-up and top-down attention in hazard.pdf"
+    },
+    {
+      "Source_ID": "S030",
+      "Grade": "B",
+      "Depth": "Medium",
+      "Title": "Modelling and interpreting pre-evacuation decision-making using machine learning",
+      "Theme_Tags": "Interpretable ML / pre-evacuation",
+      "Key_Takeaway_PDF_Free": "Interpretable ML can reveal nonlinear pre-evacuation decision effects and interactions, especially social/environmental variables.",
+      "Method_or_Evidence": "Random Forest + interpretation on 569 occupants in unannounced cinema drills.",
+      "How_to_use_in_Metro_Rescue": "Exploratory analysis model for nonlinearity/interactions in Metro Rescue.",
+      "Do_not_claim": "Keep ML exploratory unless pre-registered.",
+      "Thesis_Section": "Methods: VR/AR experimental validity",
+      "Filename": "Modelling and interpreting pre-evacuation decision-making using machine.pdf"
+    },
+    {
+      "Source_ID": "S031",
+      "Grade": "C",
+      "Depth": "Low",
+      "Title": "Optical see-through augmented reality fire safety training for building occupants",
+      "Theme_Tags": "AR training / fire safety",
+      "Key_Takeaway_PDF_Free": "AR fire training can improve motivation/self-efficacy relative to video, with similar knowledge performance.",
+      "Method_or_Evidence": "Controlled AR vs video fire-safety training experiment.",
+      "How_to_use_in_Metro_Rescue": "XR training discussion/future application.",
+      "Do_not_claim": "Peripheral to EEG/signage.",
+      "Thesis_Section": "Methods: VR/AR experimental validity",
+      "Filename": "Optical see-through augmented reality fire safety training for building occupants.pdf"
+    },
+    {
+      "Source_ID": "S032",
+      "Grade": "C",
+      "Depth": "Low",
+      "Title": "Crowdsourced virtual reality experimental approach in pedestrian and evacuation dynamics research: Part II",
+      "Theme_Tags": "Crowdsourced VR / validation / PED",
+      "Key_Takeaway_PDF_Free": "Crowdsourced VR can reproduce bottleneck and exit-choice phenomena; useful for social interaction studies.",
+      "Method_or_Evidence": "CVR validation; bottleneck and exit choice experiments.",
+      "How_to_use_in_Metro_Rescue": "Future multi-person VR method.",
+      "Do_not_claim": "Not central to single-user EEG task.",
+      "Thesis_Section": "Methods: VR/AR experimental validity",
+      "Filename": "Part II. Validation and new insights.pdf"
+    },
+    {
+      "Source_ID": "S033",
+      "Grade": "B",
+      "Depth": "Medium",
+      "Title": "Safe evacuation framework with intelligent dynamic exit sign system and demonstration in tunnel fire",
+      "Theme_Tags": "Intelligent dynamic exit signs / tunnel fire",
+      "Key_Takeaway_PDF_Free": "Intelligent dynamic exit sign systems can use fire sensor networks and dynamic patterns, but need fallback/reversion mechanisms.",
+      "Method_or_Evidence": "IDES framework and lab-scale tunnel demonstration.",
+      "How_to_use_in_Metro_Rescue": "Future dynamic signage + ethics/failure-mode discussion.",
+      "Do_not_claim": "Hardware/system study, not human EEG.",
+      "Thesis_Section": "Methods: Signature manipulation / signage variables; Future work: simulation/digital twin/dynamic signs",
+      "Filename": "Safe evacuation framework with intelligent dynamic exit sign system and demonstration in tunnel fire.pdf"
+    },
+    {
+      "Source_ID": "S034",
+      "Grade": "A",
+      "Depth": "High",
+      "Title": "Subway passengers’ wayfinding behaviors when exposed to signage: An experimental study in VR with eye-tracker",
+      "Theme_Tags": "Subway signage / VR / eye-tracking / pressure",
+      "Key_Takeaway_PDF_Free": "In VR subway wayfinding, pressure reduces spatial knowledge; first-time participants rely more on signage; start-area signs are important.",
+      "Method_or_Evidence": "VR subway station + eye tracking; 48 participants; normal vs pressure conditions.",
+      "How_to_use_in_Metro_Rescue": "Core support for Metro setting, pressure, signage reliance, and start-sign variables.",
+      "Do_not_claim": "If your task lacks pressure manipulation, treat pressure findings as analogous via Audio/urgency, not identical.",
+      "Thesis_Section": "Methods: Signature manipulation / signage variables; Rationale: virtual metro/subway context; Methods: VR/AR experimental validity",
+      "Filename": "Subway passengers’ wayfinding behaviors when exposed to signage An .pdf"
+    },
+    {
+      "Source_ID": "S035",
+      "Grade": "B",
+      "Depth": "Medium",
+      "Title": "The Halo effect in airport terminals: how wayfinding experiences influence emergency preparedness through perceived reliability",
+      "Theme_Tags": "Reliability / signage trust / emergency preparedness",
+      "Key_Takeaway_PDF_Free": "Routine wayfinding signage quality shapes perceived reliability, which can transfer to emergency exit signage compliance via halo effect.",
+      "Method_or_Evidence": "Airport terminal survey; visibility/legibility/consistency/correctness -> reliability -> compliance intention.",
+      "How_to_use_in_Metro_Rescue": "Add post-trial perceived signage reliability/confidence questionnaire.",
+      "Do_not_claim": "Questionnaire intention, not observed evacuation behavior.",
+      "Thesis_Section": "Methods: Signature manipulation / signage variables; Methods: VR/AR experimental validity",
+      "Filename": "The Halo effect in airport terminal how wayfinding experiences influence emergency preparedness through perceived reliability.pdf"
+    },
+    {
+      "Source_ID": "S036",
+      "Grade": "B",
+      "Depth": "Medium",
+      "Title": "The influence of regional landmarks (color zones) on sex differences in spatial navigation",
+      "Theme_Tags": "Landmarks / color zones / sense of direction",
+      "Key_Takeaway_PDF_Free": "Regional landmarks/color zones affect spatial navigation and interact with sense of direction.",
+      "Method_or_Evidence": "VR wayfinding with/without regional landmarks; individual differences.",
+      "How_to_use_in_Metro_Rescue": "Use for subject covariates and Metro map visual landmarks/color zones.",
+      "Do_not_claim": "Not emergency evacuation.",
+      "Thesis_Section": "Methods: VR/AR experimental validity",
+      "Filename": "The influence of regional landmarks (color zones) on sex differences in spatial navigation The moderating role of sense of direction.pdf"
+    },
+    {
+      "Source_ID": "S037",
+      "Grade": "B",
+      "Depth": "Medium",
+      "Title": "The influence of wayfinding strategy and landmark type on wayfinding performance in VR environments",
+      "Theme_Tags": "Wayfinding strategy / landmarks / stress",
+      "Key_Takeaway_PDF_Free": "Wayfinding strategy and landmark type interact; stress partly mediates performance differences.",
+      "Method_or_Evidence": "VR wayfinding; survey vs route strategy; global vs local landmarks; stress measures.",
+      "How_to_use_in_Metro_Rescue": "Support individual differences: route/survey strategy and perceived stress.",
+      "Do_not_claim": "Do not overstate to emergency signage without caveat.",
+      "Thesis_Section": "Analysis: decision-point and route-choice modeling; Methods: VR/AR experimental validity",
+      "Filename": "The influence of wayfinding strategy and landmark typ.pdf"
+    },
+    {
+      "Source_ID": "S038",
+      "Grade": "C",
+      "Depth": "Low",
+      "Title": "The study of self-organised behaviours and movement pattern of pedestrians during fire evacuations",
+      "Theme_Tags": "Self-organized behavior / virtual fire evacuation",
+      "Key_Takeaway_PDF_Free": "Virtual fire experiments can reproduce self-organized evacuation patterns like detour, wall-following, queuing.",
+      "Method_or_Evidence": "Minecraft virtual/physical comparison and surveys.",
+      "How_to_use_in_Metro_Rescue": "Peripheral future multi-person/behavioral-pattern work.",
+      "Do_not_claim": "Not signage/EEG.",
+      "Thesis_Section": "Methods: VR/AR experimental validity",
+      "Filename": "The study of self-organised behaviours and movement pattern of pedestrians during fire evacuations_ virtual experiments and survey(2).pdf"
+    },
+    {
+      "Source_ID": "S039",
+      "Grade": "A",
+      "Depth": "High",
+      "Title": "Understanding how information modality influences wayfinding behavior with text-based signage in virtual metro environments",
+      "Theme_Tags": "Information modality / metro signage / VR",
+      "Key_Takeaway_PDF_Free": "Initial evacuation information modality changes later interaction with text-based metro signage; modality consistency reduces re-confirmation and fixation duration.",
+      "Method_or_Evidence": "VR metro; audio broadcast vs text message initial instructions; text-based signage; eye tracking/behavior; 60 participants.",
+      "How_to_use_in_Metro_Rescue": "Core support for Audio/modality switching cost and re-confirmation behavior.",
+      "Do_not_claim": "Duplicate with S040; cite once.",
+      "Thesis_Section": "Methods: Signature manipulation / signage variables; Rationale: virtual metro/subway context; Methods: VR/AR experimental validity",
+      "Filename": "Understanding how information modality influences wayfinding behavior .pdf"
+    },
+    {
+      "Source_ID": "S040",
+      "Grade": "A",
+      "Depth": "High",
+      "Title": "Understanding how information modality influences wayfinding behavior with text-based signage in virtual metro environments",
+      "Theme_Tags": "Information modality / metro signage / VR",
+      "Key_Takeaway_PDF_Free": "Duplicate/near-duplicate of S039. Same modality-consistency finding.",
+      "Method_or_Evidence": "Same as S039.",
+      "How_to_use_in_Metro_Rescue": "Mark duplicate; do not treat as independent replication.",
+      "Do_not_claim": "Do not double count.",
+      "Thesis_Section": "Methods: Signature manipulation / signage variables; Rationale: virtual metro/subway context; Methods: VR/AR experimental validity",
+      "Filename": "Understanding how information modality influences wayfinding behavior with text-based signage in virtual metro environments.pdf"
+    },
+    {
+      "Source_ID": "S041",
+      "Grade": "A",
+      "Depth": "High",
+      "Title": "Validity assessment and engineering application of building guidance signs considering partial environment influence",
+      "Theme_Tags": "Guidance signs / perception-compliance / eye tracking / SHAP",
+      "Key_Takeaway_PDF_Free": "Guidance sign effectiveness should be split into perception and compliance; seeing a sign does not guarantee following it.",
+      "Method_or_Evidence": "1536 participants; eye gaze + route choice; interpretable ML/SHAP; perception-compliance model.",
+      "How_to_use_in_Metro_Rescue": "Core for sign_visible/sign_readable vs compliance split and sign_compliance_events table.",
+      "Do_not_claim": "Do not treat sign_readable as comprehension/compliance.",
+      "Thesis_Section": "Methods: Signature manipulation / signage variables; Analysis: decision-point and route-choice modeling; Methods: VR/AR experimental validity",
+      "Filename": "Validity assessment and engineering application of building guidance signs .pdf"
+    },
+    {
+      "Source_ID": "S042",
+      "Grade": "B",
+      "Depth": "Medium",
+      "Title": "Why do people make risky decisions during a fire evacuation? Effect of smoke level, individual risk preference, and neighbor behavior",
+      "Theme_Tags": "Risky route choice / smoke / social influence",
+      "Key_Takeaway_PDF_Free": "Risky route choice under smoke is influenced by smoke level, risk preference, and neighbor behavior.",
+      "Method_or_Evidence": "Immersive VR fire evacuation; smoky shortcut choice; risk questionnaire; neighbor behavior.",
+      "How_to_use_in_Metro_Rescue": "Future hazard/smoke and risk-preference covariate; supports non-rational route choice.",
+      "Do_not_claim": "Your current no-smoke task should not cite it as direct signature evidence.",
+      "Thesis_Section": "Analysis: decision-point and route-choice modeling; Methods: VR/AR experimental validity",
+      "Filename": "Why do people make risky decisions during a fire evacuation Study on the .pdf"
+    },
+    {
+      "Source_ID": "S043",
+      "Grade": "A",
+      "Depth": "High",
+      "Title": "Why individuals do not use emergency exit doors during evacuations: A VR and eye-tracking experimental study",
+      "Theme_Tags": "Exit door use / visual attention / familiarity",
+      "Key_Takeaway_PDF_Free": "Emergency exits are underused partly because users fail to notice them; familiarity affects attention, not necessarily choice after fixation.",
+      "Method_or_Evidence": "VR + eye tracking; exit door use; familiarity, door color/type, stairwell sign.",
+      "How_to_use_in_Metro_Rescue": "Core support for attention as mediator of exit choice and familiar route bias.",
+      "Do_not_claim": "Door color/type null effects are context-specific.",
+      "Thesis_Section": "Theory/Measures: cognitive load, attention, uncertainty; Methods: VR/AR experimental validity",
+      "Filename": "Why individuals do not use emergency exit doors during evacuations .pdf"
+    },
+    {
+      "Source_ID": "S044",
+      "Grade": "D",
+      "Depth": "Low",
+      "Title": "Agent-Based Data Curation Practices: Customer Responses to Human versus Algorithmic Data Requesters",
+      "Theme_Tags": "Data curation / B2B / algorithmic agents",
+      "Key_Takeaway_PDF_Free": "B2B algorithmic data requester/data curation paper; off-topic for Metro Rescue.",
+      "Method_or_Evidence": "Field/online experiments in information systems.",
+      "How_to_use_in_Metro_Rescue": "Do not use unless project pivots to AI agents/data requests.",
+      "Do_not_claim": "Exclude from thesis main bibliography.",
+      "Thesis_Section": "Rationale: virtual metro/subway context; Methods: VR/AR experimental validity",
+      "Filename": "adam-et-al-2025-agent-based-data-curation-practices-customer-responses-to-human-versus-algorithmic-data-requesters-in(1).pdf"
+    },
+    {
+      "Source_ID": "S045",
+      "Grade": "C",
+      "Depth": "Low",
+      "Title": "Pedestrian dynamics at the running of the bulls evidence an inaccessible region in the fundamental diagram",
+      "Theme_Tags": "Pedestrian dynamics / fleeing behavior",
+      "Key_Takeaway_PDF_Free": "High-speed fleeing crowd dynamics can depart from ordinary speed-density diagrams.",
+      "Method_or_Evidence": "Running of the bulls field data; pedestrian dynamics.",
+      "How_to_use_in_Metro_Rescue": "Peripheral if discussing fleeing movement dynamics or density-speed assumptions.",
+      "Do_not_claim": "Not indoor signage/EEG.",
+      "Thesis_Section": "Methods: Signature manipulation / signage variables; Theory/Measures: cognitive load, attention, uncertainty; Future work: simulation/digital twin/dynamic signs",
+      "Filename": "parisi-et-al-2021-pedestrian-dynamics-at-the-running-of-the-bulls-evidence-an-inaccessible-region-in-the-fundamental.pdf"
+    },
+    {
+      "Source_ID": "S046",
+      "Grade": "A",
+      "Depth": "High",
+      "Title": "Using street-view panoramas to model the decision-making complexity of road intersections based on passing branches",
+      "Theme_Tags": "Decision-point complexity / wayfinding",
+      "Key_Takeaway_PDF_Free": "Decision-making complexity at intersections should be computed for specific entry-exit branch pairs using visual, structural, and semantic features.",
+      "Method_or_Evidence": "Street-view panorama + road network + POI model; fine-grained branch-pair complexity.",
+      "How_to_use_in_Metro_Rescue": "Adapt to Metro decision_points.csv: branch_count, angular deviation, visual similarity, openness, landmark salience.",
+      "Do_not_claim": "Road intersections ≠ metro interiors; justify adaptation conceptually.",
+      "Thesis_Section": "Analysis: decision-point and route-choice modeling",
+      "Filename": "复杂度.pdf"
+    },
+    {
+      "Source_ID": "S047",
+      "Grade": "A",
+      "Depth": "High",
+      "Title": "How good are these directions? Determining direction quality and wayfinding efficiency",
+      "Theme_Tags": "Manipulation check / direction quality / wayfinding",
+      "Key_Takeaway_PDF_Free": "Direction quality can be measured by subjective effectiveness ratings and behavioral wayfinding errors; route directions often outperform survey directions.",
+      "Method_or_Evidence": "Indoor wayfinding studies; route vs survey directions; sense of direction; ratings/errors.",
+      "How_to_use_in_Metro_Rescue": "Core for Signature manipulation check: perceived clarity/sufficiency/overload + errors.",
+      "Do_not_claim": "Directions in text/descriptions, not signage scenes; adapt carefully.",
+      "Thesis_Section": "Methods: Signature manipulation / signage variables",
+      "Filename": "自变量操纵检验.pdf"
+    }
+  ],
+  "claims": [
+    {
+      "Claim_ID": "C01",
+      "Type": "Core mechanism",
+      "Claim": "Metro Rescue should be framed as a signage-information and uncertainty-resolution study, not a simple “which sign set is best” comparison.",
+      "Sources": "S013; S027; S028; S039; S041; S046; S047",
+      "Thesis_Section": "Intro/Theory",
+      "How_to_use": "Write Signature effects as attention + uncertainty + confirmation cost."
+    },
+    {
+      "Claim_ID": "C02",
+      "Type": "Signature2 hypothesis",
+      "Claim": "Signature2 may produce higher load if it is sufficiently complex to require interpretation but insufficiently redundant to resolve uncertainty quickly.",
+      "Sources": "S013; S027; S039; S041; S046; S047",
+      "Thesis_Section": "Hypotheses",
+      "How_to_use": "This is a project-specific inference, not a direct literature result."
+    },
+    {
+      "Claim_ID": "C03",
+      "Type": "Perception-compliance split",
+      "Claim": "Seeing or entering readable range of a sign is not equivalent to understanding or complying with it.",
+      "Sources": "S007; S025; S041; S043",
+      "Thesis_Section": "Methods/Analysis",
+      "How_to_use": "Use two-stage models: sign perception/readability, then compliance/route choice."
+    },
+    {
+      "Claim_ID": "C04",
+      "Type": "Decision complexity",
+      "Claim": "Decision points should be coded by branch count, angular deviation, visual similarity/openness, and landmark salience.",
+      "Sources": "S046; S021; S028",
+      "Thesis_Section": "Methods/Analysis",
+      "How_to_use": "Use as moderator of Signature effect."
+    },
+    {
+      "Claim_ID": "C05",
+      "Type": "Audio/modality",
+      "Claim": "Audio should be treated as a modality/attention factor that may change later visual signage processing, not merely noise.",
+      "Sources": "S020; S026; S039",
+      "Thesis_Section": "Methods/Analysis",
+      "How_to_use": "Add event exclusion/sensitivity windows around audio_play."
+    },
+    {
+      "Claim_ID": "C06",
+      "Type": "EEG uncertainty",
+      "Claim": "EEG can potentially index wayfinding uncertainty states, supporting event-locked EEG analysis around signs and decision points.",
+      "Sources": "S027; S012; S029",
+      "Thesis_Section": "Measures",
+      "How_to_use": "Use S027 as primary support, S012/S029 as adjacent feasibility."
+    },
+    {
+      "Claim_ID": "C07",
+      "Type": "Behavior load",
+      "Claim": "Dwell, scan, u-turn, backtrack, path inefficiency, and decision delay should be interpreted as behavioral indicators of uncertainty/confirmation cost.",
+      "Sources": "S025; S027; S028; S041; S043",
+      "Thesis_Section": "Measures",
+      "How_to_use": "Behavior measures are auxiliary evidence, not direct neural load."
+    },
+    {
+      "Claim_ID": "C08",
+      "Type": "Subway context",
+      "Claim": "VR subway/metro studies support the ecological relevance of Metro Rescue and show pressure/signage/spatial knowledge matter.",
+      "Sources": "S020; S034; S039; S009",
+      "Thesis_Section": "Intro/Methods",
+      "How_to_use": "Use S034 and S039 as metro-specific core."
+    },
+    {
+      "Claim_ID": "C09",
+      "Type": "Route choice multi-attribute",
+      "Claim": "Exit/route choice is not determined by nearest exit alone; familiarity, visibility, smoke, occupancy, signs, and social cues trade off.",
+      "Sources": "S021; S025; S028; S042; S043",
+      "Thesis_Section": "Theory/Analysis",
+      "How_to_use": "Supports decision choice-set modelling."
+    },
+    {
+      "Claim_ID": "C10",
+      "Type": "Manipulation check",
+      "Claim": "Signature conditions require empirical manipulation checks of direction quality, clarity, sufficiency, overload, reliability, and behavioral errors.",
+      "Sources": "S024; S035; S047; S041",
+      "Thesis_Section": "Methods",
+      "How_to_use": "Critical threat to validity if omitted."
+    },
+    {
+      "Claim_ID": "C11",
+      "Type": "VR validity",
+      "Claim": "VR is acceptable for controlled emergency/wayfinding experiments but needs caveats about realism, immersion, sickness, and social interaction.",
+      "Sources": "S004; S011; S014; S032; S038",
+      "Thesis_Section": "Methods/Limitations",
+      "How_to_use": "Do not overclaim equivalence to real evacuations."
+    },
+    {
+      "Claim_ID": "C12",
+      "Type": "Adaptive/dynamic signage",
+      "Claim": "Static signs can fail under dynamic hazards; dynamic/intelligent signs are a future extension, not the current project claim.",
+      "Sources": "S019; S023; S033",
+      "Thesis_Section": "Discussion",
+      "How_to_use": "Use for future work."
+    },
+    {
+      "Claim_ID": "C13",
+      "Type": "Individual differences",
+      "Claim": "Sense of direction, route/survey strategy, landmark use, risk preference, VR/gaming experience can moderate wayfinding behavior.",
+      "Sources": "S036; S037; S047; S042",
+      "Thesis_Section": "Methods/Discussion",
+      "How_to_use": "Collect as covariates if feasible."
+    },
+    {
+      "Claim_ID": "C14",
+      "Type": "Reliability/trust",
+      "Claim": "Perceived signage reliability can affect willingness to comply and should be measured post-trial.",
+      "Sources": "S035; S041; S024",
+      "Thesis_Section": "Methods/Discussion",
+      "How_to_use": "Questionnaire/intention evidence, not direct compliance proof."
+    },
+    {
+      "Claim_ID": "C15",
+      "Type": "Attention mediates choice",
+      "Claim": "Visual attention toward signs/doors/routes is often a proximal mediator of route choice.",
+      "Sources": "S025; S034; S043; S041",
+      "Thesis_Section": "Theory/Measures",
+      "How_to_use": "If no eye tracker, use head-yaw/scan proxies cautiously."
+    },
+    {
+      "Claim_ID": "C16",
+      "Type": "Risk and social influence",
+      "Claim": "Risk preference and neighbor/crowd cues can override optimal or designated routes.",
+      "Sources": "S001; S021; S028; S042",
+      "Thesis_Section": "Discussion/Future",
+      "How_to_use": "Useful if adding NPC/social cues."
+    },
+    {
+      "Claim_ID": "C17",
+      "Type": "Data-to-model path",
+      "Claim": "Unity behavior logs can support discrete-choice, interpretable ML, and ABM beyond hypothesis testing.",
+      "Sources": "S009; S021; S030; S005",
+      "Thesis_Section": "Discussion/Future",
+      "How_to_use": "Keep exploratory unless designed/pre-registered."
+    },
+    {
+      "Claim_ID": "C18",
+      "Type": "Design principles",
+      "Claim": "Signage is a system requiring continuity, clarity, conspicuity, consistency, correctness, and accessibility.",
+      "Sources": "S024; S002; S006; S035",
+      "Thesis_Section": "Methods",
+      "How_to_use": "Use these as coding dimensions in signature_manipulation_table."
+    },
+    {
+      "Claim_ID": "C19",
+      "Type": "Nonlinear information effect",
+      "Claim": "Cognitive/emotional response to information clarity/intensity may be nonlinear, supporting a planned middle-peak contrast.",
+      "Sources": "S003; S013; S027",
+      "Thesis_Section": "Hypotheses",
+      "How_to_use": "Adjacent support; the S2 contrast is still your empirical test."
+    },
+    {
+      "Claim_ID": "C20",
+      "Type": "Event specificity",
+      "Claim": "Signature effects should be strongest around sign_readable and decision_point_enter, not necessarily across whole trials.",
+      "Sources": "S027; S041; S025; S039",
+      "Thesis_Section": "Analysis",
+      "How_to_use": "Use event-level mixed models."
+    }
+  ],
+  "mechanisms": [
+    {
+      "Mechanism_ID": "M01",
+      "Mechanism": "Attention capture",
+      "Plain_Explanation": "Signs, audio cues, visual messages, and landmarks first compete for attention. If the participant does not attend to the cue, downstream comprehension/compliance cannot happen.",
+      "Metro_Variables": "sign_visible_enter; sign_readable; decision_look_left/right; head_yaw_rate; scan_both_sides; audio_play",
+      "Sources": "S020; S025; S034; S041; S043",
+      "Analysis_Implication": "Model sign perception separately from compliance."
+    },
+    {
+      "Mechanism_ID": "M02",
+      "Mechanism": "Information modality switching",
+      "Plain_Explanation": "Initial auditory vs text information changes how later text signs are processed. Switching modalities can increase re-confirmation and fixation duration.",
+      "Metro_Variables": "audio condition; initial_instruction_modality; modality_consistency; time_since_last_audio_play",
+      "Sources": "S020; S039",
+      "Analysis_Implication": "Treat Audio as cognitive/modality factor and test sensitivity windows."
+    },
+    {
+      "Mechanism_ID": "M03",
+      "Mechanism": "Wayfinding uncertainty",
+      "Plain_Explanation": "Uncertainty appears when cues are incomplete, conflicting, hard to interpret, or decision point complexity is high. EEG and behavior can both index this state.",
+      "Metro_Variables": "dwell; scan_both_sides; u_turn; backtrack; theta/alpha; frontal theta; posterior alpha",
+      "Sources": "S027; S028; S046; S047",
+      "Analysis_Implication": "Core mechanism for Signature2."
+    },
+    {
+      "Mechanism_ID": "M04",
+      "Mechanism": "Confirmation cost",
+      "Plain_Explanation": "When users are not confident, they re-check signs/routes, slow down, scan both sides, or hesitate before moving.",
+      "Metro_Variables": "decision_dwell_time; sign_readable_to_movement; reconfirmation_behavior; fixation_proxy",
+      "Sources": "S039; S041; S047",
+      "Analysis_Implication": "Operationalize as behavioral load."
+    },
+    {
+      "Mechanism_ID": "M05",
+      "Mechanism": "Compliance gap",
+      "Plain_Explanation": "Even after detecting a sign, users may not follow it due to low reliability, conflicting cues, familiarity, risk/social influence, or poor clarity.",
+      "Metro_Variables": "sign_detected; sign_readable; sign_complied; actual_exit_direction; route_indicated_by_sign",
+      "Sources": "S041; S043; S035; S042",
+      "Analysis_Implication": "Create sign_compliance_events.csv."
+    },
+    {
+      "Mechanism_ID": "M06",
+      "Mechanism": "Decision point complexity",
+      "Plain_Explanation": "More branches, similar-looking alternatives, angular ambiguity, weak landmarks, and low openness increase decision load.",
+      "Metro_Variables": "branch_count; angular_deviation; visual_similarity; visual_openness; landmark_salience",
+      "Sources": "S046; S021",
+      "Analysis_Implication": "Create decision_points.csv and test interaction with Signature."
+    },
+    {
+      "Mechanism_ID": "M07",
+      "Mechanism": "Spatial knowledge/familiarity",
+      "Plain_Explanation": "Prior exposure or familiar routes can reduce reliance on signs or bias attention away from emergency exits.",
+      "Metro_Variables": "trial_order; first_time_map_exposure; familiar_route_available; map familiarity",
+      "Sources": "S034; S043; S036; S037",
+      "Analysis_Implication": "Control TrialOrder and measure SOD/strategy."
+    },
+    {
+      "Mechanism_ID": "M08",
+      "Mechanism": "Dynamic hazard/risk",
+      "Plain_Explanation": "Smoke/fire/dynamic route blocking changes route utility and may make static signage misleading.",
+      "Metro_Variables": "hazard_presence; route_risk_level; smoke; dynamic_signage",
+      "Sources": "S023; S033; S042",
+      "Analysis_Implication": "Future work or limitation."
+    }
+  ],
+  "hypotheses": [
+    {
+      "Hypothesis_ID": "H1",
+      "Hypothesis": "Middle-peak EEG load",
+      "Prediction": "Signature2 will show higher EEG_Load than Signature1 and Signature3, tested by planned contrast [-1, 2, -1].",
+      "Data_Table": "trial_features",
+      "Model_Formula": "EEG_Load ~ Signature + Metro + Audio + TrialOrder + (1|Subject)",
+      "Sources": "S027; S013; S003",
+      "Note": "Primary hypothesis; be cautious."
+    },
+    {
+      "Hypothesis_ID": "H2",
+      "Hypothesis": "Event-specific uncertainty",
+      "Prediction": "The Signature2 effect will be stronger around decision_point_enter and sign_readable than across whole-trial averages.",
+      "Data_Table": "event_features",
+      "Model_Formula": "EEG_Load ~ Signature*EventType + Metro + Audio + speed + headYaw + (1|Subject)+(1|Trial)",
+      "Sources": "S027; S041; S025",
+      "Note": "Mechanism test."
+    },
+    {
+      "Hypothesis_ID": "H3",
+      "Hypothesis": "Behavioral confirmation cost",
+      "Prediction": "Signature2 will increase decision dwell, scan_both_sides, u-turn/backtrack, and sign-to-movement latency.",
+      "Data_Table": "event_features/sign_compliance_events",
+      "Model_Formula": "Behavior_Load ~ Signature + Metro + Audio + complexity + (1|Subject)",
+      "Sources": "S039; S041; S047",
+      "Note": "Auxiliary behavioral evidence."
+    },
+    {
+      "Hypothesis_ID": "H4",
+      "Hypothesis": "Complexity moderation",
+      "Prediction": "Signature2 effect will be larger at high-complexity decision points.",
+      "Data_Table": "decision_points + event_features",
+      "Model_Formula": "EEG_Load ~ Signature*DecisionComplexity + controls + random effects",
+      "Sources": "S046; S021",
+      "Note": "Strong design insight."
+    },
+    {
+      "Hypothesis_ID": "H5",
+      "Hypothesis": "Audio/modality sensitivity",
+      "Prediction": "Epochs near audio_play may differ in load/attention and should be modeled or excluded in sensitivity analyses.",
+      "Data_Table": "event_features",
+      "Model_Formula": "Add audio_overlap_2s or exclude +/-2s audio windows",
+      "Sources": "S020; S039",
+      "Note": "Quality control and interpretation."
+    },
+    {
+      "Hypothesis_ID": "H6",
+      "Hypothesis": "Compliance mediation",
+      "Prediction": "Signature differences in route choice should be partly explained by sign perception/readability and compliance, not just by Signature label.",
+      "Data_Table": "sign_compliance_events",
+      "Model_Formula": "Compliance ~ SignReadable + Signature + Complexity + Audio + (1|Subject)",
+      "Sources": "S041; S043",
+      "Note": "Prevents overinterpretation of sign_readable."
+    }
+  ],
+  "qa": [
+    {
+      "Question_ID": "Q01",
+      "Question": "Why do you expect Signature2 to be highest?",
+      "Answer": "Not because “medium information is inherently worse.” The mechanism is that Signature2 may provide enough information to require active interpretation but not enough redundancy to resolve uncertainty quickly. That should increase confirmation cost, scanning, dwell, and EEG load, especially at decision points.",
+      "Sources": "S013; S027; S039; S041; S046; S047"
+    },
+    {
+      "Question_ID": "Q02",
+      "Question": "What if Signature2 is not highest?",
+      "Answer": "Then the result still informs signage design. We would test whether load instead tracks information density, decision complexity, audio overlap, or map-specific difficulty. The hypothesis is a planned contrast, not a guaranteed result.",
+      "Sources": "S046; S047; S041"
+    },
+    {
+      "Question_ID": "Q03",
+      "Question": "Why use EEG?",
+      "Answer": "Because the project asks about cognitive load/uncertainty during navigation, not only completion performance. Prior VR wayfinding work shows EEG spectral features can identify uncertainty states; in Metro Rescue, event-locked markers allow us to localize load around sign reading and decision points.",
+      "Sources": "S027; S012; S029"
+    },
+    {
+      "Question_ID": "Q04",
+      "Question": "Why is sign_readable not enough?",
+      "Answer": "Readable range only means the participant is in a technical condition where the sign could be read. The literature separates perception and compliance; people may see a sign but not follow it, or may fail to attend to the relevant sign despite visibility.",
+      "Sources": "S041; S043; S007"
+    },
+    {
+      "Question_ID": "Q05",
+      "Question": "What is the role of Audio?",
+      "Answer": "Audio is a controlled condition but also a cognitive/modality factor. Auditory information can alter attention and later processing of visual/text signage; therefore audio_play events need to be modeled or excluded around visual decision epochs.",
+      "Sources": "S020; S039"
+    },
+    {
+      "Question_ID": "Q06",
+      "Question": "Why VR metro?",
+      "Answer": "VR allows controlled, repeatable, safe manipulation of signage, pressure, audio, and layout. Metro/subway VR studies already show pressure affects spatial knowledge and signage reliance, so the context is methodologically defensible.",
+      "Sources": "S011; S034; S039; S020"
+    },
+    {
+      "Question_ID": "Q07",
+      "Question": "How will you prove the Signature manipulation worked?",
+      "Answer": "I will not rely on labels alone. I will build a signature_manipulation_table with information density, arrow count, exit count, redundancy, ambiguity, clarity, continuity, and decision relevance, plus post-trial ratings of clarity/reliability/overload and behavioral errors.",
+      "Sources": "S024; S047; S041; S035"
+    },
+    {
+      "Question_ID": "Q08",
+      "Question": "What are the biggest threats to validity?",
+      "Answer": "Unclear Signature manipulation, EEG movement artifacts, audio overlap with visual epochs, map-specific effects, trial order/familiarity, and interpreting behavior as cognitive load without EEG support. Each has a planned control or sensitivity analysis.",
+      "Sources": "S027; S034; S039; S046"
+    },
+    {
+      "Question_ID": "Q09",
+      "Question": "Why not just analyze completion time?",
+      "Answer": "Completion time collapses perception, decision, movement, and errors into one outcome. Metro Rescue has markers that allow event-level analysis of sign reading and decision-making; this is more aligned with the mechanism.",
+      "Sources": "S041; S027; S025"
+    },
+    {
+      "Question_ID": "Q10",
+      "Question": "What makes this project original?",
+      "Answer": "It combines controlled VR metro signage manipulation, precise Unity/LSL event markers, EEG workload/uncertainty features, and behavior traces to test how signage information design shapes decision uncertainty rather than only evacuation time.",
+      "Sources": "S027; S034; S039; S041"
+    }
+  ],
+  "analysis_models": [
+    {
+      "Model_ID": "A01",
+      "Purpose": "Trial EEG model",
+      "Data_Table": "trial_features.csv",
+      "Model_Formula": "EEG_Load ~ Signature + Metro + Audio + TrialOrder + (1|Subject)",
+      "Interpretation": "Main planned contrast: S2 vs S1, S2 vs S3, [-1,2,-1]."
+    },
+    {
+      "Model_ID": "A02",
+      "Purpose": "Event EEG model",
+      "Data_Table": "event_features.csv",
+      "Model_Formula": "EEG_Load ~ Signature*EventType + Metro + Audio + MovementSpeed + HeadYawRate + (1|Subject)+(1|Trial)",
+      "Interpretation": "Tests whether effects occur at sign/decision events."
+    },
+    {
+      "Model_ID": "A03",
+      "Purpose": "Compliance model",
+      "Data_Table": "sign_compliance_events.csv",
+      "Model_Formula": "SignComplied ~ SignReadable + Signature + DecisionComplexity + Audio + TrialOrder + (1|Subject)",
+      "Interpretation": "Separates readable from obeyed."
+    },
+    {
+      "Model_ID": "A04",
+      "Purpose": "Behavior load model",
+      "Data_Table": "trial_features/event_features",
+      "Model_Formula": "Behavior_Load ~ Signature + Metro + Audio + DecisionComplexity + (1|Subject)",
+      "Interpretation": "Behavioral evidence for confirmation cost."
+    },
+    {
+      "Model_ID": "A05",
+      "Purpose": "Audio sensitivity",
+      "Data_Table": "event_features.csv",
+      "Model_Formula": "Repeat event EEG after excluding epochs within +/-2s of audio_play",
+      "Interpretation": "Checks modality/audio confound."
+    },
+    {
+      "Model_ID": "A06",
+      "Purpose": "Complexity moderation",
+      "Data_Table": "event_features + decision_points",
+      "Model_Formula": "EEG_Load ~ Signature*DecisionComplexity + Metro + Audio + controls + random effects",
+      "Interpretation": "Tests whether S2 is especially difficult at complex decision points."
+    },
+    {
+      "Model_ID": "A07",
+      "Purpose": "Within-subject contrasts",
+      "Data_Table": "trial_features.csv",
+      "Model_Formula": "Diff21 = Load(S2)-Load(S1); Diff23 = Load(S2)-Load(S3)",
+      "Interpretation": "Visualize paired subject-level differences."
+    },
+    {
+      "Model_ID": "A08",
+      "Purpose": "Exploratory ML",
+      "Data_Table": "event_features + sign_compliance_events",
+      "Model_Formula": "RF/XGBoost predicting high uncertainty or non-compliance; SHAP/PDP interpretation",
+      "Interpretation": "Exploratory only unless preregistered."
+    }
+  ],
+  "data_tables": [
+    {
+      "Table": "signature_manipulation_table.csv",
+      "Unit": "One row per sign face or sign object",
+      "Key_Fields": "map, signature, sign_id, face, enabled, texture, message, information_density, exit_count, arrow_count, redundancy, ambiguity, clarity, continuity, conspicuity, decision_relevance",
+      "Purpose": "Proves Signature manipulation is real and traceable."
+    },
+    {
+      "Table": "decision_points.csv",
+      "Unit": "One row per decision point and optionally per entry-exit pair",
+      "Key_Fields": "map, decision_point_id, entry_direction, possible_exit_direction, branch_count, angular_deviation, visual_similarity, visual_openness, landmark_salience, nearest_sign_id, complexity_score",
+      "Purpose": "Allows decision complexity to moderate Signature effects."
+    },
+    {
+      "Table": "sign_compliance_events.csv",
+      "Unit": "One row per sign/decision opportunity",
+      "Key_Fields": "subject_id, trial_id, sign_id, decision_point_id, sign_visible, sign_readable, route_indicated_by_sign, actual_exit_direction, sign_complied, dwell_after_readable, scan_after_readable, reconfirmation_behavior",
+      "Purpose": "Separates perception from compliance."
+    },
+    {
+      "Table": "event_features.csv",
+      "Unit": "One row per EEG/behavior event epoch",
+      "Key_Fields": "subject_id, trial_id, event_type, event_time, signature, metro, audio, EEG theta/alpha features, MovementSpeed, HeadYawRate, audio_overlap_2s, complexity_score",
+      "Purpose": "Feeds event-locked EEG models."
+    },
+    {
+      "Table": "trial_features.csv",
+      "Unit": "One row per trial",
+      "Key_Fields": "subject_id, trial_id, metro, signature, audio, trial_order, completion_time, path_length, path_efficiency, Behavior_Load, EEG_Load, QC flags",
+      "Purpose": "Feeds primary trial-level model."
+    },
+    {
+      "Table": "subject_covariates.csv",
+      "Unit": "One row per participant",
+      "Key_Fields": "subject_id, age_group, gender_if_collected, VR_experience, gaming_experience, sense_of_direction, route_vs_survey_strategy, risk_preference, subway_familiarity",
+      "Purpose": "Controls individual differences."
+    }
+  ],
+  "risks_and_fixes": [
+    {
+      "Risk_ID": "R01",
+      "Risk": "Signature manipulation is not auditable",
+      "Why_it_matters": "Reviewer asks what exactly differs between S1/S2/S3.",
+      "Fix": "Build signature_manipulation_table with sign/face-level variables and manipulation-check survey.",
+      "Sources": "S024; S047; S041"
+    },
+    {
+      "Risk_ID": "R02",
+      "Risk": "sign_readable overinterpreted",
+      "Why_it_matters": "Readable range is mistaken as comprehension/compliance.",
+      "Fix": "Use perception-compliance model and sign_compliance_events table.",
+      "Sources": "S041; S043; S007"
+    },
+    {
+      "Risk_ID": "R03",
+      "Risk": "EEG polluted by movement/head turns",
+      "Why_it_matters": "VR navigation introduces motion artifacts.",
+      "Fix": "Control MovementSpeed and HeadYawRate; exclude noisy epochs; report QC.",
+      "Sources": "S027; S012; S029"
+    },
+    {
+      "Risk_ID": "R04",
+      "Risk": "Audio confounds visual decision epochs",
+      "Why_it_matters": "audio_play near sign_readable/decision_point affects EEG.",
+      "Fix": "Add audio_overlap_2s flag and sensitivity exclusion.",
+      "Sources": "S020; S039"
+    },
+    {
+      "Risk_ID": "R05",
+      "Risk": "Map drives effect",
+      "Why_it_matters": "Signature2 effect may be caused by one Metro map.",
+      "Fix": "Model Metro and Signature*Metro; plot by map.",
+      "Sources": "S046; S034"
+    },
+    {
+      "Risk_ID": "R06",
+      "Risk": "TrialOrder/familiarity drives effect",
+      "Why_it_matters": "Participants learn across trials.",
+      "Fix": "Include TrialOrder and first-time exposure; within-subject plots.",
+      "Sources": "S034; S043"
+    },
+    {
+      "Risk_ID": "R07",
+      "Risk": "Behavior load treated as neural load",
+      "Why_it_matters": "Behavioral hesitation may reflect strategy, not load.",
+      "Fix": "Use behavior as auxiliary evidence; EEG remains primary.",
+      "Sources": "S027; S025"
+    }
+  ],
+  "writing_blocks": [
+    {
+      "Block_ID": "W01",
+      "Use": "Introduction gap",
+      "Draft_Text": "Most evacuation signage studies evaluate whether signs improve route choice or evacuation efficiency, but fewer studies examine the cognitive process through which evacuees perceive, interpret, re-confirm, and comply with guidance information at specific decision points. Metro Rescue addresses this gap by synchronizing Unity behavioral markers with EEG features in a controlled virtual metro evacuation task."
+    },
+    {
+      "Block_ID": "W02",
+      "Use": "Theory paragraph",
+      "Draft_Text": "In this project, signage is treated as an environmental information system rather than a passive visual object. Its effect depends on whether the participant attends to it, whether the message is clear and consistent with prior information, whether the decision point is structurally and visually complex, and whether the participant needs additional confirmation before committing to a route."
+    },
+    {
+      "Block_ID": "W03",
+      "Use": "Signature2 hypothesis paragraph",
+      "Draft_Text": "The expected middle-peak effect of Signature2 is based on a confirmation-cost mechanism. A medium level of guidance may be sufficient to attract attention and require interpretation, yet insufficiently redundant to resolve route uncertainty immediately. Under this condition, participants may show longer decision dwell, more scanning, more backtracking or u-turns, and higher event-locked EEG workload than in lower- or higher-redundancy conditions."
+    },
+    {
+      "Block_ID": "W04",
+      "Use": "Method rationale",
+      "Draft_Text": "The experiment logs sign visibility, sign readability, decision-point entry/exit, scanning, dwell, u-turns, backtracking, audio events, and evacuation completion. These markers allow the analysis to distinguish sign exposure from sign compliance and to align EEG epochs with theoretically meaningful events."
+    },
+    {
+      "Block_ID": "W05",
+      "Use": "Analysis paragraph",
+      "Draft_Text": "The primary trial-level model will estimate the effect of Signature while controlling Metro, Audio, TrialOrder, and Subject. Event-level models will test whether Signature effects are concentrated around sign_readable and decision_point_enter events, while controlling movement speed and head-yaw rate to reduce motion-related confounding in EEG features."
+    },
+    {
+      "Block_ID": "W06",
+      "Use": "Limitations paragraph",
+      "Draft_Text": "The VR environment provides experimental control but cannot fully reproduce the social, emotional, and sensory conditions of real emergencies. In addition, sign readability is operationalized by distance and facing-side logic, which simplifies actual visual perception. These limitations are addressed by treating readability as a prerequisite for perception rather than as evidence of comprehension or compliance."
+    }
+  ],
+  "quote_anchors": [
+    {
+      "Source_ID": "S006",
+      "Page_Target": "p.1 abstract",
+      "Short_Original_Anchor": "wider ground sign spacing reduces route adherence",
+      "Use": "Signage spacing/continuity claim",
+      "Task": "Verify exact page before final thesis quote"
+    },
+    {
+      "Source_ID": "S007",
+      "Page_Target": "p.1 abstract",
+      "Short_Original_Anchor": "angle of interaction affects the evacuees’ chosen direction",
+      "Use": "Angle/visible-area claim",
+      "Task": "Use short quote only"
+    },
+    {
+      "Source_ID": "S013",
+      "Page_Target": "p.1 abstract",
+      "Short_Original_Anchor": "excessive information provided by these new methods results in cognitive overload",
+      "Use": "Information overload claim",
+      "Task": "Good theory quote"
+    },
+    {
+      "Source_ID": "S020",
+      "Page_Target": "p.1 abstract",
+      "Short_Original_Anchor": "visual attention shift interventions reduce the likelihood of re-engaging",
+      "Use": "Audio/visual cue claim",
+      "Task": "Good metro cue quote"
+    },
+    {
+      "Source_ID": "S021",
+      "Page_Target": "p.1 abstract",
+      "Short_Original_Anchor": "none of the investigated factors dominated the others",
+      "Use": "Multi-attribute exit choice",
+      "Task": "Use for route choice model"
+    },
+    {
+      "Source_ID": "S025",
+      "Page_Target": "p.1 abstract",
+      "Short_Original_Anchor": "visual attention is positively related to their wayfinding choices",
+      "Use": "Attention-route choice claim",
+      "Task": "Core quote"
+    },
+    {
+      "Source_ID": "S027",
+      "Page_Target": "p.1 abstract",
+      "Short_Original_Anchor": "EEG data can potentially be used as a metric for identifying navigational uncertainty states",
+      "Use": "EEG uncertainty rationale",
+      "Task": "Core quote"
+    },
+    {
+      "Source_ID": "S028",
+      "Page_Target": "p.1 abstract",
+      "Short_Original_Anchor": "likelihood of people choosing the exit indicated by enhanced signage or majority... over 18 times higher",
+      "Use": "Wayfinding decision theory",
+      "Task": "Exact wording may need check"
+    },
+    {
+      "Source_ID": "S034",
+      "Page_Target": "p.1 abstract",
+      "Short_Original_Anchor": "spatial knowledge was less grasped under pressure",
+      "Use": "Subway pressure/signage reliance",
+      "Task": "Core metro quote"
+    },
+    {
+      "Source_ID": "S039",
+      "Page_Target": "p.1 abstract",
+      "Short_Original_Anchor": "modality consistency reduced re-confirmation behaviors and signage fixation durations",
+      "Use": "Audio/text modality mechanism",
+      "Task": "Core quote"
+    },
+    {
+      "Source_ID": "S041",
+      "Page_Target": "p.2 intro",
+      "Short_Original_Anchor": "perception-compliance model",
+      "Use": "Split perception and compliance",
+      "Task": "Find exact sentence if thesis quotes"
+    },
+    {
+      "Source_ID": "S043",
+      "Page_Target": "p.1 abstract",
+      "Short_Original_Anchor": "Failure to notice an emergency exit door is a key contributor",
+      "Use": "Attention/familiarity/exit choice",
+      "Task": "Core quote"
+    },
+    {
+      "Source_ID": "S046",
+      "Page_Target": "p.1 abstract",
+      "Short_Original_Anchor": "decision-making complexity... based on specific passing branches",
+      "Use": "Decision complexity adaptation",
+      "Task": "Core quote"
+    },
+    {
+      "Source_ID": "S047",
+      "Page_Target": "p.1 abstract",
+      "Short_Original_Anchor": "Route directions resulted in fewer wayfinding errors",
+      "Use": "Manipulation check/direction quality",
+      "Task": "Core quote"
+    }
+  ]
+}

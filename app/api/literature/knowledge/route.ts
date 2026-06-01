@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
+import { getSeedKnowledgeStats } from "@/lib/knowledgeBase";
 import { encodeLiteratureCard, isLiteratureDocument, parseLiteratureCard, type LiteratureKnowledgeCard } from "@/lib/literature";
 import { getSupabaseServerClient, type ResearchDocument } from "@/lib/supabase";
 
@@ -26,6 +27,7 @@ export async function GET(request: Request) {
 
   const documents = ((data ?? []) as ResearchDocument[]).filter(isLiteratureDocument);
   return NextResponse.json({
+    seedStats: getSeedKnowledgeStats(),
     cards: documents.map((document) => ({
       document,
       card: parseLiteratureCard(document.notes),
@@ -147,11 +149,11 @@ async function buildKnowledgeCard(apiKey: string, document: ResearchDocument, ex
       {
         role: "system",
         content:
-          "You build structured bilingual literature knowledge cards for a thesis knowledge base. Return only valid JSON. Do not invent bibliographic details that are missing from the text; use '未识别' when uncertain.",
+          "You build structured bilingual literature knowledge cards for a thesis knowledge base. Return only valid JSON. Do not invent bibliographic details, page numbers, results, or quotations that are missing from the text; use '未识别' when uncertain. Be conservative and include boundaries under doNotClaim.",
       },
       {
         role: "user",
-        content: `Create a Chinese-first knowledge card for this paper. The thesis project is about VR subway evacuation wayfinding, EEG cognitive load, Unity marker streams, signage density/design, and mixed-effects analysis.\n\nFilename: ${document.filename}\nMIME: ${document.mime_type ?? "unknown"}\nExtracted text:\n${textForModel || "(No text could be extracted; use only filename and state limitations.)"}\n\nReturn JSON with exactly these keys: title, citation, researchQuestion, methods, participants, taskAndMaterials, eegOrMeasures, keyFindings, limitations, relevanceToMetroRescue, usableForSections, keywords, evidenceLevel. Arrays must be arrays of short Chinese strings.`,
+        content: `Create a Chinese-first knowledge card for this paper, following the same logic as the Metro Rescue source-card knowledge base: extract what the paper can support, where it can be used, what must not be overclaimed, and which quote/page anchors need later verification.\n\nThe thesis project is about VR subway evacuation wayfinding, EEG cognitive load, Unity marker streams, signage density/design, and mixed-effects analysis.\n\nFilename: ${document.filename}\nMIME: ${document.mime_type ?? "unknown"}\nExtracted text:\n${textForModel || "(No text could be extracted; use only filename and state limitations.)"}\n\nReturn JSON with exactly these keys: title, citation, researchQuestion, methods, participants, taskAndMaterials, eegOrMeasures, keyFindings, limitations, relevanceToMetroRescue, usableForSections, keywords, evidenceLevel, sourceGrade, themeTags, doNotClaim, candidateClaims, quoteAnchorsToVerify. Arrays must be arrays of short Chinese strings. sourceGrade should be A/B/C/未识别 based on relevance and evidence strength for this thesis, not journal prestige.`,
       },
     ],
     text: {
@@ -175,6 +177,11 @@ async function buildKnowledgeCard(apiKey: string, document: ResearchDocument, ex
             "usableForSections",
             "keywords",
             "evidenceLevel",
+            "sourceGrade",
+            "themeTags",
+            "doNotClaim",
+            "candidateClaims",
+            "quoteAnchorsToVerify",
           ],
           properties: {
             title: { type: "string" },
@@ -190,6 +197,11 @@ async function buildKnowledgeCard(apiKey: string, document: ResearchDocument, ex
             usableForSections: { type: "array", items: { type: "string" } },
             keywords: { type: "array", items: { type: "string" } },
             evidenceLevel: { type: "string" },
+            sourceGrade: { type: "string" },
+            themeTags: { type: "array", items: { type: "string" } },
+            doNotClaim: { type: "array", items: { type: "string" } },
+            candidateClaims: { type: "array", items: { type: "string" } },
+            quoteAnchorsToVerify: { type: "array", items: { type: "string" } },
           },
         },
       },
@@ -198,7 +210,7 @@ async function buildKnowledgeCard(apiKey: string, document: ResearchDocument, ex
 
   const raw = JSON.parse(response.output_text) as Omit<LiteratureKnowledgeCard, "version" | "documentId" | "filename" | "createdAt">;
   return {
-    version: 1,
+    version: 2,
     documentId: document.id,
     filename: document.filename,
     createdAt: new Date().toISOString(),

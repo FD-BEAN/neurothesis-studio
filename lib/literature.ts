@@ -3,7 +3,7 @@ import type { ResearchDocument } from "@/lib/supabase";
 export const LITERATURE_CARD_PREFIX = "NT_KB_V1::";
 
 export type LiteratureKnowledgeCard = {
-  version: 1;
+  version: 1 | 2;
   documentId: string;
   filename: string;
   title: string;
@@ -19,6 +19,11 @@ export type LiteratureKnowledgeCard = {
   usableForSections: string[];
   keywords: string[];
   evidenceLevel: string;
+  sourceGrade?: string;
+  themeTags?: string[];
+  doNotClaim?: string[];
+  candidateClaims?: string[];
+  quoteAnchorsToVerify?: string[];
   createdAt: string;
 };
 
@@ -30,7 +35,7 @@ export function parseLiteratureCard(notes: string | null | undefined): Literatur
   if (!notes?.startsWith(LITERATURE_CARD_PREFIX)) return null;
   try {
     const parsed = JSON.parse(notes.slice(LITERATURE_CARD_PREFIX.length)) as LiteratureKnowledgeCard;
-    return parsed?.version === 1 ? parsed : null;
+    return parsed?.version === 1 || parsed?.version === 2 ? parsed : null;
   } catch {
     return null;
   }
@@ -45,4 +50,3 @@ export function getDocumentExtension(filename: string) {
   const dotIndex = filename.lastIndexOf(".");
   return dotIndex >= 0 ? filename.slice(dotIndex + 1).toLowerCase() : "";
 }
-
