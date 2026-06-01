@@ -16,6 +16,7 @@
 - 场景与标识配置索引
 - LSL marker / EEG 同步逻辑
 - LabRecorder XDF 质量检查脚本
+- 上传文件后的后台分析摘要、统计表和图表预览
 - 材料一致性提醒
 
 ## 项目 Wiki
@@ -51,6 +52,16 @@ python scripts\xdf_qc.py C:\path\to\file.xdf
 ```
 
 脚本会检查 stream 数量、Mitsar EEG、MetroRescueMarkers、session 切分、开始/完成 marker 是否齐全。原始 `.xdf` 不要提交到 GitHub。
+
+## 后台数据分析
+
+登录后在研究资料库中选择文件，点击 `生成分析摘要`。当前在线分析支持：
+
+- CSV / TSV：行列数、数值变量摘要、分类变量分布、坐标散点图。
+- JSON / JSONL：将对象数组转成表格后生成摘要。
+- SVG：检查图形元素和可读范围图例。
+- Markdown / TXT：文本规模和研究关键词频次。
+- XDF：先生成质控入口说明；正式二进制解析需要本地 `scripts/xdf_qc.py` 或后续 Python worker。
 
 ## Supabase 设置
 

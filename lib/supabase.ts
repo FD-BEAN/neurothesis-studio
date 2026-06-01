@@ -35,7 +35,7 @@ export function getSupabaseBrowserClient() {
   return browserClient;
 }
 
-export function getSupabaseServerClient() {
+export function getSupabaseServerClient(accessToken?: string) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const publishableKey = getSupabasePublishableKey();
 
@@ -48,6 +48,13 @@ export function getSupabaseServerClient() {
       persistSession: false,
       autoRefreshToken: false,
     },
+    global: accessToken
+      ? {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      : undefined,
   });
 }
 

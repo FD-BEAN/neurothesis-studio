@@ -169,6 +169,25 @@ XDF 测试数据：
 - 增加或保留 XDF 质控入口，用于判断一个文件是否能进入正式 EEG 预处理。
 - 不把 `.xdf`、未公开论文、真实实验日志提交到 GitHub；只保存脚本、schema、wiki 和 UI。
 
+## 后台数据分析模块
+
+第一版在线分析采用确定性解析，不自动把上传文件内容发送给 OpenAI：
+
+- API route: `/api/data/analyze`
+- 权限：使用当前 Supabase access token 读取 `research_documents` 和 private Storage，保持 RLS 生效。
+- CSV / TSV：输出行列数、数值字段摘要、分类字段分布、坐标散点图；对 `map`、`signature`、`x`、`z`、`clear_radius_m` 等字段做 Metro Rescue 口径识别。
+- JSON / JSONL：把对象数组转成表格后走同一套分析。
+- SVG：检查 circle/text/title 元素数量和 0-8m / 8-12m 图例。
+- Markdown / TXT：统计文本规模和 EEG / VR / Unity / LSL / Signature 等关键词频次。
+- XDF：线上 Node route 只识别类型并提示质控路径；真正解析 XDF 需要 `scripts/xdf_qc.py`、Python worker、或独立分析服务。
+
+后续如果要支持 XDF 在线图表，建议路线是：
+
+1. 上传 XDF 后只存原文件，不直接进 OpenAI。
+2. 后端任务调用 Python worker 运行 `scripts/xdf_qc.py`。
+3. 把 JSON 质控结果保存到数据库，例如 `research_analysis_reports`。
+4. 前端展示 stream 表、session 表、event count、marker 时间轴和 EEG 时长概览。
+
 ## 已发现的研究口径问题
 
 场景图图例半径口径已经基本统一：

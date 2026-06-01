@@ -12,6 +12,37 @@ type AiState = {
   output: string;
 };
 
+type AnalysisState = {
+  status: "idle" | "loading" | "done" | "error";
+  report: DataAnalysisReport | null;
+  error: string;
+};
+
+type DataAnalysisReport = {
+  title: string;
+  kind: string;
+  summary: string;
+  metrics: Array<{ label: string; value: string; text?: string }>;
+  charts: Array<
+    | {
+        type: "bar";
+        title: string;
+        xLabel: string;
+        yLabel: string;
+        data: Array<{ label: string; value: number }>;
+      }
+    | {
+        type: "scatter";
+        title: string;
+        xLabel: string;
+        yLabel: string;
+        data: Array<{ label: string; x: number; y: number; group?: string }>;
+      }
+  >;
+  tables: Array<{ title: string; columns: string[]; rows: string[][] }>;
+  notes: string[];
+};
+
 const thesisKeywords = researchProject.keywords;
 
 const workspaceModules = [
@@ -253,10 +284,19 @@ function Workspace({
     metroAiPrompt,
   );
   const [aiState, setAiState] = useState<AiState>({ status: "idle", output: "" });
+  const [analysisState, setAnalysisState] = useState<AnalysisState>({
+    status: "idle",
+    report: null,
+    error: "",
+  });
 
   useEffect(() => {
     void loadDocuments();
   }, []);
+
+  useEffect(() => {
+    setAnalysisState({ status: "idle", report: null, error: "" });
+  }, [selectedDocument?.id]);
 
   const groupedDocuments = useMemo(
     () =>
@@ -367,6 +407,35 @@ function Workspace({
     }
 
     setAiState({ status: "done", output: payload.output ?? "" });
+  }
+
+  async function runDataAnalysis() {
+    if (!selectedDocument) {
+      setAnalysisState({ status: "error", report: null, error: "请先在研究资料库中选择一个文件。" });
+      return;
+    }
+
+    setAnalysisState({ status: "loading", report: null, error: "" });
+
+    const response = await fetch("/api/data/analyze", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        documentId: selectedDocument.id,
+      }),
+    });
+
+    const payload = (await response.json()) as { report?: DataAnalysisReport; error?: string };
+
+    if (!response.ok || !payload.report) {
+      setAnalysisState({ status: "error", report: null, error: payload.error ?? "数据分析失败。" });
+      return;
+    }
+
+    setAnalysisState({ status: "done", report: payload.report, error: "" });
   }
 
   async function signOut() {
@@ -553,6 +622,9 @@ function Workspace({
               >
                 打开文件
               </button>
+              <button className="primary-button" disabled={!selectedDocument} onClick={runDataAnalysis}>
+                生成分析摘要
+              </button>
             </section>
           </div>
         </section>
@@ -597,12 +669,16 @@ function Workspace({
               <p className="eyebrow">数据分析与论文写作</p>
               <h2>分析产物与写作材料</h2>
             </div>
+            <button className="primary-button" disabled={!selectedDocument || analysisState.status === "loading"} onClick={runDataAnalysis}>
+              {analysisState.status === "loading" ? "分析中..." : "分析当前文件"}
+            </button>
           </div>
           <div className="workflow-list">
             {analysisModules.map((module) => (
               <PipelineCard key={module.title} title={module.title} text={module.text} />
             ))}
           </div>
+          <AnalysisResultPanel state={analysisState} selectedDocument={selectedDocument} />
         </section>
       </section>
     </main>
@@ -756,6 +832,185 @@ function PipelineCard({ title, text }: { title: string; text: string }) {
   );
 }
 
+function AnalysisResultPanel({
+  state,
+  selectedDocument,
+}: {
+  state: AnalysisState;
+  selectedDocument: ResearchDocument | null;
+}) {
+  if (state.status === "idle") {
+    return (
+      <section className="work-panel analysis-panel">
+        <p className="eyebrow">当前文件分析</p>
+        <h3>{selectedDocument ? selectedDocument.filename : "尚未选择文件"}</h3>
+        <p className="muted">
+          选择研究资料库中的 CSV、JSON、JSONL、SVG、Markdown 或 XDF 文件后，可以生成结构化摘要、统计表和图形预览。
+        </p>
+      </section>
+    );
+  }
+
+  if (state.status === "loading") {
+    return (
+      <section className="work-panel analysis-panel">
+        <p className="eyebrow">当前文件分析</p>
+        <h3>正在分析...</h3>
+        <p className="muted">后台正在读取私有文件并生成摘要。</p>
+      </section>
+    );
+  }
+
+  if (state.status === "error") {
+    return (
+      <section className="work-panel analysis-panel">
+        <p className="eyebrow">当前文件分析</p>
+        <h3>分析失败</h3>
+        <p className="auth-error">{state.error}</p>
+      </section>
+    );
+  }
+
+  const report = state.report;
+  if (!report) return null;
+
+  return (
+    <section className="work-panel analysis-panel">
+      <div className="analysis-head">
+        <div>
+          <p className="eyebrow">{report.kind}</p>
+          <h3>{report.title}</h3>
+        </div>
+        <span className="status-pill compact">后台分析结果</span>
+      </div>
+      <p className="summary-text compact-text">{report.summary}</p>
+
+      <div className="analysis-metric-grid">
+        {report.metrics.map((metric) => (
+          <article className="analysis-metric" key={metric.label}>
+            <span>{metric.label}</span>
+            <strong>{metric.value}</strong>
+            {metric.text ? <p>{metric.text}</p> : null}
+          </article>
+        ))}
+      </div>
+
+      {report.charts.length ? (
+        <div className="analysis-chart-grid">
+          {report.charts.map((chart, index) =>
+            chart.type === "bar" ? <BarChart chart={chart} key={`${chart.title}-${index}`} /> : <ScatterChart chart={chart} key={`${chart.title}-${index}`} />,
+          )}
+        </div>
+      ) : null}
+
+      {report.tables.map((table) => (
+        <AnalysisTable table={table} key={table.title} />
+      ))}
+
+      {report.notes.length ? (
+        <div className="analysis-notes">
+          <strong>分析说明</strong>
+          {report.notes.map((note) => (
+            <p key={note}>{note}</p>
+          ))}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function BarChart({
+  chart,
+}: {
+  chart: Extract<DataAnalysisReport["charts"][number], { type: "bar" }>;
+}) {
+  const maxValue = Math.max(1, ...chart.data.map((item) => item.value));
+
+  return (
+    <article className="chart-card">
+      <h4>{chart.title}</h4>
+      <div className="bar-chart" aria-label={`${chart.xLabel} by ${chart.yLabel}`}>
+        {chart.data.map((item) => (
+          <div className="bar-row" key={item.label}>
+            <span>{item.label}</span>
+            <div>
+              <i style={{ width: `${Math.max(3, (item.value / maxValue) * 100)}%` }} />
+            </div>
+            <strong>{item.value}</strong>
+          </div>
+        ))}
+      </div>
+    </article>
+  );
+}
+
+function ScatterChart({
+  chart,
+}: {
+  chart: Extract<DataAnalysisReport["charts"][number], { type: "scatter" }>;
+}) {
+  const xValues = chart.data.map((item) => item.x);
+  const yValues = chart.data.map((item) => item.y);
+  const minX = Math.min(...xValues);
+  const maxX = Math.max(...xValues);
+  const minY = Math.min(...yValues);
+  const maxY = Math.max(...yValues);
+
+  function normalize(value: number, min: number, max: number) {
+    if (max === min) return 50;
+    return ((value - min) / (max - min)) * 84 + 8;
+  }
+
+  return (
+    <article className="chart-card">
+      <h4>{chart.title}</h4>
+      <div className="scatter-plot" aria-label={`${chart.xLabel} and ${chart.yLabel} scatter plot`}>
+        {chart.data.map((item, index) => (
+          <span
+            className="scatter-dot"
+            key={`${item.label}-${index}`}
+            title={`${item.label}: ${chart.xLabel}=${item.x}, ${chart.yLabel}=${item.y}`}
+            style={{
+              left: `${normalize(item.x, minX, maxX)}%`,
+              bottom: `${normalize(item.y, minY, maxY)}%`,
+            }}
+          />
+        ))}
+      </div>
+      <p className="muted chart-caption">
+        {chart.xLabel}: {formatCompactNumber(minX)} 到 {formatCompactNumber(maxX)}；{chart.yLabel}:{" "}
+        {formatCompactNumber(minY)} 到 {formatCompactNumber(maxY)}
+      </p>
+    </article>
+  );
+}
+
+function AnalysisTable({ table }: { table: DataAnalysisReport["tables"][number] }) {
+  return (
+    <div className="analysis-table-wrap">
+      <h4>{table.title}</h4>
+      <table className="analysis-table">
+        <thead>
+          <tr>
+            {table.columns.map((column) => (
+              <th key={column}>{column}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {table.rows.map((row, rowIndex) => (
+            <tr key={`${table.title}-${rowIndex}`}>
+              {row.map((cell, cellIndex) => (
+                <td key={`${table.title}-${rowIndex}-${cellIndex}`}>{cell}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function getDocumentCategory(document: Pick<ResearchDocument, "filename" | "mime_type">) {
   const filename = document.filename.toLowerCase();
   const extension = getDocumentExtension(document.filename);
@@ -821,4 +1076,8 @@ function buildStoragePath(userId: string, filename: string) {
   const uniquePrefix = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
 
   return `${userId}/${uniquePrefix}-${base}${extension ? `.${extension}` : ""}`;
+}
+
+function formatCompactNumber(value: number) {
+  return Number.isInteger(value) ? String(value) : value.toFixed(2);
 }
