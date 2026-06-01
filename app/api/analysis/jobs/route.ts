@@ -55,6 +55,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Document does not belong to current user." }, { status: 403 });
   }
 
+  if (getExtension(researchDocument.filename) !== "xdf") {
+    return NextResponse.json(
+      {
+        error:
+          "XDF 高级分析当前只面向 LabRecorder .xdf 文件，也就是 EEG stream + Unity marker stream。PDF/CSV 等资料请使用即时摘要。",
+      },
+      { status: 400 },
+    );
+  }
+
   const { data: insertedJob, error: insertError } = await supabase
     .from("research_analysis_jobs")
     .insert({
@@ -62,7 +72,7 @@ export async function POST(request: Request) {
       document_id: documentId,
       analysis_type: analysisType || "advanced_python",
       status: "pending",
-      status_message: "分析任务已创建，等待 Python worker。",
+      status_message: "XDF 分析任务已创建，等待 Python worker。",
     })
     .select("*")
     .single();
@@ -75,7 +85,7 @@ export async function POST(request: Request) {
   const dispatchConfig = getDispatchConfig();
 
   if (!dispatchConfig.ready) {
-    const message = `高级 Python worker 尚未配置：${dispatchConfig.missing.join(", ")}。请在 Vercel 环境变量和 GitHub Secrets 中完成配置。`;
+    const message = `XDF Python worker 尚未配置：${dispatchConfig.missing.join(", ")}。请在 Vercel 环境变量和 GitHub Secrets 中完成配置。`;
     const { data: updatedJob } = await supabase
       .from("research_analysis_jobs")
       .update({
@@ -123,7 +133,7 @@ export async function POST(request: Request) {
     .from("research_analysis_jobs")
     .update({
       status: "queued",
-      status_message: "已触发 GitHub Actions Python worker。",
+      status_message: "已触发 GitHub Actions XDF Python worker。",
     })
     .eq("id", job.id)
     .select("*")
@@ -167,6 +177,11 @@ function normalizeJobs(rows: unknown[]) {
       research_documents: relatedDocument,
     } satisfies ResearchAnalysisJob;
   });
+}
+
+function getExtension(filename: string) {
+  const parts = filename.toLowerCase().split(".");
+  return parts.length > 1 ? parts[parts.length - 1] : "";
 }
 
 function getDispatchConfig() {

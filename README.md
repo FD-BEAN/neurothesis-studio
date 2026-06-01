@@ -61,11 +61,19 @@ python scripts\xdf_qc.py C:\path\to\file.xdf
 - JSON / JSONL：将对象数组转成表格后生成摘要。
 - SVG：检查图形元素和可读范围图例。
 - Markdown / TXT：文本规模和研究关键词频次。
-- XDF：先生成质控入口说明；正式二进制解析需要本地 `scripts/xdf_qc.py` 或后续 Python worker。
+- XDF：即时摘要只给出质控入口；正式实验数据分析请使用 `运行 XDF 高级分析`。
 
-## 高级 Python 分析
+## XDF 高级分析
 
-点击 `运行高级 Python 分析` 会创建 `research_analysis_jobs` 任务，并触发 GitHub Actions 中的 Python worker。worker 会下载 Supabase private Storage 中的文件，运行 `pandas / pyxdf / scipy / statsmodels` 分析，再把 JSON 报告写回 Supabase。
+点击 `运行 XDF 高级分析` 会创建 `research_analysis_jobs` 任务，并触发 GitHub Actions 中的 Python worker。worker 只处理 LabRecorder `.xdf`，下载 Supabase private Storage 中的文件，使用 `pyxdf / numpy` 解析 EEG stream 与 Unity marker stream，再把 JSON 报告写回 Supabase。
+
+当前 XDF worker 的目标不是分析 PDF 或 CSV，而是服务这个 VR 地铁撤离研究的核心数据链路：
+
+- 识别 `Mitsar` / EEG stream 与 `MetroRescueMarkers` marker stream。
+- 按 `subject / session / map / signage / audio` 切分 marker session。
+- 确认 `map_start` 到 `evacuation_complete` 的 EEG 覆盖关系。
+- 提取 Unity 行为 marker：`sign_readable`、`decision_point_enter`、停留、扫描、回退和完成时长。
+- 计算 trial-level theta、alpha、theta/alpha，以及 `sign_readable` / `decision_point_enter` 事件窗特征。
 
 需要配置：
 

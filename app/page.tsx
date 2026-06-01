@@ -79,11 +79,11 @@ const workspaceModules = [
 ];
 
 const analysisModules = [
-  { title: "XDF 质量检查", text: "检查 Mitsar EEG 与 MetroRescueMarkers，切分有效 session，并标注缺失开始/结束 marker 的文件。" },
-  { title: "文献矩阵", text: "按 wayfinding、VR evacuation、EEG cognitive load 整理研究问题、方法和指标。" },
-  { title: "行为数据", text: "整理 Unity 路径、停留、回退、决策点扫描和任务完成情况。" },
-  { title: "EEG 预处理", text: "保留 MNE-Python 和 EEGLAB 的脚本入口，用于事件锁定和认知负荷分析。" },
-  { title: "论文段落", text: "为 Introduction、Methods、Results 和 Discussion 保存中英双语草稿。" },
+  { title: "XDF 同步质控", text: "检查 Mitsar EEG 与 MetroRescueMarkers，确认 map_start 到 evacuation_complete 的覆盖关系。" },
+  { title: "事件与行为指标", text: "基于 Unity marker 提取 sign_readable、decision_point_enter、停留、扫描、回退和完成时长。" },
+  { title: "EEG 特征提取", text: "围绕 sign_readable 与 decision_point_enter 建立事件窗，提取 theta、alpha 和 theta/alpha 指标。" },
+  { title: "统计建模", text: "汇总 trial_features 与 event_features，用 mixed-effects model 检验 Signature、Metro 与 Audio 条件。" },
+  { title: "写作材料", text: "保存 Methods、Results、图表说明和中英双语论文草稿，所有结论回到真实分析输出。" },
 ];
 
 const documentCategories = [
@@ -321,6 +321,7 @@ function Workspace({
     [documents],
   );
   const selectedCategory = selectedDocument ? getDocumentCategory(selectedDocument) : null;
+  const selectedDocumentIsXdf = selectedDocument ? isXdfDocument(selectedDocument) : false;
   const totalStoredBytes = documents.reduce((total, document) => total + (document.size_bytes ?? 0), 0);
 
   async function loadDocuments() {
@@ -474,6 +475,11 @@ function Workspace({
       return;
     }
 
+    if (!selectedDocumentIsXdf) {
+      setJobMessage("XDF 高级分析只处理 LabRecorder .xdf，也就是 EEG stream + Unity marker stream。PDF、CSV、SVG 和研究说明请使用即时摘要或 AI 助手。");
+      return;
+    }
+
     setJobLoading(true);
     setJobMessage("");
 
@@ -492,12 +498,12 @@ function Workspace({
     const payload = (await response.json()) as { job?: ResearchAnalysisJob; error?: string; warning?: string };
 
     if (!response.ok && !payload.job) {
-      setJobMessage(payload.error ?? "高级 Python 分析任务创建失败。");
+      setJobMessage(payload.error ?? "XDF 高级分析任务创建失败。");
       setJobLoading(false);
       return;
     }
 
-    setJobMessage(payload.warning ?? "高级 Python 分析任务已提交。");
+    setJobMessage(payload.warning ?? "XDF 高级分析任务已提交。");
     await loadAnalysisJobs();
     setJobLoading(false);
   }
@@ -690,7 +696,7 @@ function Workspace({
                 生成分析摘要
               </button>
               <button className="secondary-button" disabled={!selectedDocument || jobLoading} onClick={runAdvancedAnalysis}>
-                {jobLoading ? "提交中..." : "运行高级 Python 分析"}
+                {jobLoading ? "提交中..." : "运行 XDF 高级分析"}
               </button>
             </section>
           </div>
@@ -741,7 +747,7 @@ function Workspace({
                 刷新任务
               </button>
               <button className="secondary-button" disabled={!selectedDocument || jobLoading} onClick={runAdvancedAnalysis}>
-                {jobLoading ? "提交中..." : "高级 Python 分析"}
+                {jobLoading ? "提交中..." : "XDF 高级分析"}
               </button>
               <button className="primary-button" disabled={!selectedDocument || analysisState.status === "loading"} onClick={runDataAnalysis}>
                 {analysisState.status === "loading" ? "分析中..." : "即时摘要"}
@@ -925,7 +931,7 @@ function AnalysisResultPanel({
         <p className="eyebrow">当前文件分析</p>
         <h3>{selectedDocument ? selectedDocument.filename : "尚未选择文件"}</h3>
         <p className="muted">
-          选择研究资料库中的 CSV、JSON、JSONL、SVG、Markdown 或 XDF 文件后，可以生成结构化摘要、统计表和图形预览。
+          即时摘要用于资料索引和快速检查；正式的实验数据分析请在资料库中选择 LabRecorder .xdf 文件，并运行 XDF 高级分析来对齐 EEG stream 与 Unity marker stream。
         </p>
       </section>
     );
@@ -1010,7 +1016,7 @@ function AnalysisJobsPanel({
     <section className="work-panel analysis-jobs-panel">
       <div className="analysis-head">
         <div>
-          <p className="eyebrow">高级 Python 分析</p>
+          <p className="eyebrow">XDF 高级分析</p>
           <h3>后台任务</h3>
         </div>
         <span className="status-pill compact">{jobs.length} 个任务</span>
@@ -1044,7 +1050,7 @@ function AnalysisJobsPanel({
           })}
         </div>
       ) : (
-        <p className="muted">还没有高级分析任务。选择一个文件后可以提交到 GitHub Actions Python worker。</p>
+        <p className="muted">还没有 XDF 高级分析任务。选择 LabRecorder .xdf 文件后，可以提交到 GitHub Actions Python worker。</p>
       )}
     </section>
   );
@@ -1176,6 +1182,10 @@ function getDocumentCategory(document: Pick<ResearchDocument, "filename" | "mime
 function getDocumentExtension(filename: string) {
   const dotIndex = filename.lastIndexOf(".");
   return dotIndex >= 0 ? filename.slice(dotIndex + 1).toLowerCase() : "";
+}
+
+function isXdfDocument(document: Pick<ResearchDocument, "filename">) {
+  return getDocumentExtension(document.filename) === "xdf";
 }
 
 function formatDocumentKind(document: Pick<ResearchDocument, "filename">) {

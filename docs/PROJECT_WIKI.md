@@ -173,6 +173,7 @@ XDF 测试数据：
 - `sub-P001_ses-S001_task-Default_run-001_eeg_old3.xdf` 更像一条完整测试 trial：包含 `MetroRescueMarkers` 与一个 `Mitsar` EEG stream；主 session 为 subject 005 / Metro2 / Signature3 / Low，marker 有 `session_start`、`trial_start`、`map_start` 和 `evacuation_complete`。
 - `sub-P001_ses-S001_task-Default_run-001_eeg.xdf` 包含 `MetroRescueMarkers` 和两个 `Mitsar` EEG stream；主 session 为 subject 006 / Metro3 / Signature1 / Low，有 `evacuation_complete`，但缺少完整开始 marker，并混入少量旧 subject/session marker。
 - 正式分析前必须先做 XDF 质控：列出 streams、选择 EEG stream、按 subject/session/map/signature/audio 切分 markers，确认开始与完成事件齐全，再导出 `xdf_quality_report`。
+- 重要口径：正式实验分析对象是 LabRecorder `.xdf` 中的 EEG stream + Unity marker stream。PDF、CSV、SVG、研究说明文档只作为文献、刺激材料或辅助索引，不应被包装成主实验数据分析。
 
 当前产品应支持的下一步：
 
@@ -190,16 +191,16 @@ XDF 测试数据：
 - JSON / JSONL：把对象数组转成表格后走同一套分析。
 - SVG：检查 circle/text/title 元素数量和 0-8m / 8-12m 图例。
 - Markdown / TXT：统计文本规模和 EEG / VR / Unity / LSL / Signature 等关键词频次。
-- XDF：线上 Node route 只识别类型并提示质控路径；真正解析 XDF 需要 `scripts/xdf_qc.py`、Python worker、或独立分析服务。
+- XDF：Node route 只做入口说明；正式实验数据分析交给 GitHub Actions Python worker，避免把 EEG 二进制当作普通表格处理。
 
-后续如果要支持 XDF 在线图表，建议路线是：
+XDF 在线图表的当前路线：
 
 1. 上传 XDF 后只存原文件，不直接进 OpenAI。
-2. 后端任务调用 Python worker 运行 `scripts/xdf_qc.py`。
-3. 把 JSON 质控结果保存到数据库，例如 `research_analysis_reports`。
-4. 前端展示 stream 表、session 表、event count、marker 时间轴和 EEG 时长概览。
+2. 后端任务调用 Python worker 下载 private Storage 中的 XDF。
+3. Worker 解析 EEG stream 与 Unity marker stream，输出 JSON 到 `research_analysis_jobs.result_json`。
+4. 前端展示 stream 表、session 表、event count、trial 行为指标、EEG 覆盖 QC、频带特征和事件窗摘要。
 
-## 高级 Python 分析 worker
+## XDF 高级分析 worker
 
 第二层分析链路已经按异步 job 设计：
 
@@ -211,24 +212,28 @@ XDF 测试数据：
 
 任务流程：
 
-1. 用户在资料库选择文件并点击高级 Python 分析。
+1. 用户在资料库选择 LabRecorder `.xdf` 并点击 XDF 高级分析。
 2. Vercel API 用当前 Supabase access token 验证文件归属，并写入 `research_analysis_jobs`。
 3. Vercel API 用 `GITHUB_ANALYSIS_TOKEN` 触发 GitHub Actions workflow。
 4. Python worker 用 GitHub Secret 中的 `SUPABASE_SERVICE_ROLE_KEY` 下载 private Storage 文件。
 5. Worker 输出 JSON 报告并写回 `result_json`。
 6. 前端轮询任务表，完成后可查看结果。
 
-当前 Python worker 支持：
+当前 Python worker 只支持 XDF，这是刻意设计的边界。PDF、Markdown、SVG、CSV 等材料仍走即时摘要或 AI 助手，不进入正式 EEG+Unity marker 分析流水线。
 
-- CSV / TSV / JSON / JSONL：`pandas` 描述统计、分类分布、坐标散点、event count、Metro Rescue 标识坐标口径检查。
-- 如果表格里有 `subject`、`signature` 和可识别 outcome，如 `load`、`theta_alpha_ratio`、`completion_time`，worker 会尝试 `statsmodels` MixedLM；条件不足时退回或跳过。
-- XDF：`pyxdf` 读取 stream、marker、session、event count、EEG stream 数量和完整 trial 检查。
-- SVG / TXT / MD：元素或关键词检查。
+XDF worker 目前输出：
+
+- stream 概览：识别 `Mitsar` / EEG stream 与 `MetroRescueMarkers` marker stream。
+- marker session：按 `subject / session / map / signage / audio` 切分，检查开始 marker 与 `evacuation_complete`。
+- trial 行为指标：完成时长、`sign_readable`、`decision_point_enter`、停留、扫描、回退等事件计数。
+- EEG 覆盖 QC：确认 EEG 是否覆盖 `map_start` 到 `evacuation_complete`，估计有效采样率和样本覆盖率。
+- EEG 通道 QC：标出 flat、event channel、高方差或缺失通道候选。
+- EEG 频带特征：trial-level theta、alpha、beta、theta/alpha，以及 sign_readable / decision_point_enter / audio_play 事件窗摘要。
 
 限制：
 
 - GitHub Actions 不是实时交互内核，适合“提交任务、稍后看结果”。
-- 大型 EEG 预处理、滤波、ICA、epoch、bandpower 与 MNE 报告可以继续在这个 worker 上扩展，但需要明确数据量和运行时间。
+- 大型 EEG 预处理、滤波、ICA、artifact rejection、epoch 和正式 MNE 报告可以继续在这个 worker 上扩展，但需要明确数据量和运行时间。
 - `SUPABASE_SERVICE_ROLE_KEY` 只允许放在 GitHub Actions Secret，不放在 Vercel 前端环境变量，也不写入仓库。
 
 ## 已发现的研究口径问题
