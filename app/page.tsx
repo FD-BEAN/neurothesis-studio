@@ -122,6 +122,39 @@ const densityLabels: Record<DensityLevel, string> = {
   high: "高密度",
 };
 
+const writingAssistantPresets = [
+  {
+    label: "文献综述矩阵",
+    prompt:
+      "请基于内置知识库和新增文献卡片，整理一份面向 Introduction 的文献综述矩阵：按 VR/地铁撤离、导向标识与 wayfinding、EEG/认知负荷、密度/信息复杂度、统计方法 五类组织。每类给出可写入论文的中文要点、英文句子草稿、证据来源、不能过度声称的边界。",
+  },
+  {
+    label: "理论逻辑",
+    prompt:
+      "请把本研究的理论逻辑写清楚：为什么低密度可能信息不足、高密度可能冗余或搜索成本高、中密度反而可能认知负荷最高。请区分文献支持、项目假设和需要实验验证的部分，并给出可写入 Introduction 的英文段落。",
+  },
+  {
+    label: "Methods 草稿",
+    prompt:
+      "请基于当前项目理解，起草英文 Methods 小节：Participants/Design, VR task and signage-density manipulation, Unity markers and behavioral measures, EEG recording and XDF synchronization, preprocessing and feature extraction。要保守，不编造设备参数或样本完成情况。",
+  },
+  {
+    label: "统计分析计划",
+    prompt:
+      "请写一份 Analysis Plan：说明 90 名被试 × 低/中/高密度的组内设计、主 planned contrast medium - mean(low, high)、EEG 与行为指标、subject-level contrast、mixed-effects model、组间变量需要的 metadata，以及多指标报告策略。",
+  },
+  {
+    label: "结果写作模板",
+    prompt:
+      "请基于已完成的 XDF/全样本分析报告摘要，生成 Results 写作模板。如果没有足够结果，请只写占位结构和需要填入的统计量，不要编造显著性。包括中文解释和英文论文段落框架。",
+  },
+  {
+    label: "Discussion 风险",
+    prompt:
+      "请整理 Discussion 可以讨论的机制、贡献、局限和替代解释，特别关注 VR 生态效度、EEG 指标解释、标识密度操控、组内/组间统计、样本量与多重比较。请列出哪些结论必须等真实结果支持。",
+  },
+];
+
 export default function HomePage() {
   const hasConfig = hasSupabaseBrowserConfig();
   const supabase = useMemo(() => (hasConfig ? getSupabaseBrowserClient() : null), [hasConfig]);
@@ -949,14 +982,24 @@ function Workspace({
           </div>
 
           <div className="ai-grid">
-            <label>
-              给 AI 的任务
-              <textarea value={researchNote} rows={8} onChange={(event) => setResearchNote(event.target.value)} />
-            </label>
+            <section className="work-panel assistant-task-panel">
+              <h3>写作任务</h3>
+              <div className="prompt-preset-grid">
+                {writingAssistantPresets.map((preset) => (
+                  <button className="secondary-button" key={preset.label} type="button" onClick={() => setResearchNote(preset.prompt)}>
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+              <label>
+                给 AI 的任务
+                <textarea value={researchNote} rows={10} onChange={(event) => setResearchNote(event.target.value)} />
+              </label>
+            </section>
             <section className="work-panel ai-output">
               <h3>输出</h3>
               <p className="muted">
-                适合让它整理文献矩阵、Methods 草稿、图注、marker 说明和分析计划。不要让它替真实结果下结论。
+                回答会结合项目设计、内置知识库、新增文献卡片和已完成分析报告；显著性结论只来自真实报告或你明确提供的数据。
               </p>
               <pre>{aiState.output || "运行后，这里会显示整理结果。"}</pre>
             </section>

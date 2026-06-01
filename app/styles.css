@@ -916,6 +916,22 @@ textarea {
   line-height: 1.55;
 }
 
+.assistant-task-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.prompt-preset-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.prompt-preset-grid button {
+  min-height: 42px;
+  white-space: normal;
+}
+
 .analysis-panel {
   margin-top: 20px;
   display: grid;
