@@ -238,6 +238,7 @@ XDF worker 目前输出：
 - 分析脚本与输出：放 Python/MATLAB/notebook、trial_features、event_features、中间统计表和写作产物。后续 90 名被试 × 3 trials = 270 个实验文件，应走批量上传和批量提交 XDF 队列。
 - 场景平面图与导向标识配置暂时不作为主要界面模块展示，避免干扰当前文献库和 XDF 分析主线。
 - 不把真实论文 PDF、XDF、EEG 原始数据或被试数据提交到公开 GitHub repo 的 `data` 目录。公开 GitHub 只保存代码、schema、wiki 和可公开的模板；私有数据优先放 Supabase private Storage。
+- GitHub Actions 的 `SUPABASE_SERVICE_ROLE_KEY` 可以使用新版 `sb_secret_...` 或旧版 JWT `service_role`。worker 请求头需要区分两者：新版 secret key 只放 `apikey`，旧版 JWT 才放 `Authorization: Bearer ...`。
 
 用户提供的 XDF 报告脚本参考：
 

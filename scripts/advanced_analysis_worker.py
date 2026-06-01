@@ -52,10 +52,15 @@ BEHAVIOR_EVENTS = [
 class SupabaseRest:
     def __init__(self, url: str, service_role_key: str):
         self.url = url.rstrip("/")
-        self.headers = {
+        base_headers = {
             "apikey": service_role_key,
-            "Authorization": f"Bearer {service_role_key}",
             "Content-Type": "application/json",
+            "User-Agent": "NeuroThesis-GitHub-Actions-Worker",
+        }
+        if is_legacy_jwt_key(service_role_key):
+            base_headers["Authorization"] = f"Bearer {service_role_key}"
+        self.headers = {
+            **base_headers,
         }
 
     def select_one(self, table: str, query: str) -> dict[str, Any]:
@@ -992,6 +997,10 @@ def safe_chart_value(value: Any) -> float:
 
 def get_extension(filename: str) -> str:
     return filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+
+
+def is_legacy_jwt_key(key: str) -> bool:
+    return key.startswith("eyJ")
 
 
 def fmt(value: Any) -> str:
