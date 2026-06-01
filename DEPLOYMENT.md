@@ -1,32 +1,50 @@
 # Deployment Notes
 
-## Recommended Setup
+## Secure App
 
-Use GitHub Pages from the `main` branch root.
+The secure app is a Next.js project and should be deployed on Vercel, not GitHub Pages.
 
-This project is a static site, so no build step is required.
+Recommended production branch:
 
-## First Push
-
-After creating an empty public GitHub repository named `neurothesis-studio`, run:
-
-```powershell
-cd C:\Python\neurothesis-studio
-git remote add origin https://github.com/YOUR_USERNAME/neurothesis-studio.git
-git push -u origin main
+```text
+next-supabase-secure
 ```
 
-Replace `YOUR_USERNAME` with your GitHub username.
+## Required Environment Variables
 
-## Update Deployment Later
+Add these in Vercel Project Settings -> Environment Variables:
 
-After editing files:
-
-```powershell
-cd C:\Python\neurothesis-studio
-git add .
-git commit -m "Update NeuroThesis Studio"
-git push
+```text
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+OPENAI_API_KEY
+OPENAI_MODEL
 ```
 
-GitHub Pages will redeploy automatically after each push.
+`OPENAI_API_KEY` must never be committed to git.
+
+## Supabase
+
+Run:
+
+```powershell
+supabase/schema.sql
+```
+
+in Supabase SQL Editor.
+
+## Local Development
+
+```powershell
+npm install
+copy .env.example .env.local
+npm run dev
+```
+
+## Legacy Static Site
+
+The previous GitHub Pages prototype is preserved in:
+
+```text
+legacy-static/
+```

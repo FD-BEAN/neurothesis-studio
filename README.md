@@ -1,42 +1,51 @@
 # NeuroThesis Studio
 
-面向 EEG + VR 实验型研究生论文的中文优先研究工作台原型。
+面向 EEG + VR 实验型研究生论文的中文优先研究工作台。
 
-当前版本是纯静态网页，可以直接部署到 GitHub Pages。它包含：
+当前 `next-supabase-secure` 分支是安全版 Next.js 应用，包含 Supabase Auth、私有文件存储和后端 AI API route。旧的 GitHub Pages 静态版保留在 `legacy-static/` 目录中。
+
+## 功能
 
 - 项目总览
-- 论文阅读示例
-- 文献矩阵
-- 实验设计
-- EEG / 数据分析示例
-- Python / MNE 与 MATLAB / EEGLAB 分析脚本骨架
-- 英文论文草稿与中文逻辑说明
+- Supabase 登录
+- 私有论文 / 数据文件上传
+- 私有 Storage 临时签名链接
+- AI 研究助手后端接口
+- 后续 EEG / 文献矩阵 / 论文写作模块入口
 
-## 本地打开
+## 本地开发
 
-直接双击打开：
-
-```text
-index.html
+```powershell
+npm install
+copy .env.example .env.local
+npm run dev
 ```
 
-或在浏览器中打开项目目录下的 `index.html`。
-
-## GitHub Pages 部署
-
-1. 在 GitHub 新建一个 public repo，例如 `neurothesis-studio`。
-2. 把本项目推送到该 repo。
-3. 打开 repo 的 `Settings` -> `Pages`。
-4. `Source` 选择 `Deploy from a branch`。
-5. `Branch` 选择 `main`，目录选择 `/root`。
-6. 保存后等待 1-2 分钟。
-
-部署完成后，访问地址通常是：
+然后打开：
 
 ```text
-https://你的用户名.github.io/neurothesis-studio/
+http://localhost:3000
 ```
+
+## Supabase 设置
+
+1. 新建 Supabase project。
+2. 在 `Authentication` 里创建用户。
+3. 复制 project URL 和 anon key 到 `.env.local`。
+4. 打开 `SQL Editor`，运行 `supabase/schema.sql`。
+5. 确认 `research-files` bucket 是 private。
+
+## Vercel 部署
+
+1. 在 Vercel 导入 GitHub repo。
+2. 选择 `next-supabase-secure` 分支。
+3. 添加环境变量：
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `OPENAI_API_KEY`
+   - `OPENAI_MODEL`
+4. Deploy。
 
 ## 隐私提醒
 
-当前原型只适合放 demo 数据。不要把真实实验数据、EEG 文件、未公开论文草稿、API key 或个人隐私信息提交到 public repo。
+不要把真实实验数据、EEG 文件、未公开论文草稿、API key 或个人隐私信息提交到 GitHub repo。真实文件应上传到 Supabase private Storage；API key 只能放在 Vercel 环境变量里。
