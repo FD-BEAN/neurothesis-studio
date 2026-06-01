@@ -8,8 +8,8 @@ const state = {
 };
 
 const AUTH_CONFIG = {
-  username: "researcher",
-  passwordHash: "0e5a170ff0867a879d950b746ab6c1b741cbb413769c35e9647f1e5726a137a4",
+  username: "wondernionio",
+  passwordHash: "895e1618b922e419aee1254dafc9c9418697deea1d45f384e2aa8fa70d4c7ad9",
   sessionKey: "neurothesis_session",
   sessionHours: 8,
 };
@@ -238,7 +238,7 @@ async function handleLogin(event) {
   const passwordHash = await hashText(password);
   const isValid =
     username === AUTH_CONFIG.username &&
-    (passwordHash === AUTH_CONFIG.passwordHash || (!window.crypto?.subtle && password === "neuro2026"));
+    (passwordHash === AUTH_CONFIG.passwordHash || (!window.crypto?.subtle && password === "neuro1204"));
 
   if (!isValid) {
     $("#loginError").hidden = false;
