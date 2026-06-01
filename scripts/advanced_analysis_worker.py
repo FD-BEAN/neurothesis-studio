@@ -167,7 +167,9 @@ def run_job(client: SupabaseRest, job_id: str, run_url: str) -> None:
         },
     )
 
-    if job.get("analysis_type") == "subject_batch":
+    if job.get("analysis_type") == "cohort_density_summary":
+        report = run_cohort_density_job(client, job)
+    elif job.get("analysis_type") == "subject_batch":
         report = run_subject_batch_job(client, job, run_url)
     else:
         document = client.select_one("research_documents", f"id=eq.{job['document_id']}&select=*")
@@ -435,6 +437,157 @@ def extract_batch_payload(job: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(batch, dict):
         raise RuntimeError("subject_batch 任务缺少 batch payload。")
     return batch
+
+
+def run_cohort_density_job(client: SupabaseRest, job: dict[str, Any]) -> dict[str, Any]:
+    rows = client.select_many(
+        "research_analysis_jobs",
+        f"user_id=eq.{job['user_id']}&analysis_type=eq.subject_batch&status=eq.completed&select=id,result_json,created_at,completed_at&limit=1000",
+    )
+    subject_rows = extract_subject_contrast_rows(rows)
+    if not subject_rows:
+        raise RuntimeError("还没有可汇总的已完成被试批量报告；请先为若干被试运行低/中/高密度 XDF 批量分析。")
+    return analyze_cohort_density(subject_rows)
+
+
+def extract_subject_contrast_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    extracted: list[dict[str, Any]] = []
+    for row in rows:
+        payload = row.get("result_json") or {}
+        if isinstance(payload, str):
+            try:
+                payload = json.loads(payload)
+            except json.JSONDecodeError:
+                payload = {}
+        if not isinstance(payload, dict):
+            continue
+        subject_id = str(payload.get("subjectId") or payload.get("title") or row.get("id", "subject-unknown"))
+        contrasts = payload.get("densityContrasts")
+        if not isinstance(contrasts, list):
+            continue
+        for contrast in contrasts:
+            if not isinstance(contrast, dict):
+                continue
+            estimate = to_float(contrast.get("estimate"))
+            metric = str(contrast.get("metric") or "")
+            if estimate is None or not metric:
+                continue
+            extracted.append(
+                {
+                    "subject": subject_id,
+                    "metric": metric,
+                    "metricLabel": str(contrast.get("metricLabel") or metric),
+                    "estimate": estimate,
+                    "direction": str(contrast.get("direction") or ""),
+                    "jobId": row.get("id", ""),
+                    "completedAt": row.get("completed_at") or row.get("created_at") or "",
+                }
+            )
+    return extracted
+
+
+def analyze_cohort_density(subject_rows: list[dict[str, Any]]) -> dict[str, Any]:
+    by_metric: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in subject_rows:
+        by_metric[row["metric"]].append(row)
+
+    summary_rows = []
+    metric_charts = []
+    primary_result = None
+    for metric, rows in sorted(by_metric.items(), key=lambda item: metric_priority(item[0])):
+        values = [float(row["estimate"]) for row in rows]
+        stats = one_sample_contrast_stats(values)
+        metric_label = str(rows[0].get("metricLabel") or metric)
+        conclusion = contrast_conclusion(stats)
+        if metric == "eeg_load_proxy":
+            primary_result = {**stats, "metricLabel": metric_label, "conclusion": conclusion}
+        summary_rows.append(
+            [
+                metric_label,
+                str(stats["n"]),
+                fmt(stats["mean"]),
+                format_ci(stats),
+                fmt(stats["t"]),
+                fmt_p(stats["p"]),
+                fmt(stats["dz"]),
+                conclusion,
+            ]
+        )
+        metric_charts.append({"label": metric_label, "value": safe_chart_value(stats["mean"])})
+
+    subject_table_rows = [
+        [
+            str(row["subject"]),
+            str(row["metricLabel"]),
+            fmt(row["estimate"]),
+            str(row["direction"]),
+            str(row["completedAt"])[:19],
+        ]
+        for row in sorted(subject_rows, key=lambda item: (str(item["subject"]), metric_priority(str(item["metric"]))))[:600]
+    ]
+    unique_subjects = sorted({str(row["subject"]) for row in subject_rows})
+    primary_text = (
+        f"{primary_result['metricLabel']}：n={primary_result['n']}，mean contrast={fmt(primary_result['mean'])}，p={fmt_p(primary_result['p'])}，{primary_result['conclusion']}"
+        if primary_result
+        else "尚未形成 EEG load proxy 主指标汇总；请确认每个被试报告里都有低/中/高密度完整 contrast。"
+    )
+
+    notes = [
+        "该报告只汇总已经完成的被试批量 XDF HTML/JSON 结果；未完成、失败或密度条件缺失的被试不会进入统计。",
+        "主检验是每名被试的 medium - mean(low, high) contrast 是否显著大于 0；这是组内设计最直接的检验。",
+        "如果存在组间变量，需要上传 subject metadata 后再检验 Density × Group 交互；当前汇总不自动推断组别。",
+        "结论写作应优先报告预先指定的主指标，再把行为和其他 EEG 指标作为一致性证据或探索性结果。",
+    ]
+
+    return {
+        "title": "全样本密度条件统计汇总",
+        "kind": "Cohort Density Summary",
+        "subjectId": "cohort-density-summary",
+        "summary": f"从 {len(unique_subjects)} 名被试的已完成批量报告中汇总低/中/高密度 planned contrast。主结论口径：{primary_text}",
+        "design": {
+            "expected_subjects": 90,
+            "runs_per_subject": 3,
+            "expected_total_runs": 270,
+            "within_subject_factor": "density",
+            "primary_contrast": "medium - mean(low, high)",
+        },
+        "metrics": [
+            {"label": "已纳入被试", "value": f"{len(unique_subjects)}/90"},
+            {"label": "contrast 行", "value": str(len(subject_rows))},
+            {"label": "主指标", "value": primary_result["conclusion"] if primary_result else "未形成", "text": primary_text},
+        ],
+        "charts": [
+            {
+                "type": "bar",
+                "title": "各指标主 contrast 均值",
+                "xLabel": "metric",
+                "yLabel": "medium - mean(low, high)",
+                "data": metric_charts,
+            }
+        ],
+        "tables": [
+            {
+                "title": "组内 planned contrast 显著性汇总",
+                "columns": ["metric", "n", "mean", "95% CI", "t", "p", "Cohen dz", "结论"],
+                "rows": summary_rows,
+            },
+            {
+                "title": "被试级 contrast 明细",
+                "columns": ["subject", "metric", "estimate", "direction", "completed_at"],
+                "rows": subject_table_rows,
+            },
+            {
+                "title": "下一步组间模型",
+                "columns": ["需要字段", "模型", "用途"],
+                "rows": [
+                    ["subject_id, group", "Load ~ Density * Group + RunOrder + Map + (1 + Density | Subject)", "检验不同组别是否有不同密度效应"],
+                    ["order/counterbalance", "Load ~ Density + Order + Density:Order + (1 + Density | Subject)", "控制顺序、练习和疲劳效应"],
+                    ["trial_features/event_features", "event-level 或 trial-level mixed model", "把 sign_readable、decision_point_enter 等事件窗指标纳入更细粒度模型"],
+                ],
+            },
+        ],
+        "notes": notes,
+    }
 
 
 def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]], reports: list[dict[str, Any]]) -> dict[str, Any]:
@@ -737,6 +890,96 @@ def compute_density_planned_contrasts(rows: list[dict[str, str]]) -> tuple[list[
         )
 
     return table_rows, json_rows
+
+
+def metric_priority(metric: str) -> tuple[int, str]:
+    order = {
+        "eeg_load_proxy": 0,
+        "theta_alpha_ratio": 1,
+        "frontal_theta_4_7": 2,
+        "posterior_alpha_8_12": 3,
+        "behavior_load_proxy": 4,
+        "duration_s": 5,
+    }
+    return (order.get(metric, 99), metric)
+
+
+def one_sample_contrast_stats(values: list[float]) -> dict[str, Any]:
+    clean = np.asarray([value for value in values if math.isfinite(value)], dtype=float)
+    n = int(clean.size)
+    if n == 0:
+        return {"n": 0, "mean": None, "sd": None, "se": None, "t": None, "p": None, "ci_low": None, "ci_high": None, "dz": None}
+    mean = float(np.mean(clean))
+    sd = float(np.std(clean, ddof=1)) if n > 1 else 0.0
+    se = sd / math.sqrt(n) if n > 1 else None
+    if n < 2 or not se or se <= 0:
+        return {"n": n, "mean": mean, "sd": sd, "se": se, "t": None, "p": None, "ci_low": None, "ci_high": None, "dz": None}
+
+    t_value = mean / se
+    p_value = None
+    ci_low = mean - 1.96 * se
+    ci_high = mean + 1.96 * se
+
+    try:
+        from scipy import stats
+
+        test = stats.ttest_1samp(clean, popmean=0.0, nan_policy="omit")
+        p_value = float(test.pvalue)
+        interval = stats.t.interval(0.95, df=n - 1, loc=mean, scale=se)
+        ci_low = float(interval[0])
+        ci_high = float(interval[1])
+    except Exception:
+        p_value = 2.0 * (1.0 - normal_cdf(abs(t_value)))
+
+    return {
+        "n": n,
+        "mean": mean,
+        "sd": sd,
+        "se": se,
+        "t": float(t_value),
+        "p": p_value,
+        "ci_low": ci_low,
+        "ci_high": ci_high,
+        "dz": mean / sd if sd > 0 else None,
+    }
+
+
+def normal_cdf(value: float) -> float:
+    return 0.5 * (1.0 + math.erf(value / math.sqrt(2.0)))
+
+
+def contrast_conclusion(stats: dict[str, Any]) -> str:
+    mean = stats.get("mean")
+    p_value = stats.get("p")
+    n = int(stats.get("n") or 0)
+    if n < 10:
+        return "样本量不足，仅供检查"
+    if mean is None or p_value is None:
+        return "统计量不足"
+    if mean > 0 and p_value < 0.05:
+        return "显著支持中密度最高"
+    if mean < 0 and p_value < 0.05:
+        return "显著反向"
+    if mean > 0:
+        return "方向支持但未达显著"
+    return "未支持假设方向"
+
+
+def format_ci(stats: dict[str, Any]) -> str:
+    low = stats.get("ci_low")
+    high = stats.get("ci_high")
+    if low is None or high is None:
+        return "-"
+    return f"[{fmt(low)}, {fmt(high)}]"
+
+
+def fmt_p(value: Any) -> str:
+    numeric = to_float(value)
+    if numeric is None:
+        return "-"
+    if numeric < 0.001:
+        return "<0.001"
+    return f"{numeric:.3f}"
 
 
 def parse_session_label(label: str) -> dict[str, str]:

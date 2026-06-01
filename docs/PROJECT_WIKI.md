@@ -245,6 +245,7 @@ XDF worker 目前输出：
 - GitHub Actions 的 `SUPABASE_SERVICE_ROLE_KEY` 可以使用新版 `sb_secret_...` 或旧版 JWT `service_role`。worker 请求头需要区分两者：新版 secret key 只放 `apikey`，旧版 JWT 才放 `Authorization: Bearer ...`。
 - 文件管理界面必须以“文件为中心”呈现分析状态：XDF 文件旁边直接显示未提交、排队、运行、完成、失败、疑似卡住；任务队列支持状态筛选和进度条。270 个实验文件不能只靠一串卡片堆叠。
 - XDF 正式分析必须支持“被试批量任务”：同一被试的低/中/高密度 3 个 XDF run 一起提交，先逐 run 做 QC，再汇总成 subject-level density table。核心组内因素是 Density；Metro/map、run order、signage version 可作为控制变量或辅助解释字段。组间因素需要用户额外提供 subject metadata 表，例如 subject_id、group、age、sex、VR experience、专业背景、实验顺序/分组等。
+- “数据分析与论文写作”还需要一个全样本汇总任务：读取已完成的被试批量报告，提取每名被试的 `medium - mean(low, high)` contrast，输出 n、均值、95% CI、t/p、Cohen dz 和结论口径。该汇总只能回答组内主假设；组间显著性需要额外 subject metadata 后再做 Density × Group 交互模型。
 - 运行完成、失败、配置错误、疑似卡住的任务应该能从界面删除，避免历史错误任务堆积影响判断。
 - XDF worker 的正式输出不要在 dashboard 内长篇展示；生成自包含 HTML report，存入 Supabase private Storage，并在任务列表中提供下载入口。页面只显示队列状态、进度和下载按钮。
 - 信息架构：研究资料库只做文件管理、打开文件和文献知识卡片；XDF 被试批量分析、任务队列、HTML 报告下载应集中放在“数据分析与论文写作”，避免同一分析入口在两个模块重复出现。

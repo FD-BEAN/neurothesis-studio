@@ -341,6 +341,7 @@ function Workspace({
   const inferredSubjectGroups = useMemo(() => groupXdfDocumentsBySubject(xdfDocuments), [xdfDocuments]);
   const latestJobByDocumentId = useMemo(() => buildLatestJobByDocumentId(analysisJobs), [analysisJobs]);
   const xdfJobStats = useMemo(() => getXdfJobStats(analysisJobs), [analysisJobs]);
+  const completedSubjectBatchCount = useMemo(() => countCompletedSubjectBatchJobs(analysisJobs), [analysisJobs]);
   const filteredXdfJobs = useMemo(
     () =>
       analysisJobs
@@ -544,6 +545,43 @@ function Workspace({
     }
 
     setJobMessage(payload.warning ?? `已提交 ${uniqueDocumentIds.length} 个 XDF 的被试密度条件批量分析任务。`);
+    await loadAnalysisJobs();
+    setJobLoading(false);
+  }
+
+  async function runCohortDensitySummary() {
+    if (!xdfDocuments.length) {
+      setJobMessage("还没有 XDF 文件，无法创建全样本汇总任务。");
+      return;
+    }
+    if (!completedSubjectBatchCount) {
+      setJobMessage("还没有已完成的被试批量报告。请先按被试提交低/中/高密度 XDF 分析。");
+      return;
+    }
+
+    setJobLoading(true);
+    setJobMessage("");
+
+    const response = await fetch("/api/analysis/jobs", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        documentId: xdfDocuments[0].id,
+        analysisType: "cohort_density_summary",
+      }),
+    });
+
+    const payload = (await response.json()) as { job?: ResearchAnalysisJob; error?: string; warning?: string };
+    if (!response.ok && !payload.job) {
+      setJobMessage(payload.error ?? "全样本密度统计汇总任务创建失败。");
+      setJobLoading(false);
+      return;
+    }
+
+    setJobMessage(payload.warning ?? `已提交全样本密度统计汇总任务，将汇总 ${completedSubjectBatchCount} 个已完成被试报告。`);
     await loadAnalysisJobs();
     setJobLoading(false);
   }
@@ -858,6 +896,13 @@ function Workspace({
               <h2>XDF 批量分析与报告</h2>
             </div>
             <div className="top-actions">
+              <button
+                className="secondary-button"
+                disabled={jobLoading || !completedSubjectBatchCount || !xdfDocuments.length}
+                onClick={runCohortDensitySummary}
+              >
+                汇总已完成被试
+              </button>
               <button className="secondary-button" onClick={loadAnalysisJobs}>
                 刷新任务
               </button>
@@ -1381,12 +1426,17 @@ function getJobDisplayTitle(job: ResearchAnalysisJob) {
   const result = job.result_json as
     | {
         batch?: { subjectId?: string; documentIds?: string[] };
+        cohort?: { kind?: string };
         subjectId?: string;
         sourceDocumentIds?: string[];
       }
     | null
     | undefined;
   const batch = result?.batch;
+
+  if (job.analysis_type === "cohort_density_summary" || result?.cohort?.kind === "cohort_density_summary") {
+    return "全样本密度统计汇总";
+  }
 
   if (job.analysis_type === "subject_batch" || batch || result?.sourceDocumentIds?.length) {
     const subjectId = batch?.subjectId ?? result?.subjectId ?? inferSubjectIdFromFilename(job.research_documents?.filename ?? "");
@@ -1426,6 +1476,17 @@ function getXdfJobStats(jobs: ResearchAnalysisJob[]) {
     failed: xdfJobs.filter((job) => job.status === "failed" || job.status === "configuration_required").length,
     stale: xdfJobs.filter(isStaleJob).length,
   };
+}
+
+function countCompletedSubjectBatchJobs(jobs: ResearchAnalysisJob[]) {
+  return jobs.filter((job) => {
+    const result = job.result_json as { batch?: unknown; densityContrasts?: unknown } | null | undefined;
+    return (
+      job.status === "completed" &&
+      (job.analysis_type === "subject_batch" || Boolean(result?.batch)) &&
+      Array.isArray(result?.densityContrasts)
+    );
+  }).length;
 }
 
 function filterJobForView(job: ResearchAnalysisJob, filter: JobViewFilter) {

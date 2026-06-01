@@ -55,7 +55,8 @@ export async function POST(request: Request) {
   const { supabase, userId } = auth;
   const { documentId, documentIds, subjectId, analysisType } = (await request.json()) as CreateJobBody;
   const requestedDocumentIds = uniqueStrings(documentIds?.length ? documentIds : documentId ? [documentId] : []);
-  const isSubjectBatch = analysisType === "subject_batch" || requestedDocumentIds.length > 1;
+  const isCohortSummary = analysisType === "cohort_density_summary";
+  const isSubjectBatch = !isCohortSummary && (analysisType === "subject_batch" || requestedDocumentIds.length > 1);
 
   if (!requestedDocumentIds.length) {
     return NextResponse.json({ error: "documentId or documentIds is required." }, { status: 400 });
@@ -91,7 +92,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "被试批量分析至少需要 2 个 XDF；正式数据建议同一被试的低/中/高密度 3 个 run 一起提交。" }, { status: 400 });
   }
 
-  const resolvedAnalysisType = isSubjectBatch ? "subject_batch" : analysisType || "advanced_python";
+  const resolvedAnalysisType = isCohortSummary ? "cohort_density_summary" : isSubjectBatch ? "subject_batch" : analysisType || "advanced_python";
   const representativeDocument = documents[0];
   const batchPayload = isSubjectBatch
     ? {
@@ -108,6 +109,12 @@ export async function POST(request: Request) {
         })),
       }
     : null;
+  const cohortPayload = isCohortSummary
+    ? {
+        kind: "cohort_density_summary",
+        design: DENSITY_ANALYSIS_DESIGN,
+      }
+    : null;
 
   const { data: insertedJob, error: insertError } = await supabase
     .from("research_analysis_jobs")
@@ -118,8 +125,10 @@ export async function POST(request: Request) {
       status: "pending",
       status_message: batchPayload
         ? `被试 ${batchPayload.subjectId} 的 ${documents.length} 个 XDF 批量分析任务已创建，等待 Python worker。`
-        : "XDF 分析任务已创建，等待 Python worker。",
-      result_json: batchPayload ? { batch: batchPayload } : null,
+        : cohortPayload
+          ? "全样本密度统计汇总任务已创建，等待 Python worker。"
+          : "XDF 分析任务已创建，等待 Python worker。",
+      result_json: batchPayload ? { batch: batchPayload } : cohortPayload ? { cohort: cohortPayload } : null,
     })
     .select("*")
     .single();
@@ -182,6 +191,8 @@ export async function POST(request: Request) {
       status: "queued",
       status_message: batchPayload
         ? `已触发 GitHub Actions：被试 ${batchPayload.subjectId} 的 ${documents.length} 个 XDF 将按低/中/高密度一起分析。`
+        : cohortPayload
+          ? "已触发 GitHub Actions：将汇总已完成被试的密度条件 contrast。"
         : "已触发 GitHub Actions XDF Python worker。",
     })
     .eq("id", job.id)
