@@ -381,6 +381,8 @@ textarea {
 .condition-grid,
 .dashboard-grid,
 .document-grid,
+.library-summary,
+.library-layout,
 .ai-grid,
 .materials-grid,
 .alert-grid,
@@ -405,8 +407,43 @@ textarea {
 }
 
 .document-grid,
+.library-layout,
 .ai-grid {
   grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+}
+
+.library-summary {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-bottom: 16px;
+}
+
+.library-card {
+  min-height: 132px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.library-card span {
+  display: block;
+  color: var(--blue);
+  font-size: 1.45rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.library-card strong {
+  display: block;
+  margin-top: 10px;
+}
+
+.library-card p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
 }
 
 .materials-grid {
@@ -613,14 +650,41 @@ textarea {
 
 .document-list {
   display: grid;
-  gap: 10px;
+  gap: 18px;
   align-content: start;
+}
+
+.structured-list {
+  padding: 18px;
 }
 
 .document-detail {
   align-content: start;
   display: grid;
   gap: 14px;
+}
+
+.document-group {
+  display: grid;
+  gap: 9px;
+}
+
+.document-group + .document-group {
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.document-group-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.document-group-head span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
 }
 
 .document-item {
@@ -647,6 +711,43 @@ textarea {
 .document-item:hover {
   border-color: #91bcb6;
   background: #f0f7f5;
+}
+
+.category-badge {
+  width: fit-content;
+  padding: 6px 9px;
+  border: 1px solid #cddbd5;
+  border-radius: 8px;
+  background: #f6faf7;
+  color: var(--green);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.file-meta {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.file-meta div {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.file-meta dt {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.file-meta dd {
+  margin: 0;
+  font-weight: 800;
+  overflow-wrap: anywhere;
 }
 
 .ai-output pre {
@@ -687,6 +788,8 @@ textarea {
   .condition-grid,
   .dashboard-grid,
   .document-grid,
+  .library-summary,
+  .library-layout,
   .ai-grid,
   .materials-grid,
   .alert-grid,

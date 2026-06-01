@@ -1,7 +1,7 @@
 export const researchProject = {
   name: "Metro Rescue",
   subtitle: "VR 地铁撤离任务中的导向标识、音频负荷与 EEG 同步研究",
-  keywords: ["Metro Rescue", "VR 地铁撤离", "导向标识", "音频负荷", "LSL marker", "EEG .xdf"],
+  keywords: ["Metro Rescue", "VR 地铁撤离", "导向标识", "认知负荷", "LSL marker", "EEG .xdf"],
   design: {
     maps: ["Metro1", "Metro2", "Metro3"],
     signatures: ["Signature1", "Signature2", "Signature3"],
@@ -24,7 +24,7 @@ export const researchProject = {
     },
     {
       id: "fig-3-5",
-      title: "Metro1-3 平面图与标识可读范围",
+      title: "Metro1-3 场景平面图与标识可读范围",
       use: "开题、方法、答辩展示",
       caption:
         "绿色方块表示吊挂式导向标识位置，箭头表示标识正面朝向。蓝色圆圈表示文字完全清楚范围，橙色虚线圆圈表示文字逐渐模糊/变淡结束范围。",
@@ -87,7 +87,7 @@ export const researchProject = {
   ],
   qualityAlerts: [
     {
-      title: "图纸图例半径文字需要统一",
+      title: "场景图图例半径口径需要统一",
       detail:
         "图注文档和 SVG 元数据均指向 clear radius = 8 m、blur end radius = 12 m；但 SVG 底部可见图例写成 Blue 0-5m / Orange 5-8m。建议统一为 0-8m clear、8-12m blur/fade、12m+ intended unreadable。",
     },

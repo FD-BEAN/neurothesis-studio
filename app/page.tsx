@@ -17,8 +17,8 @@ const thesisKeywords = researchProject.keywords;
 const workspaceModules = [
   {
     href: "#files",
-    title: "资料库",
-    text: "论文 PDF、图纸、Unity 日志、EEG 文件和研究笔记。",
+    title: "研究资料库",
+    text: "文献、实验配置、原始数据、分析脚本和写作材料。",
   },
   {
     href: "#blueprint",
@@ -27,18 +27,18 @@ const workspaceModules = [
   },
   {
     href: "#materials",
-    title: "图纸与刺激",
-    text: "9 张平面图、标识可读范围、图注和口径提醒。",
+    title: "实验材料",
+    text: "VR 场景平面图、导向标识方案、可读范围和图注口径。",
   },
   {
     href: "#ai",
-    title: "研究助理",
+    title: "文献与写作助手",
     text: "文献摘要、双语矩阵、Methods 草稿和分析计划。",
   },
   {
     href: "#pipeline",
-    title: "分析与写作",
-    text: "PDF 解析、EEG 脚本、文献矩阵和英文论文段落。",
+    title: "数据分析与论文写作",
+    text: "行为数据、EEG 预处理、文献矩阵和英文论文段落。",
   },
 ];
 
@@ -47,6 +47,39 @@ const analysisModules = [
   { title: "行为数据", text: "整理 Unity 路径、停留、回退、决策点扫描和任务完成情况。" },
   { title: "EEG 预处理", text: "保留 MNE-Python 和 EEGLAB 的脚本入口，用于事件锁定和认知负荷分析。" },
   { title: "论文段落", text: "为 Introduction、Methods、Results 和 Discussion 保存中英双语草稿。" },
+];
+
+const documentCategories = [
+  {
+    id: "literature",
+    label: "文献与论文",
+    description: "已发表文献、综述、开题材料和论文草稿。",
+    extensions: ["pdf", "doc", "docx"],
+  },
+  {
+    id: "materials",
+    label: "实验材料",
+    description: "VR 场景平面图、导向标识方案、图注和实验说明。",
+    extensions: ["svg", "png", "jpg", "jpeg", "md"],
+  },
+  {
+    id: "raw-data",
+    label: "原始数据",
+    description: "Unity 日志、LSL marker、EEG 文件和行为数据表。",
+    extensions: ["xdf", "edf", "set", "mat", "csv", "xlsx", "jsonl", "json"],
+  },
+  {
+    id: "analysis",
+    label: "分析脚本与输出",
+    description: "Python、MATLAB、notebook、统计表和中间结果。",
+    extensions: ["py", "m", "ipynb", "tsv"],
+  },
+  {
+    id: "notes",
+    label: "研究笔记",
+    description: "读书笔记、讨论记录、图表说明和写作备忘。",
+    extensions: ["txt"],
+  },
 ];
 
 export default function HomePage() {
@@ -156,9 +189,9 @@ function LoginScreen({ supabase }: { supabase: SupabaseClient }) {
       <section className="auth-panel">
         <Brand />
         <div className="auth-copy">
-          <p className="eyebrow">私人工作台</p>
+          <p className="eyebrow">研究工作台</p>
           <h1>进入私人论文研究空间</h1>
-          <p>这里将用于真实论文 PDF、实验数据、EEG 分析笔记和 AI 研究助手。</p>
+          <p>集中管理文献、实验材料、行为数据、EEG 文件、分析脚本和论文写作材料。</p>
         </div>
 
         <form className="login-form" onSubmit={handleSubmit}>
@@ -195,8 +228,8 @@ function LoginScreen({ supabase }: { supabase: SupabaseClient }) {
       </section>
 
       <aside className="auth-aside">
-        <PreviewCard title="今日工作" text="先整理文献证据、图纸口径和实验条件表，再进入写作。" />
-        <PreviewCard title="研究原则" text="所有结论都回到上传材料和真实分析结果，不替研究编造发现。" />
+        <PreviewCard title="材料组织" text="按文献、实验材料、原始数据、分析产物和写作材料维护项目资料。" />
+        <PreviewCard title="写作原则" text="所有结论回到上传材料和真实分析结果，不替研究编造发现。" />
       </aside>
     </main>
   );
@@ -223,6 +256,17 @@ function Workspace({
   useEffect(() => {
     void loadDocuments();
   }, []);
+
+  const groupedDocuments = useMemo(
+    () =>
+      documentCategories.map((category) => ({
+        ...category,
+        documents: documents.filter((document) => getDocumentCategory(document).id === category.id),
+      })),
+    [documents],
+  );
+  const selectedCategory = selectedDocument ? getDocumentCategory(selectedDocument) : null;
+  const totalStoredBytes = documents.reduce((total, document) => total + (document.size_bytes ?? 0), 0);
 
   async function loadDocuments() {
     const { data, error } = await supabase
@@ -334,22 +378,22 @@ function Workspace({
         <Brand />
         <nav className="nav-list" aria-label="Workspace navigation">
           <a className="nav-item is-active" href="#overview">
-            工作区
+            项目概览
           </a>
           <a className="nav-item" href="#files">
-            资料库
+            研究资料库
           </a>
           <a className="nav-item" href="#blueprint">
             实验设计
           </a>
           <a className="nav-item" href="#materials">
-            图纸与刺激
+            实验材料
           </a>
           <a className="nav-item" href="#ai">
-            研究助理
+            文献与写作助手
           </a>
           <a className="nav-item" href="#pipeline">
-            分析与写作
+            数据分析与写作
           </a>
         </nav>
         <div className="side-note">
@@ -375,10 +419,10 @@ function Workspace({
         <section className="view is-visible" id="overview">
           <div className="module-overview">
             <section className="project-summary">
-              <p className="eyebrow">研究模块</p>
-              <h2>VR 地铁撤离与 EEG 认知负荷研究</h2>
+              <p className="eyebrow">项目概览</p>
+              <h2>VR 地铁撤离中的导向标识与 EEG 认知负荷研究</h2>
               <p className="summary-text">
-                这里按研究材料和工作环节组织，不替你安排顺序。需要处理哪一块，就直接进入对应模块。
+                按文献、实验配置、数据文件、分析结果和写作材料组织。各模块独立维护，也可以通过文献与写作助手串联整理。
               </p>
               <div className="module-grid">
                 {workspaceModules.map((module) => (
@@ -391,14 +435,18 @@ function Workspace({
             </section>
 
             <aside className="project-summary compact-summary">
-              <p className="eyebrow">项目记录</p>
+              <p className="eyebrow">资料摘要</p>
               <dl className="status-list">
                 <div>
                   <dt>已入库文件</dt>
                   <dd>{documents.length}</dd>
                 </div>
                 <div>
-                  <dt>当前材料</dt>
+                  <dt>存储容量</dt>
+                  <dd>{formatBytes(totalStoredBytes)}</dd>
+                </div>
+                <div>
+                  <dt>当前选中文件</dt>
                   <dd>{selectedDocument?.filename ?? "尚未选择"}</dd>
                 </div>
                 <div>
@@ -418,39 +466,85 @@ function Workspace({
         <section className="view is-visible" id="files">
           <div className="section-head">
             <div>
-              <p className="eyebrow">资料库</p>
-              <h2>论文、图纸和实验数据</h2>
+              <p className="eyebrow">研究资料库</p>
+              <h2>文献、实验材料、原始数据与分析产物</h2>
             </div>
             <label className="file-button">
-              <input type="file" accept=".pdf,.csv,.xlsx,.mat,.set,.edf,.txt,.md,.svg,.xdf,.jsonl" onChange={handleUpload} />
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx,.csv,.tsv,.xlsx,.mat,.set,.edf,.txt,.md,.svg,.png,.jpg,.jpeg,.xdf,.json,.jsonl,.py,.m,.ipynb"
+                onChange={handleUpload}
+              />
               {uploadState === "uploading" ? "上传中..." : "上传文件"}
             </label>
           </div>
 
           {uploadMessage ? <p className={`notice ${uploadState}`}>{uploadMessage}</p> : null}
 
-          <div className="document-grid">
-            <section className="work-panel document-list">
+          <div className="library-summary">
+            {groupedDocuments.map((group) => (
+              <article className="library-card" key={group.id}>
+                <span>{group.documents.length}</span>
+                <strong>{group.label}</strong>
+                <p>{group.description}</p>
+              </article>
+            ))}
+          </div>
+
+          <div className="library-layout">
+            <section className="work-panel document-list structured-list">
               {documents.length ? (
-                documents.map((document) => (
-                  <button
-                    className={`document-item ${selectedDocument?.id === document.id ? "is-active" : ""}`}
-                    key={document.id}
-                    onClick={() => setSelectedDocument(document)}
-                  >
-                    <strong>{document.filename}</strong>
-                    <span>{formatBytes(document.size_bytes)} · {new Date(document.created_at).toLocaleDateString("zh-CN")}</span>
-                  </button>
-                ))
+                groupedDocuments.map((group) =>
+                  group.documents.length ? (
+                    <div className="document-group" key={group.id}>
+                      <div className="document-group-head">
+                        <strong>{group.label}</strong>
+                        <span>{group.documents.length} 个文件</span>
+                      </div>
+                      {group.documents.map((document) => (
+                        <button
+                          className={`document-item ${selectedDocument?.id === document.id ? "is-active" : ""}`}
+                          key={document.id}
+                          onClick={() => setSelectedDocument(document)}
+                        >
+                          <strong>{document.filename}</strong>
+                          <span>
+                            {formatDocumentKind(document)} · {formatBytes(document.size_bytes)} ·{" "}
+                            {new Date(document.created_at).toLocaleDateString("zh-CN")}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : null,
+                )
               ) : (
-                <p className="muted">还没有文件。建议先放入核心文献 PDF、研究图注、9 张 SVG 图纸、Unity 日志样例和 EEG .xdf 文件。</p>
+                <p className="muted">
+                  还没有文件。建议按文献、实验材料、原始数据、分析脚本和研究笔记分批上传，便于后续检索和写作。
+                </p>
               )}
             </section>
 
             <section className="work-panel document-detail">
               <p className="eyebrow">当前选中</p>
               <h3>{selectedDocument?.filename ?? "尚未选择文件"}</h3>
-              <p className="muted">材料保持私有。需要阅读原文件时，会生成一个短时间有效的临时链接。</p>
+              {selectedCategory ? <span className="category-badge">{selectedCategory.label}</span> : null}
+              <dl className="file-meta">
+                <div>
+                  <dt>文件类型</dt>
+                  <dd>{selectedDocument ? formatDocumentKind(selectedDocument) : "未选择"}</dd>
+                </div>
+                <div>
+                  <dt>文件大小</dt>
+                  <dd>{selectedDocument ? formatBytes(selectedDocument.size_bytes) : "未选择"}</dd>
+                </div>
+                <div>
+                  <dt>入库日期</dt>
+                  <dd>
+                    {selectedDocument ? new Date(selectedDocument.created_at).toLocaleDateString("zh-CN") : "未选择"}
+                  </dd>
+                </div>
+              </dl>
+              <p className="muted">文件保持私有。需要阅读原文件时，会生成一个短时间有效的临时链接。</p>
               <button
                 className="secondary-button"
                 disabled={!selectedDocument}
@@ -473,8 +567,8 @@ function Workspace({
         <section className="view is-visible" id="ai">
           <div className="section-head">
             <div>
-              <p className="eyebrow">研究助理</p>
-              <h2>把材料变成笔记、表格和英文段落</h2>
+              <p className="eyebrow">文献与写作助手</p>
+              <h2>文献整理、方法撰写与分析计划</h2>
             </div>
             <button className="primary-button" onClick={runAiAssistant} disabled={aiState.status === "loading"}>
               {aiState.status === "loading" ? "分析中..." : "运行 AI"}
@@ -499,8 +593,8 @@ function Workspace({
         <section className="view is-visible" id="pipeline">
           <div className="section-head">
             <div>
-              <p className="eyebrow">分析与写作</p>
-              <h2>论文分析模块</h2>
+              <p className="eyebrow">数据分析与论文写作</p>
+              <h2>分析产物与写作材料</h2>
             </div>
           </div>
           <div className="workflow-list">
@@ -551,7 +645,7 @@ function ProjectBlueprint() {
         <Metric label="地图布局" value={researchProject.design.maps.length} text={researchProject.design.maps.join(" / ")} />
         <Metric label="标识方案" value={researchProject.design.signatures.length} text={researchProject.design.signatures.join(" / ")} />
         <Metric label="音频条件" value={researchProject.design.audio.length} text={researchProject.design.audio.join(" / ")} />
-        <Metric label="平面图" value={researchProject.planFiles.length} text="3 地图 × 3 标识方案，每张图含标识可读范围。" />
+        <Metric label="场景图" value={researchProject.planFiles.length} text="3 个地图布局 × 3 种标识方案，并标注导向标识可读范围。" />
       </div>
 
       <div className="dashboard-grid">
@@ -585,10 +679,10 @@ function MaterialsPanel() {
     <div className="blueprint-stack">
       <div className="section-head">
         <div>
-          <p className="eyebrow">图纸与刺激材料</p>
-          <h2>9 张平面图和论文图表线索</h2>
+          <p className="eyebrow">实验材料</p>
+          <h2>场景平面图与导向标识配置</h2>
         </div>
-        <span className="status-pill">待核对图例半径</span>
+        <span className="status-pill">可读范围口径待统一</span>
       </div>
 
       <div className="materials-grid">
@@ -598,13 +692,13 @@ function MaterialsPanel() {
               {item.map} / {item.signature}
             </span>
             <strong>{item.file}</strong>
-            <p>{item.signs} 个实验标识点。建议放入私人资料库，并与图注记录绑定。</p>
+            <p>{item.signs} 个导向标识点。建议放入研究资料库，并与图注记录绑定。</p>
           </article>
         ))}
       </div>
 
       <section className="work-panel">
-        <h3>论文图表组织建议</h3>
+        <h3>图表与图注建议</h3>
         <div className="figure-list">
           {researchProject.figures.map((figure) => (
             <article key={figure.id}>
@@ -639,8 +733,50 @@ function PipelineCard({ title, text }: { title: string; text: string }) {
   );
 }
 
+function getDocumentCategory(document: Pick<ResearchDocument, "filename" | "mime_type">) {
+  const filename = document.filename.toLowerCase();
+  const extension = getDocumentExtension(document.filename);
+
+  if (["xdf", "edf", "set", "mat", "csv", "xlsx", "json", "jsonl"].includes(extension)) {
+    return documentCategories[2];
+  }
+
+  if (["py", "m", "ipynb", "tsv"].includes(extension)) {
+    return documentCategories[3];
+  }
+
+  if (
+    ["svg", "png", "jpg", "jpeg"].includes(extension) ||
+    filename.includes("metro") ||
+    filename.includes("signature") ||
+    filename.includes("plan") ||
+    filename.includes("图注") ||
+    filename.includes("场景") ||
+    filename.includes("标识")
+  ) {
+    return documentCategories[1];
+  }
+
+  if (["pdf", "doc", "docx"].includes(extension) || document.mime_type?.includes("pdf")) {
+    return documentCategories[0];
+  }
+
+  return documentCategories[4];
+}
+
+function getDocumentExtension(filename: string) {
+  const dotIndex = filename.lastIndexOf(".");
+  return dotIndex >= 0 ? filename.slice(dotIndex + 1).toLowerCase() : "";
+}
+
+function formatDocumentKind(document: Pick<ResearchDocument, "filename">) {
+  const extension = getDocumentExtension(document.filename);
+  return extension ? extension.toUpperCase() : "FILE";
+}
+
 function formatBytes(size: number | null) {
-  if (!size) return "unknown size";
+  if (size === null) return "unknown size";
+  if (size === 0) return "0 KB";
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
   return `${(size / 1024 / 1024).toFixed(1)} MB`;
 }
