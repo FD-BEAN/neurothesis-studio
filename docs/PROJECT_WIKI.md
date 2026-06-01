@@ -238,6 +238,7 @@ XDF worker 目前输出：
 2026-06-01 后的产品边界：
 
 - 文献与论文：只做文献知识库。上传 PDF 后生成/更新“知识卡片”，卡片包含研究问题、方法、EEG/行为指标、主要发现、局限、可用于论文哪个章节等。AI 写作助手必须优先读取这些卡片，并用论文标题或文件名引用来源。
+- 新增文献知识卡片必须走后端 OpenAI API，不把 key 暴露到前端。长 PDF 不应只截取开头；先按 chunk 生成 evidence digest，再生成最终知识卡片。卡片需要包含中文摘要、英文摘要、one-sentence takeaway、方法/指标、主要发现、局限、与中密度假设的关系、可写入 Methods/Results/Discussion 的用法、不可过度声称的边界和待核对 quote anchors。
 - XDF 原始数据：只放 LabRecorder `.xdf`、EEG 原始文件和正式实验数据。XDF 高级分析只处理这里的 EEG stream + Unity marker stream。
 - 分析脚本与输出：放 Python/MATLAB/notebook、trial_features、event_features、中间统计表和写作产物。后续 90 名被试 × 3 个密度条件 = 270 个实验文件，应走批量上传和批量提交 XDF 队列。
 - 场景平面图与导向标识配置暂时不作为主要界面模块展示，避免干扰当前文献库和 XDF 分析主线。

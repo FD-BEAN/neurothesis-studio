@@ -3,11 +3,15 @@ import type { ResearchDocument } from "@/lib/supabase";
 export const LITERATURE_CARD_PREFIX = "NT_KB_V1::";
 
 export type LiteratureKnowledgeCard = {
-  version: 1 | 2;
+  version: 1 | 2 | 3;
   documentId: string;
   filename: string;
   title: string;
   citation: string;
+  paperType?: string;
+  oneSentenceTakeaway?: string;
+  abstractZh?: string;
+  abstractEn?: string;
   researchQuestion: string;
   methods: string;
   participants: string;
@@ -24,6 +28,17 @@ export type LiteratureKnowledgeCard = {
   doNotClaim?: string[];
   candidateClaims?: string[];
   quoteAnchorsToVerify?: string[];
+  theoryOrMechanism?: string[];
+  variablesAndMeasures?: string[];
+  densityHypothesisRelevance?: string[];
+  methodsWritingUse?: string[];
+  resultsDiscussionUse?: string[];
+  qualityCaveats?: string[];
+  extractionMeta?: {
+    extractedChars: number;
+    digestChunks: number;
+    warning: string;
+  };
   createdAt: string;
 };
 
@@ -35,7 +50,7 @@ export function parseLiteratureCard(notes: string | null | undefined): Literatur
   if (!notes?.startsWith(LITERATURE_CARD_PREFIX)) return null;
   try {
     const parsed = JSON.parse(notes.slice(LITERATURE_CARD_PREFIX.length)) as LiteratureKnowledgeCard;
-    return parsed?.version === 1 || parsed?.version === 2 ? parsed : null;
+    return parsed?.version === 1 || parsed?.version === 2 || parsed?.version === 3 ? parsed : null;
   } catch {
     return null;
   }

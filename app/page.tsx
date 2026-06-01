@@ -1291,7 +1291,7 @@ function LiteratureKnowledgePanel({
               <article className="knowledge-card" key={document.id}>
                 <span>{card.sourceGrade ? `Grade ${card.sourceGrade}` : card.evidenceLevel || "文献证据"}</span>
                 <h4>{card.title || document.filename}</h4>
-                <p>{card.researchQuestion}</p>
+                <p>{card.oneSentenceTakeaway || card.researchQuestion}</p>
                 <div className="keyword-row compact quiet">
                   {(card.themeTags?.length ? card.themeTags : card.keywords).slice(0, 6).map((keyword) => (
                     <span key={`${document.id}-${keyword}`}>{keyword}</span>
@@ -1306,6 +1306,18 @@ function LiteratureKnowledgePanel({
                     <dt>可用于</dt>
                     <dd>{card.usableForSections.join(" / ")}</dd>
                   </div>
+                  {card.densityHypothesisRelevance?.length ? (
+                    <div>
+                      <dt>密度假设</dt>
+                      <dd>{card.densityHypothesisRelevance.slice(0, 2).join("；")}</dd>
+                    </div>
+                  ) : null}
+                  {card.keyFindings?.length ? (
+                    <div>
+                      <dt>主要发现</dt>
+                      <dd>{card.keyFindings.slice(0, 2).join("；")}</dd>
+                    </div>
+                  ) : null}
                   {card.doNotClaim?.length ? (
                     <div>
                       <dt>边界</dt>
