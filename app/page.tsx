@@ -1012,6 +1012,9 @@ function AnalysisJobsPanel({
   jobs: ResearchAnalysisJob[];
   onOpenReport: (report: DataAnalysisReport) => void;
 }) {
+  const xdfJobs = jobs.filter(isXdfAnalysisJob);
+  const hiddenLegacyJobs = jobs.length - xdfJobs.length;
+
   return (
     <section className="work-panel analysis-jobs-panel">
       <div className="analysis-head">
@@ -1019,11 +1022,16 @@ function AnalysisJobsPanel({
           <p className="eyebrow">XDF 高级分析</p>
           <h3>后台任务</h3>
         </div>
-        <span className="status-pill compact">{jobs.length} 个任务</span>
+        <span className="status-pill compact">{xdfJobs.length} 个任务</span>
       </div>
-      {jobs.length ? (
+      {hiddenLegacyJobs ? (
+        <p className="muted">
+          已隐藏 {hiddenLegacyJobs} 个旧的非 XDF 后台任务。XDF 高级分析只显示 LabRecorder .xdf 的 EEG + Unity marker 分析任务。
+        </p>
+      ) : null}
+      {xdfJobs.length ? (
         <div className="job-list">
-          {jobs.map((job) => {
+          {xdfJobs.map((job) => {
             const report = isDataAnalysisReport(job.result_json) ? job.result_json : null;
 
             return (
@@ -1186,6 +1194,11 @@ function getDocumentExtension(filename: string) {
 
 function isXdfDocument(document: Pick<ResearchDocument, "filename">) {
   return getDocumentExtension(document.filename) === "xdf";
+}
+
+function isXdfAnalysisJob(job: ResearchAnalysisJob) {
+  const filename = job.research_documents?.filename ?? "";
+  return getDocumentExtension(filename) === "xdf";
 }
 
 function formatDocumentKind(document: Pick<ResearchDocument, "filename">) {
