@@ -6,7 +6,50 @@
     <title>NeuroThesis Studio</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
-  <body>
+  <body class="auth-locked">
+    <section class="auth-screen" id="authScreen" aria-labelledby="login-title">
+      <div class="auth-panel">
+        <div class="brand auth-brand">
+          <div class="brand-mark" aria-hidden="true">NS</div>
+          <div>
+            <p class="eyebrow">私人研究工作台</p>
+            <h1>NeuroThesis Studio</h1>
+          </div>
+        </div>
+        <div class="auth-copy">
+          <p class="eyebrow">登录访问</p>
+          <h2 id="login-title">进入论文研究空间</h2>
+          <p>为 EEG + VR 地铁逃生论文准备的阅读、分析和写作工作台。</p>
+        </div>
+
+        <form class="login-form" id="loginForm">
+          <label>
+            账号
+            <input id="loginUser" name="username" type="text" autocomplete="username" placeholder="请输入账号" />
+          </label>
+          <label>
+            访问密码
+            <input id="loginPassword" name="password" type="password" autocomplete="current-password" placeholder="请输入访问密码" />
+          </label>
+          <p class="auth-error" id="loginError" hidden>账号或密码不正确。</p>
+          <button class="primary-button auth-submit" type="submit">进入工作台</button>
+        </form>
+
+        <p class="auth-warning">当前是 GitHub Pages 静态演示门禁。真实论文、实验数据和 API key 不应放在公开仓库或前端代码里。</p>
+      </div>
+
+      <aside class="auth-aside" aria-label="Research workspace preview">
+        <div class="auth-preview-card">
+          <span>Research Flow</span>
+          <strong>论文阅读 -> 文献矩阵 -> EEG 分析 -> 英文写作</strong>
+        </div>
+        <div class="auth-preview-card">
+          <span>Data Boundary</span>
+          <strong>先演示流程，后接入后端鉴权和私有数据存储</strong>
+        </div>
+      </aside>
+    </section>
+
     <div class="app-shell">
       <aside class="sidebar" aria-label="Workspace navigation">
         <div class="brand">
@@ -39,6 +82,8 @@
             <h2>集论文阅读、数据分析和中英双语写作于一体的研究工作台</h2>
           </div>
           <div class="top-actions">
+            <span class="status-pill compact" id="authUserLabel">已登录</span>
+            <button class="secondary-button" id="logoutButton">退出</button>
             <button class="secondary-button" id="resetDemo">重置</button>
             <button class="primary-button" id="loadDemo">加载示例项目</button>
           </div>

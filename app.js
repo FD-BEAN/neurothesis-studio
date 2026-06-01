@@ -7,6 +7,13 @@ const state = {
   activeCode: "python",
 };
 
+const AUTH_CONFIG = {
+  username: "researcher",
+  passwordHash: "0e5a170ff0867a879d950b746ab6c1b741cbb413769c35e9647f1e5726a137a4",
+  sessionKey: "neurothesis_session",
+  sessionHours: 8,
+};
+
 const demoPapers = [
   {
     id: "p1",
@@ -169,6 +176,92 @@ function showToast(message) {
   window.setTimeout(() => toast.classList.remove("is-visible"), 2200);
 }
 
+async function hashText(text) {
+  if (window.crypto?.subtle) {
+    const bytes = new TextEncoder().encode(text);
+    const digest = await window.crypto.subtle.digest("SHA-256", bytes);
+    return Array.from(new Uint8Array(digest))
+      .map((byte) => byte.toString(16).padStart(2, "0"))
+      .join("");
+  }
+
+  let hash = 5381;
+  for (let index = 0; index < text.length; index += 1) {
+    hash = (hash * 33) ^ text.charCodeAt(index);
+  }
+  return String(hash >>> 0);
+}
+
+function getSession() {
+  try {
+    const raw = window.sessionStorage.getItem(AUTH_CONFIG.sessionKey);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function setSession(username) {
+  try {
+    const expiresAt = Date.now() + AUTH_CONFIG.sessionHours * 60 * 60 * 1000;
+    window.sessionStorage.setItem(AUTH_CONFIG.sessionKey, JSON.stringify({ username, expiresAt }));
+  } catch {
+    // Session storage can be disabled by the browser. The UI still unlocks for this tab.
+  }
+}
+
+function clearSession() {
+  try {
+    window.sessionStorage.removeItem(AUTH_CONFIG.sessionKey);
+  } catch {
+    // Nothing to clear.
+  }
+}
+
+function isSessionValid() {
+  const session = getSession();
+  return session?.username === AUTH_CONFIG.username && Number(session.expiresAt) > Date.now();
+}
+
+function setAuthenticated(isAuthenticated) {
+  document.body.classList.toggle("auth-locked", !isAuthenticated);
+  document.body.classList.toggle("is-authenticated", isAuthenticated);
+  if (isAuthenticated) {
+    $("#authUserLabel").textContent = `已登录：${AUTH_CONFIG.username}`;
+  }
+}
+
+async function handleLogin(event) {
+  event.preventDefault();
+  const username = $("#loginUser").value.trim().toLowerCase();
+  const password = $("#loginPassword").value;
+  const passwordHash = await hashText(password);
+  const isValid =
+    username === AUTH_CONFIG.username &&
+    (passwordHash === AUTH_CONFIG.passwordHash || (!window.crypto?.subtle && password === "neuro2026"));
+
+  if (!isValid) {
+    $("#loginError").hidden = false;
+    $("#loginPassword").select();
+    return;
+  }
+
+  $("#loginError").hidden = true;
+  $("#loginPassword").value = "";
+  setSession(username);
+  setAuthenticated(true);
+  showToast("已进入研究工作台");
+}
+
+function handleLogout() {
+  clearSession();
+  setAuthenticated(false);
+  $("#loginUser").value = AUTH_CONFIG.username;
+  $("#loginPassword").value = "";
+  $("#loginPassword").focus();
+  showToast("已退出");
+}
+
 function setView(id) {
   $all(".view").forEach((view) => view.classList.toggle("is-visible", view.id === id));
   $all(".nav-item").forEach((button) => {
@@ -276,9 +369,9 @@ function renderMatrix() {
   body.innerHTML = rows
     .map((paper) => {
       let focus = paper.finding;
-      if (lens === "method") focus = paper.extracts.Method;
+      if (lens === "method") focus = paper.extracts["方法"] || paper.extracts.Method;
       if (lens === "measure") focus = paper.measures;
-      if (lens === "limitation") focus = paper.extracts.Limitation;
+      if (lens === "limitation") focus = paper.extracts["局限"] || paper.extracts.Limitation;
       return `<tr>
         <td><strong>${paper.title}</strong><br><span>${paper.type}</span></td>
         <td>${paper.scenario}</td>
@@ -632,6 +725,8 @@ function handlePaperUpload(event) {
 }
 
 function wireEvents() {
+  $("#loginForm").addEventListener("submit", handleLogin);
+  $("#logoutButton").addEventListener("click", handleLogout);
   $all(".nav-item").forEach((button) => {
     button.addEventListener("click", () => setView(button.dataset.view));
   });
@@ -672,3 +767,5 @@ function wireEvents() {
 wireEvents();
 drawRoute();
 loadDemo();
+$("#loginUser").value = AUTH_CONFIG.username;
+setAuthenticated(isSessionValid());
