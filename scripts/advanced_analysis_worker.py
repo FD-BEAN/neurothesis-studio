@@ -10,6 +10,7 @@ QC and feature summaries, and writes a JSON report to research_analysis_jobs.
 from __future__ import annotations
 
 import argparse
+import html as html_lib
 import json
 import math
 import os
@@ -103,6 +104,20 @@ class SupabaseRest:
         response.raise_for_status()
         destination.write_bytes(response.content)
 
+    def upload_storage_object(self, storage_path: str, content: bytes, content_type: str) -> None:
+        encoded_path = quote(storage_path, safe="/")
+        response = requests.post(
+            f"{self.url}/storage/v1/object/{BUCKET}/{encoded_path}",
+            headers={
+                **self.headers,
+                "Content-Type": content_type,
+                "x-upsert": "true",
+            },
+            data=content,
+            timeout=90,
+        )
+        response.raise_for_status()
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()
@@ -159,17 +174,213 @@ def run_job(client: SupabaseRest, job_id: str, run_url: str) -> None:
             client.download_storage_object(document["storage_path"], local_file)
             report = analyze_xdf(document, local_file)
 
+    report = attach_html_report(client, job, report)
+
     client.update_job(
         job_id,
         {
             "status": "completed",
-            "status_message": "XDF EEG + Unity marker 分析完成。",
+            "status_message": "XDF EEG + Unity marker 分析完成，HTML 报告已生成。",
             "result_json": report,
             "error_message": None,
             "completed_at": now_sql(),
             "github_run_url": run_url,
         },
     )
+
+
+def attach_html_report(client: SupabaseRest, job: dict[str, Any], report: dict[str, Any]) -> dict[str, Any]:
+    generated_at = now_sql()
+    report_title = str(report.get("subjectId") or report.get("title") or "xdf-report")
+    filename = f"{sanitize_filename(report_title)}-{job['id'][:8]}.html"
+    storage_path = f"{job['user_id']}/analysis-products/{job['id']}/{filename}"
+    html_text = render_html_report(report, job, generated_at)
+    content = html_text.encode("utf-8")
+    client.upload_storage_object(storage_path, content, "text/html; charset=utf-8")
+    return {
+        **report,
+        "htmlReport": {
+            "storagePath": storage_path,
+            "filename": filename,
+            "sizeBytes": len(content),
+            "generatedAt": generated_at,
+        },
+    }
+
+
+def render_html_report(report: dict[str, Any], job: dict[str, Any], generated_at: str) -> str:
+    title = str(report.get("title") or "XDF analysis report")
+    kind = str(report.get("kind") or "XDF")
+    summary = str(report.get("summary") or "")
+    metrics = report.get("metrics") if isinstance(report.get("metrics"), list) else []
+    charts = report.get("charts") if isinstance(report.get("charts"), list) else []
+    tables = report.get("tables") if isinstance(report.get("tables"), list) else []
+    notes = report.get("notes") if isinstance(report.get("notes"), list) else []
+
+    parts = [
+        "<!doctype html><html lang='zh-CN'><head><meta charset='utf-8'>",
+        "<meta name='viewport' content='width=device-width, initial-scale=1'>",
+        f"<title>{h(title)}</title>",
+        HTML_REPORT_STYLE,
+        "</head><body><main>",
+        "<header class='hero'>",
+        f"<p class='eyebrow'>{h(kind)}</p>",
+        f"<h1>{h(title)}</h1>",
+        f"<p class='muted'>Generated at {h(generated_at)} · Job {h(job.get('id', ''))}</p>",
+        "</header>",
+    ]
+
+    if summary:
+        parts.extend(["<section class='card'><h2>报告摘要</h2>", f"<p>{h(summary)}</p>", "</section>"])
+
+    if metrics:
+        parts.append("<section class='metric-grid'>")
+        for metric in metrics:
+            if not isinstance(metric, dict):
+                continue
+            metric_text = metric.get("text")
+            parts.append(
+                "<article class='metric'>"
+                f"<span>{h(metric.get('label', 'metric'))}</span>"
+                f"<strong>{h(metric.get('value', '-'))}</strong>"
+                f"{'<p>' + h(metric_text) + '</p>' if metric_text else ''}"
+                "</article>"
+            )
+        parts.append("</section>")
+
+    if charts:
+        parts.append("<section class='grid two'>")
+        for chart in charts:
+            if not isinstance(chart, dict):
+                continue
+            parts.append("<article class='card'>")
+            parts.append(f"<h2>{h(chart.get('title', 'Chart'))}</h2>")
+            parts.append(render_scatter_chart(chart) if chart.get("type") == "scatter" else render_bar_chart(chart))
+            x_label = chart.get("xLabel")
+            y_label = chart.get("yLabel")
+            if x_label or y_label:
+                parts.append(f"<p class='muted'>{h(x_label)} / {h(y_label)}</p>")
+            parts.append("</article>")
+        parts.append("</section>")
+
+    for table in tables:
+        if isinstance(table, dict):
+            parts.append(render_table(table))
+
+    if notes:
+        parts.append("<section class='card'><h2>分析说明与限制</h2><ul>")
+        for note in notes:
+            parts.append(f"<li>{h(note)}</li>")
+        parts.append("</ul></section>")
+
+    parts.extend(
+        [
+            "<section class='card'><h2>后续统计建模提醒</h2>",
+            "<p>该 HTML 是 QC 与特征提取报告，适合检查 XDF、marker、EEG 覆盖和 run-level 指标。正式论文结论仍需要把所有被试汇总为 trial-level / event-level 表，再做 mixed-effects model 与 planned contrasts。</p>",
+            "</section>",
+            "<details class='card'><summary>机器可读 JSON 摘要</summary>",
+            f"<pre>{h(json.dumps(to_jsonable(report), ensure_ascii=False, indent=2))}</pre>",
+            "</details>",
+            "</main></body></html>",
+        ]
+    )
+    return "".join(parts)
+
+
+def render_bar_chart(chart: dict[str, Any]) -> str:
+    data = chart.get("data") if isinstance(chart.get("data"), list) else []
+    rows = []
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+        value = to_float(item.get("value"))
+        if value is not None:
+            rows.append((str(item.get("label", "")), value))
+    if not rows:
+        return "<p class='muted'>没有可绘制数据。</p>"
+
+    width, height = 760, 280
+    left, right, top, bottom = 72, 24, 28, 58
+    plot_w = width - left - right
+    plot_h = height - top - bottom
+    values = [value for _label, value in rows]
+    min_value = min(0.0, min(values))
+    max_value = max(0.0, max(values))
+    span = max(1e-9, max_value - min_value)
+    zero_y = top + plot_h - (0.0 - min_value) / span * plot_h
+    gap = 12
+    bar_w = max(14, (plot_w - gap * (len(rows) - 1)) / max(1, len(rows)))
+    parts = [f"<svg class='chart' viewBox='0 0 {width} {height}' role='img'>"]
+    parts.append(f"<line x1='{left}' y1='{zero_y:.1f}' x2='{left + plot_w}' y2='{zero_y:.1f}' stroke='#94a3b8'/>")
+    for index, (label, value) in enumerate(rows):
+        x = left + index * (bar_w + gap)
+        value_y = top + plot_h - (value - min_value) / span * plot_h
+        y = min(value_y, zero_y)
+        bar_h = max(2, abs(zero_y - value_y))
+        color = "#3f7f75" if value >= 0 else "#c95f4a"
+        value_label_y = y - 7 if value >= 0 else y + bar_h + 15
+        parts.append(f"<rect x='{x:.1f}' y='{y:.1f}' width='{bar_w:.1f}' height='{bar_h:.1f}' fill='{color}' rx='4'/>")
+        parts.append(f"<text x='{x + bar_w / 2:.1f}' y='{value_label_y:.1f}' class='svg-label' text-anchor='middle'>{h(fmt(value))}</text>")
+        parts.append(f"<text x='{x + bar_w / 2:.1f}' y='{height - 28}' class='svg-small' text-anchor='middle'>{h(short_label(label))}</text>")
+    parts.append("</svg>")
+    return "".join(parts)
+
+
+def render_scatter_chart(chart: dict[str, Any]) -> str:
+    data = chart.get("data") if isinstance(chart.get("data"), list) else []
+    points = []
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+        x_value = to_float(item.get("x"))
+        y_value = to_float(item.get("y"))
+        if x_value is not None and y_value is not None:
+            points.append((str(item.get("label", "")), x_value, y_value))
+    if not points:
+        return "<p class='muted'>没有可绘制数据。</p>"
+
+    width, height = 760, 320
+    left, right, top, bottom = 72, 32, 28, 52
+    plot_w = width - left - right
+    plot_h = height - top - bottom
+    x_values = [point[1] for point in points]
+    y_values = [point[2] for point in points]
+    min_x, max_x = min(x_values), max(x_values)
+    min_y, max_y = min(y_values), max(y_values)
+
+    def scale(value: float, low: float, high: float, size: float) -> float:
+        if abs(high - low) < 1e-12:
+            return size / 2
+        return (value - low) / (high - low) * size
+
+    parts = [f"<svg class='chart' viewBox='0 0 {width} {height}' role='img'>"]
+    parts.append(f"<rect x='{left}' y='{top}' width='{plot_w}' height='{plot_h}' fill='#fff' stroke='#d8e1df'/>")
+    for label, x_value, y_value in points:
+        x = left + scale(x_value, min_x, max_x, plot_w)
+        y = top + plot_h - scale(y_value, min_y, max_y, plot_h)
+        parts.append(f"<circle cx='{x:.1f}' cy='{y:.1f}' r='5' fill='#3f7f75'><title>{h(label)}: {h(fmt(x_value))}, {h(fmt(y_value))}</title></circle>")
+    parts.append(f"<text x='{left}' y='{height - 18}' class='svg-small'>{h(fmt(min_x))} → {h(fmt(max_x))}</text>")
+    parts.append(f"<text x='{left}' y='{top - 8}' class='svg-small'>{h(fmt(min_y))} → {h(fmt(max_y))}</text>")
+    parts.append("</svg>")
+    return "".join(parts)
+
+
+def render_table(table: dict[str, Any]) -> str:
+    columns = table.get("columns") if isinstance(table.get("columns"), list) else []
+    rows = table.get("rows") if isinstance(table.get("rows"), list) else []
+    parts = ["<section class='card table-card'>", f"<h2>{h(table.get('title', 'Table'))}</h2>", "<div class='table-wrap'><table><thead><tr>"]
+    for column in columns:
+        parts.append(f"<th>{h(column)}</th>")
+    parts.append("</tr></thead><tbody>")
+    for row in rows:
+        if not isinstance(row, list):
+            continue
+        parts.append("<tr>")
+        for cell in row:
+            parts.append(f"<td>{h(cell)}</td>")
+        parts.append("</tr>")
+    parts.append("</tbody></table></div></section>")
+    return "".join(parts)
 
 
 def run_subject_batch_job(client: SupabaseRest, job: dict[str, Any], run_url: str) -> dict[str, Any]:
@@ -1242,6 +1453,21 @@ def is_legacy_jwt_key(key: str) -> bool:
     return key.startswith("eyJ")
 
 
+def h(value: Any) -> str:
+    return html_lib.escape("" if value is None else str(value), quote=True)
+
+
+def short_label(value: str, limit: int = 18) -> str:
+    text = str(value)
+    return text if len(text) <= limit else f"{text[: limit - 1]}…"
+
+
+def sanitize_filename(value: str) -> str:
+    cleaned = "".join(ch.lower() if ("a" <= ch.lower() <= "z" or "0" <= ch <= "9") else "-" for ch in value)
+    cleaned = "-".join(part for part in cleaned.split("-") if part)
+    return (cleaned or "xdf-report")[:90]
+
+
 def fmt(value: Any) -> str:
     if value is None:
         return "-"
@@ -1284,6 +1510,102 @@ def to_jsonable(value: Any) -> Any:
     if value is None:
         return None
     return value
+
+
+HTML_REPORT_STYLE = """
+<style>
+:root {
+  --bg: #f7faf9;
+  --card: #ffffff;
+  --ink: #12201d;
+  --muted: #65736f;
+  --line: #d8e1df;
+  --green: #3f7f75;
+  --coral: #c95f4a;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.58 -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
+}
+main { max-width: 1180px; margin: 0 auto; padding: 30px; }
+.hero { margin-bottom: 18px; }
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+h1 { margin: 0 0 8px; font-size: 30px; line-height: 1.18; }
+h2 { margin: 0 0 14px; font-size: 20px; }
+p { margin: 8px 0; }
+.muted { color: var(--muted); }
+.card {
+  margin: 18px 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+  box-shadow: 0 1px 2px rgba(18, 32, 29, 0.04);
+}
+.grid.two {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 18px 0;
+}
+.metric {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+.metric span { display: block; color: var(--muted); font-size: 12px; font-weight: 800; }
+.metric strong { display: block; margin-top: 6px; font-size: 24px; }
+.metric p { color: var(--muted); font-size: 13px; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td {
+  padding: 8px 9px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+th { background: #edf4f2; font-weight: 800; }
+pre {
+  max-height: 440px;
+  overflow: auto;
+  padding: 14px;
+  border-radius: 8px;
+  background: #17211f;
+  color: #eef6f3;
+  white-space: pre-wrap;
+}
+code { font-family: Consolas, "SFMono-Regular", monospace; }
+.chart {
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+.svg-label { font: 12px "Segoe UI", Arial, sans-serif; fill: #33423f; font-weight: 800; }
+.svg-small { font: 11px "Segoe UI", Arial, sans-serif; fill: #65736f; }
+@media (max-width: 860px) {
+  main { padding: 18px; }
+  .grid.two { grid-template-columns: 1fr; }
+}
+</style>
+"""
 
 
 if __name__ == "__main__":

@@ -57,6 +57,13 @@ type DataAnalysisReport = {
   notes: string[];
 };
 
+type HtmlReportArtifact = {
+  storagePath: string;
+  filename?: string;
+  sizeBytes?: number;
+  generatedAt?: string;
+};
+
 const thesisKeywords = researchProject.keywords;
 
 const workspaceModules = [
@@ -505,6 +512,27 @@ function Workspace({
     window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   }
 
+  async function downloadJobHtmlReport(job: ResearchAnalysisJob) {
+    const artifact = getJobHtmlReport(job);
+    if (!artifact) {
+      setJobMessage("这个任务还没有 HTML 报告文件。旧任务需要重新运行一次 XDF 高级分析，新的 worker 才会生成可下载 HTML。");
+      return;
+    }
+
+    const { data, error } = await supabase.storage
+      .from("research-files")
+      .createSignedUrl(artifact.storagePath, 60 * 10, {
+        download: artifact.filename ?? "xdf-analysis-report.html",
+      });
+
+    if (error || !data?.signedUrl) {
+      setJobMessage(`生成 HTML 报告下载链接失败：${error?.message ?? "未知错误"}`);
+      return;
+    }
+
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  }
+
   async function runAiAssistant() {
     setAiState({ status: "loading", output: "" });
     const accessToken = session.access_token;
@@ -863,7 +891,7 @@ function Workspace({
             <StatusMetric label="总文件" value={documents.length} text={formatBytes(totalStoredBytes)} />
             <StatusMetric label="XDF 文件" value={xdfDocuments.length} text="EEG + Unity marker 原始数据" />
             <StatusMetric label="进行中" value={xdfJobStats.active} text="pending / queued / running" />
-            <StatusMetric label="已完成" value={xdfJobStats.completed} text="可以查看结果" />
+            <StatusMetric label="已完成" value={xdfJobStats.completed} text="可下载 HTML 报告" />
             <StatusMetric label="失败/需处理" value={xdfJobStats.failed + xdfJobStats.stale} text="失败或长时间未更新" tone="warn" />
           </div>
 
@@ -1011,7 +1039,7 @@ function Workspace({
               <SelectedDocumentJobs
                 jobs={selectedDocumentJobs}
                 selectedDocument={selectedDocument}
-                onOpenReport={(report) => setAnalysisState({ status: "done", report, error: "" })}
+                onDownloadReport={downloadJobHtmlReport}
               />
             </section>
           </div>
@@ -1040,7 +1068,7 @@ function Workspace({
             jobs={filteredXdfJobs}
             filter={jobViewFilter}
             onDeleteJobs={deleteAnalysisJobs}
-            onOpenReport={(report) => setAnalysisState({ status: "done", report, error: "" })}
+            onDownloadReport={downloadJobHtmlReport}
           />
         </section>
 
@@ -1104,7 +1132,7 @@ function Workspace({
           </div>
           <AnalysisJobsPanel
             jobs={analysisJobs}
-            onOpenReport={(report) => setAnalysisState({ status: "done", report, error: "" })}
+            onDownloadReport={downloadJobHtmlReport}
           />
           <AnalysisResultPanel state={analysisState} selectedDocument={selectedDocument} />
         </section>
@@ -1180,11 +1208,11 @@ function DocumentStatusBadge({
 function SelectedDocumentJobs({
   jobs,
   selectedDocument,
-  onOpenReport,
+  onDownloadReport,
 }: {
   jobs: ResearchAnalysisJob[];
   selectedDocument: ResearchDocument | null;
-  onOpenReport: (report: DataAnalysisReport) => void;
+  onDownloadReport: (job: ResearchAnalysisJob) => void;
 }) {
   if (!selectedDocument || !isXdfDocument(selectedDocument)) return null;
 
@@ -1200,7 +1228,7 @@ function SelectedDocumentJobs({
       {jobs.length ? (
         <div className="compact-job-list">
           {jobs.slice(0, 4).map((job) => {
-            const report = isDataAnalysisReport(job.result_json) ? job.result_json : null;
+            const reportArtifact = getJobHtmlReport(job);
             return (
               <article className="compact-job" key={job.id}>
                 <div className="compact-job-head">
@@ -1215,8 +1243,8 @@ function SelectedDocumentJobs({
                       GitHub Run
                     </a>
                   ) : null}
-                  <button className="secondary-button" disabled={!report} onClick={() => report && onOpenReport(report)}>
-                    查看结果
+                  <button className="secondary-button" disabled={!reportArtifact} onClick={() => onDownloadReport(job)}>
+                    {reportArtifact ? "下载 HTML" : job.status === "completed" ? "需重新生成" : "等待报告"}
                   </button>
                 </div>
               </article>
@@ -1234,12 +1262,12 @@ function AnalysisQueueOverview({
   jobs,
   filter,
   onDeleteJobs,
-  onOpenReport,
+  onDownloadReport,
 }: {
   jobs: ResearchAnalysisJob[];
   filter: JobViewFilter;
   onDeleteJobs: (jobIds: string[]) => void;
-  onOpenReport: (report: DataAnalysisReport) => void;
+  onDownloadReport: (job: ResearchAnalysisJob) => void;
 }) {
   const deletableJobs = jobs.filter((job) => job.status === "completed" || job.status === "failed" || job.status === "configuration_required" || isStaleJob(job));
 
@@ -1260,7 +1288,7 @@ function AnalysisQueueOverview({
       {jobs.length ? (
         <div className="queue-table">
           {jobs.map((job) => {
-            const report = isDataAnalysisReport(job.result_json) ? job.result_json : null;
+            const reportArtifact = getJobHtmlReport(job);
             return (
               <article className="queue-row" key={job.id}>
                 <div>
@@ -1275,8 +1303,8 @@ function AnalysisQueueOverview({
                       GitHub
                     </a>
                   ) : null}
-                  <button className="secondary-button" disabled={!report} onClick={() => report && onOpenReport(report)}>
-                    结果
+                  <button className="secondary-button" disabled={!reportArtifact} onClick={() => onDownloadReport(job)}>
+                    {reportArtifact ? "下载 HTML" : job.status === "completed" ? "需重新生成" : "等待报告"}
                   </button>
                   <button className="secondary-button" onClick={() => onDeleteJobs([job.id])}>
                     删除
@@ -1610,10 +1638,10 @@ function AnalysisResultPanel({
 
 function AnalysisJobsPanel({
   jobs,
-  onOpenReport,
+  onDownloadReport,
 }: {
   jobs: ResearchAnalysisJob[];
-  onOpenReport: (report: DataAnalysisReport) => void;
+  onDownloadReport: (job: ResearchAnalysisJob) => void;
 }) {
   const xdfJobs = jobs.filter(isXdfAnalysisJob);
   const hiddenLegacyJobs = jobs.length - xdfJobs.length;
@@ -1635,7 +1663,7 @@ function AnalysisJobsPanel({
       {xdfJobs.length ? (
         <div className="job-list">
           {xdfJobs.map((job) => {
-            const report = isDataAnalysisReport(job.result_json) ? job.result_json : null;
+            const reportArtifact = getJobHtmlReport(job);
 
             return (
               <article className="job-item" key={job.id}>
@@ -1652,8 +1680,8 @@ function AnalysisJobsPanel({
                       GitHub Run
                     </a>
                   ) : null}
-                  <button className="secondary-button" disabled={!report} onClick={() => report && onOpenReport(report)}>
-                    查看结果
+                  <button className="secondary-button" disabled={!reportArtifact} onClick={() => onDownloadReport(job)}>
+                    {reportArtifact ? "下载 HTML" : job.status === "completed" ? "需重新生成" : "等待报告"}
                   </button>
                 </div>
               </article>
@@ -1944,6 +1972,18 @@ function getJobDisplayTitle(job: ResearchAnalysisJob) {
   }
 
   return job.research_documents?.filename ?? job.document_id;
+}
+
+function getJobHtmlReport(job: ResearchAnalysisJob): HtmlReportArtifact | null {
+  const result = job.result_json as { htmlReport?: Partial<HtmlReportArtifact> } | null | undefined;
+  const artifact = result?.htmlReport;
+  if (!artifact?.storagePath || typeof artifact.storagePath !== "string") return null;
+  return {
+    storagePath: artifact.storagePath,
+    filename: typeof artifact.filename === "string" ? artifact.filename : "xdf-analysis-report.html",
+    sizeBytes: typeof artifact.sizeBytes === "number" ? artifact.sizeBytes : undefined,
+    generatedAt: typeof artifact.generatedAt === "string" ? artifact.generatedAt : undefined,
+  };
 }
 
 function getJobDocumentIds(job: ResearchAnalysisJob) {
