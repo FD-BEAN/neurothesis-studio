@@ -18,12 +18,6 @@ type AiState = {
   output: string;
 };
 
-type AnalysisState = {
-  status: "idle" | "loading" | "done" | "error";
-  report: DataAnalysisReport | null;
-  error: string;
-};
-
 type LiteratureKnowledgeEntry = {
   document: ResearchDocument;
   card: LiteratureKnowledgeCard | null;
@@ -31,31 +25,6 @@ type LiteratureKnowledgeEntry = {
 
 type LibraryFilter = "all" | "literature" | "raw-data" | "analysis" | "notes";
 type JobViewFilter = "all" | "active" | "completed" | "failed" | "stale";
-
-type DataAnalysisReport = {
-  title: string;
-  kind: string;
-  summary: string;
-  metrics: Array<{ label: string; value: string; text?: string }>;
-  charts: Array<
-    | {
-        type: "bar";
-        title: string;
-        xLabel: string;
-        yLabel: string;
-        data: Array<{ label: string; value: number }>;
-      }
-    | {
-        type: "scatter";
-        title: string;
-        xLabel: string;
-        yLabel: string;
-        data: Array<{ label: string; x: number; y: number; group?: string }>;
-      }
-  >;
-  tables: Array<{ title: string; columns: string[]; rows: string[][] }>;
-  notes: string[];
-};
 
 type HtmlReportArtifact = {
   storagePath: string;
@@ -87,14 +56,6 @@ const workspaceModules = [
     title: "数据分析与论文写作",
     text: "XDF 质量检查、行为数据、EEG 预处理和英文论文段落。",
   },
-];
-
-const analysisModules = [
-  { title: "XDF 同步质控", text: "检查 Mitsar EEG 与 MetroRescueMarkers，确认 map_start 到 evacuation_complete 的覆盖关系。" },
-  { title: "事件与行为指标", text: "基于 Unity marker 提取 sign_readable、decision_point_enter、停留、扫描、回退和完成时长。" },
-  { title: "EEG 特征提取", text: "围绕 sign_readable 与 decision_point_enter 建立事件窗，提取 theta、alpha 和 theta/alpha 指标。" },
-  { title: "统计建模", text: "汇总 trial_features 与 event_features，用 mixed-effects model 检验 Signature、Metro 与 Audio 条件。" },
-  { title: "写作材料", text: "保存 Methods、Results、图表说明和中英双语论文草稿，所有结论回到真实分析输出。" },
 ];
 
 const documentCategories = [
@@ -316,11 +277,6 @@ function Workspace({
     metroAiPrompt,
   );
   const [aiState, setAiState] = useState<AiState>({ status: "idle", output: "" });
-  const [analysisState, setAnalysisState] = useState<AnalysisState>({
-    status: "idle",
-    report: null,
-    error: "",
-  });
   const [analysisJobs, setAnalysisJobs] = useState<ResearchAnalysisJob[]>([]);
   const [jobMessage, setJobMessage] = useState("");
   const [jobLoading, setJobLoading] = useState(false);
@@ -345,10 +301,6 @@ function Workspace({
     return () => window.clearInterval(intervalId);
   }, []);
 
-  useEffect(() => {
-    setAnalysisState({ status: "idle", report: null, error: "" });
-  }, [selectedDocument?.id]);
-
   const groupedDocuments = useMemo(
     () => {
       const query = libraryQuery.trim().toLowerCase();
@@ -370,7 +322,6 @@ function Workspace({
     [documents, libraryFilter, libraryQuery],
   );
   const selectedCategory = selectedDocument ? getDocumentCategory(selectedDocument) : null;
-  const selectedDocumentIsXdf = selectedDocument ? isXdfDocument(selectedDocument) : false;
   const selectedDocumentIsLiterature = selectedDocument ? isLiteratureDocument(selectedDocument) : false;
   const totalStoredBytes = documents.reduce((total, document) => total + (document.size_bytes ?? 0), 0);
   const filteredDocumentCount = groupedDocuments.reduce((total, group) => total + group.documents.length, 0);
@@ -551,44 +502,6 @@ function Workspace({
     }
 
     setAiState({ status: "done", output: payload.output ?? "" });
-  }
-
-  async function runDataAnalysis() {
-    if (!selectedDocument) {
-      setAnalysisState({ status: "error", report: null, error: "请先在研究资料库中选择一个文件。" });
-      return;
-    }
-
-    setAnalysisState({ status: "loading", report: null, error: "" });
-
-    const response = await fetch("/api/data/analyze", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({
-        documentId: selectedDocument.id,
-      }),
-    });
-
-    const payload = (await response.json()) as { report?: DataAnalysisReport; error?: string };
-
-    if (!response.ok || !payload.report) {
-      setAnalysisState({ status: "error", report: null, error: payload.error ?? "数据分析失败。" });
-      return;
-    }
-
-    setAnalysisState({ status: "done", report: payload.report, error: "" });
-  }
-
-  async function runPrimaryDocumentAction() {
-    if (selectedDocumentIsLiterature) {
-      await buildLiteratureKnowledgeCard();
-      return;
-    }
-
-    await runDataAnalysis();
   }
 
   async function runSubjectBatchAnalysis(documentIds = selectedBatchIds, subjectId = batchSubjectId) {
@@ -926,21 +839,11 @@ function Workspace({
                   文献入库会抽取论文目的、方法、EEG/行为指标、主要发现、局限和可引用章节，生成结构化知识卡片供写作助手引用。
                 </p>
               ) : null}
-              <button
-                className="primary-button"
-                disabled={!selectedDocument || (selectedDocumentIsLiterature ? knowledgeLoading : analysisState.status === "loading")}
-                onClick={runPrimaryDocumentAction}
-              >
-                {selectedDocumentIsLiterature
-                  ? knowledgeLoading
-                    ? "生成知识卡片中..."
-                    : "生成/更新知识卡片"
-                  : analysisState.status === "loading"
-                    ? "生成中..."
-                    : selectedDocumentIsXdf
-                      ? "查看即时 XDF 摘要"
-                      : "生成摘要"}
-              </button>
+              {selectedDocumentIsLiterature ? (
+                <button className="primary-button" disabled={!selectedDocument || knowledgeLoading} onClick={buildLiteratureKnowledgeCard}>
+                  {knowledgeLoading ? "生成知识卡片中..." : "生成/更新知识卡片"}
+                </button>
+              ) : null}
               {knowledgeMessage ? <p className="muted">{knowledgeMessage}</p> : null}
             </section>
           </div>
@@ -981,14 +884,11 @@ function Workspace({
           <div className="section-head">
             <div>
               <p className="eyebrow">数据分析与论文写作</p>
-              <h2>分析产物与写作材料</h2>
+              <h2>XDF 批量分析与报告</h2>
             </div>
             <div className="top-actions">
               <button className="secondary-button" onClick={loadAnalysisJobs}>
                 刷新任务
-              </button>
-              <button className="primary-button" disabled={!selectedDocument || analysisState.status === "loading"} onClick={runDataAnalysis}>
-                {analysisState.status === "loading" ? "分析中..." : "即时摘要"}
               </button>
             </div>
           </div>
@@ -1019,12 +919,6 @@ function Workspace({
             onDeleteJobs={deleteAnalysisJobs}
             onDownloadReport={downloadJobHtmlReport}
           />
-          <div className="workflow-list">
-            {analysisModules.map((module) => (
-              <PipelineCard key={module.title} title={module.title} text={module.text} />
-            ))}
-          </div>
-          <AnalysisResultPanel state={analysisState} selectedDocument={selectedDocument} />
         </section>
       </section>
     </main>
@@ -1390,102 +1284,6 @@ function Metric({ label, value, text }: { label: string; value: number | string;
   );
 }
 
-function PipelineCard({ title, text }: { title: string; text: string }) {
-  return (
-    <article className="work-panel">
-      <h3>{title}</h3>
-      <p className="muted">{text}</p>
-    </article>
-  );
-}
-
-function AnalysisResultPanel({
-  state,
-  selectedDocument,
-}: {
-  state: AnalysisState;
-  selectedDocument: ResearchDocument | null;
-}) {
-  if (state.status === "idle") {
-    return (
-      <section className="work-panel analysis-panel">
-        <p className="eyebrow">当前文件分析</p>
-        <h3>{selectedDocument ? selectedDocument.filename : "尚未选择文件"}</h3>
-        <p className="muted">
-          即时摘要用于资料索引和快速检查；正式的实验数据分析请在资料库中选择 LabRecorder .xdf 文件，并运行 XDF 高级分析来对齐 EEG stream 与 Unity marker stream。
-        </p>
-      </section>
-    );
-  }
-
-  if (state.status === "loading") {
-    return (
-      <section className="work-panel analysis-panel">
-        <p className="eyebrow">当前文件分析</p>
-        <h3>正在分析...</h3>
-        <p className="muted">后台正在读取私有文件并生成摘要。</p>
-      </section>
-    );
-  }
-
-  if (state.status === "error") {
-    return (
-      <section className="work-panel analysis-panel">
-        <p className="eyebrow">当前文件分析</p>
-        <h3>分析失败</h3>
-        <p className="auth-error">{state.error}</p>
-      </section>
-    );
-  }
-
-  const report = state.report;
-  if (!report) return null;
-
-  return (
-    <section className="work-panel analysis-panel">
-      <div className="analysis-head">
-        <div>
-          <p className="eyebrow">{report.kind}</p>
-          <h3>{report.title}</h3>
-        </div>
-        <span className="status-pill compact">后台分析结果</span>
-      </div>
-      <p className="summary-text compact-text">{report.summary}</p>
-
-      <div className="analysis-metric-grid">
-        {report.metrics.map((metric) => (
-          <article className="analysis-metric" key={metric.label}>
-            <span>{metric.label}</span>
-            <strong>{metric.value}</strong>
-            {metric.text ? <p>{metric.text}</p> : null}
-          </article>
-        ))}
-      </div>
-
-      {report.charts.length ? (
-        <div className="analysis-chart-grid">
-          {report.charts.map((chart, index) =>
-            chart.type === "bar" ? <BarChart chart={chart} key={`${chart.title}-${index}`} /> : <ScatterChart chart={chart} key={`${chart.title}-${index}`} />,
-          )}
-        </div>
-      ) : null}
-
-      {report.tables.map((table) => (
-        <AnalysisTable table={table} key={table.title} />
-      ))}
-
-      {report.notes.length ? (
-        <div className="analysis-notes">
-          <strong>分析说明</strong>
-          {report.notes.map((note) => (
-            <p key={note}>{note}</p>
-          ))}
-        </div>
-      ) : null}
-    </section>
-  );
-}
-
 function LiteratureKnowledgePanel({
   entries,
   onRefresh,
@@ -1542,98 +1340,6 @@ function LiteratureKnowledgePanel({
         <p className="muted">还没有文献知识卡片。上传论文后，先在文献区生成知识卡片，再让写作助手基于知识库回答。</p>
       )}
     </section>
-  );
-}
-
-function BarChart({
-  chart,
-}: {
-  chart: Extract<DataAnalysisReport["charts"][number], { type: "bar" }>;
-}) {
-  const maxValue = Math.max(1, ...chart.data.map((item) => item.value));
-
-  return (
-    <article className="chart-card">
-      <h4>{chart.title}</h4>
-      <div className="bar-chart" aria-label={`${chart.xLabel} by ${chart.yLabel}`}>
-        {chart.data.map((item) => (
-          <div className="bar-row" key={item.label}>
-            <span>{item.label}</span>
-            <div>
-              <i style={{ width: `${Math.max(3, (item.value / maxValue) * 100)}%` }} />
-            </div>
-            <strong>{item.value}</strong>
-          </div>
-        ))}
-      </div>
-    </article>
-  );
-}
-
-function ScatterChart({
-  chart,
-}: {
-  chart: Extract<DataAnalysisReport["charts"][number], { type: "scatter" }>;
-}) {
-  const xValues = chart.data.map((item) => item.x);
-  const yValues = chart.data.map((item) => item.y);
-  const minX = Math.min(...xValues);
-  const maxX = Math.max(...xValues);
-  const minY = Math.min(...yValues);
-  const maxY = Math.max(...yValues);
-
-  function normalize(value: number, min: number, max: number) {
-    if (max === min) return 50;
-    return ((value - min) / (max - min)) * 84 + 8;
-  }
-
-  return (
-    <article className="chart-card">
-      <h4>{chart.title}</h4>
-      <div className="scatter-plot" aria-label={`${chart.xLabel} and ${chart.yLabel} scatter plot`}>
-        {chart.data.map((item, index) => (
-          <span
-            className="scatter-dot"
-            key={`${item.label}-${index}`}
-            title={`${item.label}: ${chart.xLabel}=${item.x}, ${chart.yLabel}=${item.y}`}
-            style={{
-              left: `${normalize(item.x, minX, maxX)}%`,
-              bottom: `${normalize(item.y, minY, maxY)}%`,
-            }}
-          />
-        ))}
-      </div>
-      <p className="muted chart-caption">
-        {chart.xLabel}: {formatCompactNumber(minX)} 到 {formatCompactNumber(maxX)}；{chart.yLabel}:{" "}
-        {formatCompactNumber(minY)} 到 {formatCompactNumber(maxY)}
-      </p>
-    </article>
-  );
-}
-
-function AnalysisTable({ table }: { table: DataAnalysisReport["tables"][number] }) {
-  return (
-    <div className="analysis-table-wrap">
-      <h4>{table.title}</h4>
-      <table className="analysis-table">
-        <thead>
-          <tr>
-            {table.columns.map((column) => (
-              <th key={column}>{column}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {table.rows.map((row, rowIndex) => (
-            <tr key={`${table.title}-${rowIndex}`}>
-              {row.map((cell, cellIndex) => (
-                <td key={`${table.title}-${rowIndex}-${cellIndex}`}>{cell}</td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
   );
 }
 
@@ -1720,16 +1426,6 @@ function getUploadCollection(filename: string, mimeType: string) {
   if (["xdf", "edf", "set", "mat"].includes(extension)) return "xdf-raw";
   if (["py", "m", "ipynb", "csv", "tsv", "xlsx", "json", "jsonl"].includes(extension)) return "analysis-products";
   return "documents";
-}
-
-function formatCompactNumber(value: number) {
-  return Number.isInteger(value) ? String(value) : value.toFixed(2);
-}
-
-function isDataAnalysisReport(value: unknown): value is DataAnalysisReport {
-  if (!value || typeof value !== "object") return false;
-  const candidate = value as Partial<DataAnalysisReport>;
-  return Boolean(candidate.title && candidate.kind && candidate.summary && Array.isArray(candidate.metrics));
 }
 
 function buildLatestJobByDocumentId(jobs: ResearchAnalysisJob[]) {

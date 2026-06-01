@@ -211,14 +211,14 @@ XDF 在线图表的当前路线：
 
 任务流程：
 
-1. 用户在资料库选择 LabRecorder `.xdf` 并点击 XDF 高级分析。
+1. 用户在“数据分析与论文写作”中按被试选择 LabRecorder `.xdf` run，并提交被试批量分析。
 2. Vercel API 用当前 Supabase access token 验证文件归属，并写入 `research_analysis_jobs`。
 3. Vercel API 用 `GITHUB_ANALYSIS_TOKEN` 触发 GitHub Actions workflow。
 4. Python worker 用 GitHub Secret 中的 `SUPABASE_SERVICE_ROLE_KEY` 下载 private Storage 文件。
 5. Worker 输出 JSON 报告并写回 `result_json`。
 6. 前端轮询任务表，完成后可查看结果。
 
-当前 Python worker 只支持 XDF，这是刻意设计的边界。PDF、Markdown、SVG、CSV 等材料仍走即时摘要或 AI 助手，不进入正式 EEG+Unity marker 分析流水线。
+当前 Python worker 只支持 XDF，这是刻意设计的边界。PDF 文献走文献知识卡片和写作助手；Markdown、SVG、CSV 等材料只作为资料管理或辅助索引，不进入正式 EEG+Unity marker 分析流水线。
 
 XDF worker 目前输出：
 
@@ -243,7 +243,8 @@ XDF worker 目前输出：
 - XDF 正式分析必须支持“被试批量任务”：同一被试的 2-3 个 XDF run 一起提交，先逐 run 做 QC，再汇总成 subject-level run table。组内因素包括 Signature、Metro/map、audio/cognitive-load；组间因素需要用户额外提供 subject metadata 表，例如 subject_id、group、age、sex、VR experience、实验顺序/分组等。
 - 运行完成、失败、配置错误、疑似卡住的任务应该能从界面删除，避免历史错误任务堆积影响判断。
 - XDF worker 的正式输出不要在 dashboard 内长篇展示；生成自包含 HTML report，存入 Supabase private Storage，并在任务列表中提供下载入口。页面只显示队列状态、进度和下载按钮。
-- 信息架构：研究资料库只做文件管理、打开文件、文献知识卡片和轻量摘要；XDF 被试批量分析、任务队列、HTML 报告下载应集中放在“数据分析与论文写作”，避免同一分析入口在两个模块重复出现。
+- 信息架构：研究资料库只做文件管理、打开文件和文献知识卡片；XDF 被试批量分析、任务队列、HTML 报告下载应集中放在“数据分析与论文写作”，避免同一分析入口在两个模块重复出现。
+- “数据分析与论文写作”页只显示可操作内容：被试批量提交、任务队列、状态筛选、删除任务和下载 HTML report。不要显示 XDF 同步质控、事件指标、EEG 特征提取、统计建模、写作材料这类功能说明卡，也不要显示“当前文件分析/即时摘要”面板。
 
 用户提供的 XDF 报告脚本参考：
 
