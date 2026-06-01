@@ -54,11 +54,6 @@ const workspaceModules = [
     text: "文献知识库、XDF 原始数据、分析脚本和写作材料。",
   },
   {
-    href: "#blueprint",
-    title: "实验设计",
-    text: "3×3×2 条件、marker 逻辑、行为数据和 EEG 同步关系。",
-  },
-  {
     href: "#ai",
     title: "文献与写作助手",
     text: "基于已入库论文知识卡片生成文献矩阵、Methods 草稿和分析计划。",
@@ -172,16 +167,8 @@ function LocalPreview() {
           <p>{researchProject.subtitle}</p>
         </div>
         <p className="auth-warning">
-          当前未连接 Supabase，因此只展示研究项目蓝图。配置 `.env.local` 后会启用登录、私有文件上传和后端 AI。
+          当前未连接 Supabase。配置 `.env.local` 后会启用登录、私有文件上传和后端 AI。
         </p>
-      </section>
-
-      <section className="view is-visible">
-        <ProjectBlueprint />
-      </section>
-
-      <section className="view is-visible">
-        <MaterialsPanel />
       </section>
     </main>
   );
@@ -635,9 +622,6 @@ function Workspace({
           <a className="nav-item" href="#files">
             研究资料库
           </a>
-          <a className="nav-item" href="#blueprint">
-            实验设计
-          </a>
           <a className="nav-item" href="#ai">
             文献与写作助手
           </a>
@@ -671,7 +655,7 @@ function Workspace({
               <p className="eyebrow">项目概览</p>
               <h2>VR 地铁撤离中的导向标识与 EEG 认知负荷研究</h2>
               <p className="summary-text">
-                按文献知识库、实验设计、XDF 原始数据、分析结果和写作材料分区管理，用于检索、分析和论文写作引用。
+                按文献知识库、XDF 原始数据、分析结果和写作材料分区管理，用于检索、分析和论文写作引用。
               </p>
               <div className="module-grid">
                 {workspaceModules.map((module) => (
@@ -697,10 +681,6 @@ function Workspace({
                 <div>
                   <dt>当前选中文件</dt>
                   <dd>{selectedDocument?.filename ?? "尚未选择"}</dd>
-                </div>
-                <div>
-                  <dt>实验结构</dt>
-                  <dd>{researchProject.design.totalConditions} 个条件</dd>
                 </div>
               </dl>
               <div className="keyword-row compact quiet">
@@ -861,10 +841,6 @@ function Workspace({
               {knowledgeMessage ? <p className="muted">{knowledgeMessage}</p> : null}
             </section>
           </div>
-        </section>
-
-        <section className="view is-visible" id="blueprint">
-          <ProjectBlueprint />
         </section>
 
         <section className="view is-visible" id="ai">
@@ -1203,99 +1179,6 @@ function getAuthErrorMessage(message: string) {
   }
 
   return `登录失败：${message}`;
-}
-
-function ProjectBlueprint() {
-  return (
-    <div className="blueprint-stack">
-      <div className="section-head">
-        <div>
-          <p className="eyebrow">实验设计</p>
-          <h2>Metro Rescue 的条件、marker 与同步关系</h2>
-        </div>
-      </div>
-
-      <div className="condition-grid">
-        <Metric label="地图布局" value={researchProject.design.maps.length} text={researchProject.design.maps.join(" / ")} />
-        <Metric label="标识方案" value={researchProject.design.signatures.length} text={researchProject.design.signatures.join(" / ")} />
-        <Metric label="音频条件" value={researchProject.design.audio.length} text={researchProject.design.audio.join(" / ")} />
-        <Metric label="场景图" value={researchProject.planFiles.length} text="3 个地图布局 × 3 种标识方案，并标注导向标识可读范围。" />
-      </div>
-
-      <div className="dashboard-grid">
-        {researchProject.markerGroups.map((group) => (
-          <article className="work-panel" key={group.title}>
-            <h3>{group.title}</h3>
-            <p className="muted">{group.detail}</p>
-            <div className="keyword-row compact">
-              {group.items.map((item) => (
-                <span key={item}>{item}</span>
-              ))}
-            </div>
-          </article>
-        ))}
-      </div>
-
-      <div className="alert-grid">
-        {researchProject.qualityAlerts.map((alert) => (
-          <article className="quality-alert" key={alert.title}>
-            <strong>{alert.title}</strong>
-            <p>{alert.detail}</p>
-          </article>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function MaterialsPanel() {
-  return (
-    <div className="blueprint-stack">
-      <div className="section-head">
-        <div>
-          <p className="eyebrow">场景与标识配置</p>
-          <h2>场景平面图与导向标识配置</h2>
-        </div>
-        <span className="status-pill">可读范围 8 m / 12 m</span>
-      </div>
-
-      <div className="materials-grid">
-        {researchProject.planFiles.map((item) => (
-          <article className="material-card" key={item.file}>
-            <span>
-              {item.map} / {item.signature}
-            </span>
-            <strong>{item.file}</strong>
-            <p>{item.signs} 个导向标识点；与条件表、图注和坐标表保持对应。</p>
-          </article>
-        ))}
-      </div>
-
-      <section className="work-panel">
-        <h3>图表与图注建议</h3>
-        <div className="figure-list">
-          {researchProject.figures.map((figure) => (
-            <article key={figure.id}>
-              <span>{figure.id}</span>
-              <strong>{figure.title}</strong>
-              <p>{figure.use}</p>
-              <p className="muted">{figure.caption}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function Metric({ label, value, text }: { label: string; value: number | string; text: string }) {
-  return (
-    <article className="metric-card">
-      <span>{label}</span>
-      <strong>{value}</strong>
-      <p>{text}</p>
-    </article>
-  );
 }
 
 function LiteratureKnowledgePanel({
