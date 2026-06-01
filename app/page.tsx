@@ -179,7 +179,7 @@ function LoginScreen({ supabase }: { supabase: SupabaseClient }) {
     });
 
     if (signInError) {
-      setError("登录失败。请确认邮箱、密码，或先在 Supabase 里创建这个用户。");
+      setError(getAuthErrorMessage(signInError.message));
     }
 
     setLoading(false);
@@ -630,6 +630,28 @@ function PreviewCard({ title, text }: { title: string; text: string }) {
       <strong>{text}</strong>
     </div>
   );
+}
+
+function getAuthErrorMessage(message: string) {
+  const normalized = message.toLowerCase();
+
+  if (normalized.includes("email not confirmed")) {
+    return "这个邮箱还没有确认。请在 Supabase Auth 用户列表里确认邮箱，或重新创建用户时勾选 Auto Confirm User。";
+  }
+
+  if (normalized.includes("invalid login credentials")) {
+    return "邮箱或密码不正确。请确认登录时使用的是邮箱地址，不是用户名。";
+  }
+
+  if (normalized.includes("user not found")) {
+    return "没有找到这个用户。请先在 Supabase Authentication 里创建 email/password 用户。";
+  }
+
+  if (normalized.includes("email")) {
+    return `登录失败：${message}`;
+  }
+
+  return `登录失败：${message}`;
 }
 
 function ProjectBlueprint() {

@@ -214,6 +214,9 @@ AI 不应该：
 
 - 使用 Supabase email/password
 - 旧静态版的 `wondernionio / neuro1204` 已不再是正式认证方式
+- 登录框需要邮箱地址，不能直接使用用户名。
+- 新用户无法登录时优先检查 Supabase Auth 用户是否已确认邮箱；私人工具可以在创建用户时勾选 Auto Confirm User。
+- 使用 Invite user 时，用户需要先接受邀请并设置密码；更直接的方式是在 Dashboard 里 Create user 并设置 email/password。
 
 分支策略：
 

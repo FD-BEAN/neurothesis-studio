@@ -60,6 +60,13 @@ python scripts\xdf_qc.py C:\path\to\file.xdf
 4. 打开 `SQL Editor`，运行 `supabase/schema.sql`。
 5. 确认 `research-files` bucket 是 private。
 
+### 新用户无法登录时
+
+- 登录框必须填写邮箱地址，不能填写用户名。
+- 如果 Supabase 提示 `Email not confirmed`，在 `Authentication > Users` 里确认该用户邮箱，或重新创建用户时勾选 `Auto Confirm User`。
+- 如果使用的是 `Invite user`，用户需要先接受邀请并设置密码；更简单的方式是用 `Create user` 直接设置 email/password。
+- 如果 Vercel 上失败、本地正常，检查 Vercel 环境变量是否和当前 Supabase project 一致。
+
 ## Vercel 部署
 
 1. 在 Vercel 导入 GitHub repo。
