@@ -54,14 +54,14 @@ const workspaceModules = [
     text: "文献知识库、XDF 原始数据、分析脚本和写作材料。",
   },
   {
-    href: "#ai",
-    title: "文献与写作助手",
-    text: "基于已入库论文知识卡片生成文献矩阵、Methods 草稿和分析计划。",
-  },
-  {
     href: "#pipeline",
     title: "数据分析与论文写作",
     text: "XDF 质量检查、行为数据、EEG 预处理和英文论文段落。",
+  },
+  {
+    href: "#ai",
+    title: "文献与写作助手",
+    text: "基于已入库论文知识卡片生成文献矩阵、Methods 草稿和分析计划。",
   },
 ];
 
@@ -622,11 +622,11 @@ function Workspace({
           <a className="nav-item" href="#files">
             研究资料库
           </a>
-          <a className="nav-item" href="#ai">
-            文献与写作助手
-          </a>
           <a className="nav-item" href="#pipeline">
             数据分析与写作
+          </a>
+          <a className="nav-item" href="#ai">
+            文献与写作助手
           </a>
         </nav>
         <div className="side-note">
@@ -843,33 +843,6 @@ function Workspace({
           </div>
         </section>
 
-        <section className="view is-visible" id="ai">
-          <div className="section-head">
-            <div>
-              <p className="eyebrow">文献与写作助手</p>
-              <h2>文献整理、方法撰写与分析计划</h2>
-            </div>
-            <button className="primary-button" onClick={runAiAssistant} disabled={aiState.status === "loading"}>
-              {aiState.status === "loading" ? "分析中..." : "运行 AI"}
-            </button>
-          </div>
-
-          <div className="ai-grid">
-            <label>
-              给 AI 的任务
-              <textarea value={researchNote} rows={8} onChange={(event) => setResearchNote(event.target.value)} />
-            </label>
-            <section className="work-panel ai-output">
-              <h3>输出</h3>
-              <p className="muted">
-                适合让它整理文献矩阵、Methods 草稿、图注、marker 说明和分析计划。不要让它替真实结果下结论。
-              </p>
-              <pre>{aiState.output || "运行后，这里会显示整理结果。"}</pre>
-            </section>
-          </div>
-          <LiteratureKnowledgePanel entries={knowledgeEntries} seedStats={seedKnowledgeStats} onRefresh={loadKnowledgeBase} />
-        </section>
-
         <section className="view is-visible" id="pipeline">
           <div className="section-head">
             <div>
@@ -909,6 +882,33 @@ function Workspace({
             onDeleteJobs={deleteAnalysisJobs}
             onDownloadReport={downloadJobHtmlReport}
           />
+        </section>
+
+        <section className="view is-visible" id="ai">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">文献与写作助手</p>
+              <h2>文献整理、方法撰写与分析计划</h2>
+            </div>
+            <button className="primary-button" onClick={runAiAssistant} disabled={aiState.status === "loading"}>
+              {aiState.status === "loading" ? "分析中..." : "运行 AI"}
+            </button>
+          </div>
+
+          <div className="ai-grid">
+            <label>
+              给 AI 的任务
+              <textarea value={researchNote} rows={8} onChange={(event) => setResearchNote(event.target.value)} />
+            </label>
+            <section className="work-panel ai-output">
+              <h3>输出</h3>
+              <p className="muted">
+                适合让它整理文献矩阵、Methods 草稿、图注、marker 说明和分析计划。不要让它替真实结果下结论。
+              </p>
+              <pre>{aiState.output || "运行后，这里会显示整理结果。"}</pre>
+            </section>
+          </div>
+          <LiteratureKnowledgePanel entries={knowledgeEntries} seedStats={seedKnowledgeStats} onRefresh={loadKnowledgeBase} />
         </section>
       </section>
     </main>
