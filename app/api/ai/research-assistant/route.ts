@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
+import { isLiteratureDocument, parseLiteratureCard } from "@/lib/literature";
 import { getSupabaseServerClient } from "@/lib/supabase";
 
 type RequestBody = {
@@ -15,7 +16,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing Supabase access token." }, { status: 401 });
   }
 
-  const supabase = getSupabaseServerClient();
+  const supabase = getSupabaseServerClient(token);
   const {
     data: { user },
     error: authError,
@@ -44,6 +45,7 @@ export async function POST(request: Request) {
 
   const client = new OpenAI({ apiKey });
   const model = process.env.OPENAI_MODEL || "gpt-5.4-mini";
+  const knowledgeContext = await loadLiteratureKnowledgeContext(supabase, user.id);
 
   const response = await client.responses.create({
     model,
@@ -51,11 +53,11 @@ export async function POST(request: Request) {
       {
         role: "system",
         content:
-          "You are a bilingual thesis research assistant for the Metro Rescue project: a VR subway evacuation study with 3 map layouts, 3 signage schemes, 2 audio-load conditions, Unity behavior logs, LSL marker streams, SmartBCI EEG, and LabRecorder .xdf synchronization. Help with project documentation, figure captions, marker logic, EEG analysis planning, and English academic writing. Be careful, cite uncertainty, and do not invent study results.",
+          "You are a bilingual thesis research assistant for the Metro Rescue project: a VR subway evacuation study with 3 map layouts, 3 signage schemes, 2 audio-load conditions, Unity behavior logs, LSL marker streams, SmartBCI EEG, and LabRecorder .xdf synchronization. Use the supplied literature knowledge base first, cite paper filenames/titles when you rely on them, distinguish literature evidence from the user's own experimental results, and do not invent findings.",
       },
       {
         role: "user",
-        content: `Research context:\n${context || "No file context provided."}\n\nTask:\n${prompt}`,
+        content: `Literature knowledge base:\n${knowledgeContext}\n\nCurrent file context:\n${context || "No file context provided."}\n\nTask:\n${prompt}`,
       },
     ],
   });
@@ -63,4 +65,38 @@ export async function POST(request: Request) {
   return NextResponse.json({
     output: response.output_text,
   });
+}
+
+async function loadLiteratureKnowledgeContext(supabase: ReturnType<typeof getSupabaseServerClient>, userId: string) {
+  const { data } = await supabase
+    .from("research_documents")
+    .select("id,filename,mime_type,notes")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(40);
+
+  const cards = (data ?? [])
+    .filter(isLiteratureDocument)
+    .map((document) => parseLiteratureCard(document.notes))
+    .filter((card): card is NonNullable<typeof card> => Boolean(card));
+
+  if (!cards.length) {
+    return "No indexed literature cards yet. Ask the user to build literature knowledge cards before making literature-grounded claims.";
+  }
+
+  return cards
+    .map(
+      (card, index) => [
+        `[${index + 1}] ${card.title || card.filename}`,
+        `Filename: ${card.filename}`,
+        `Citation: ${card.citation}`,
+        `Research question: ${card.researchQuestion}`,
+        `Methods: ${card.methods}`,
+        `Measures: ${card.eegOrMeasures}`,
+        `Key findings: ${card.keyFindings.join("；")}`,
+        `Limitations: ${card.limitations.join("；")}`,
+        `Use for Metro Rescue: ${card.relevanceToMetroRescue.join("；")}`,
+      ].join("\n"),
+    )
+    .join("\n\n");
 }

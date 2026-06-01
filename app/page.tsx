@@ -8,6 +8,7 @@ import {
   type ResearchAnalysisJob,
   type ResearchDocument,
 } from "@/lib/supabase";
+import { isLiteratureDocument, parseLiteratureCard, type LiteratureKnowledgeCard } from "@/lib/literature";
 import { metroAiPrompt, researchProject } from "@/lib/researchProject";
 
 type UploadState = "idle" | "uploading" | "done" | "error";
@@ -21,6 +22,11 @@ type AnalysisState = {
   status: "idle" | "loading" | "done" | "error";
   report: DataAnalysisReport | null;
   error: string;
+};
+
+type LiteratureKnowledgeEntry = {
+  document: ResearchDocument;
+  card: LiteratureKnowledgeCard | null;
 };
 
 type DataAnalysisReport = {
@@ -54,7 +60,7 @@ const workspaceModules = [
   {
     href: "#files",
     title: "研究资料库",
-    text: "文献、实验配置、原始数据、分析脚本和写作材料。",
+    text: "文献知识库、XDF 原始数据、分析脚本和写作材料。",
   },
   {
     href: "#blueprint",
@@ -62,14 +68,9 @@ const workspaceModules = [
     text: "3×3×2 条件、marker 逻辑、行为数据和 EEG 同步关系。",
   },
   {
-    href: "#materials",
-    title: "场景与标识配置",
-    text: "L1 平面图、导向标识位置、可读范围和图注口径。",
-  },
-  {
     href: "#ai",
     title: "文献与写作助手",
-    text: "文献摘要、双语矩阵、Methods 草稿和分析计划。",
+    text: "基于已入库论文知识卡片生成文献矩阵、Methods 草稿和分析计划。",
   },
   {
     href: "#pipeline",
@@ -95,21 +96,21 @@ const documentCategories = [
   },
   {
     id: "materials",
-    label: "场景与标识材料",
-    description: "VR 场景平面图、导向标识方案、图注和实验说明。",
+    label: "辅助材料",
+    description: "暂存的非主线研究资料；当前不在主界面展示。",
     extensions: ["svg", "png", "jpg", "jpeg", "md"],
   },
   {
     id: "raw-data",
     label: "原始数据",
-    description: "Unity 日志、LSL marker、EEG 文件和行为数据表。",
-    extensions: ["xdf", "edf", "set", "mat", "csv", "xlsx", "jsonl", "json"],
+    description: "LabRecorder XDF、EEG 原始文件和待进入分析队列的实验数据。",
+    extensions: ["xdf", "edf", "set", "mat"],
   },
   {
     id: "analysis",
     label: "分析脚本与输出",
-    description: "Python、MATLAB、notebook、统计表和中间结果。",
-    extensions: ["py", "m", "ipynb", "tsv"],
+    description: "Python、MATLAB、notebook、统计表、中间特征表和写作产物。",
+    extensions: ["py", "m", "ipynb", "csv", "tsv", "xlsx", "jsonl", "json"],
   },
   {
     id: "notes",
@@ -228,7 +229,7 @@ function LoginScreen({ supabase }: { supabase: SupabaseClient }) {
         <div className="auth-copy">
           <p className="eyebrow">研究工作台</p>
           <h1>进入私人论文研究空间</h1>
-          <p>集中管理文献、场景与标识材料、行为数据、EEG 文件、分析脚本和论文写作材料。</p>
+          <p>集中管理文献知识库、XDF 原始数据、分析脚本、统计结果和论文写作材料。</p>
         </div>
 
         <form className="login-form" onSubmit={handleSubmit}>
@@ -265,7 +266,7 @@ function LoginScreen({ supabase }: { supabase: SupabaseClient }) {
       </section>
 
       <aside className="auth-aside">
-        <PreviewCard title="资料结构" text="按文献、场景材料、原始数据、分析产物和写作材料维护项目资料。" />
+        <PreviewCard title="资料结构" text="按文献知识库、XDF 原始数据、分析产物和写作材料维护项目资料。" />
         <PreviewCard title="写作原则" text="所有结论回到上传材料和真实分析结果，不替研究编造发现。" />
       </aside>
     </main>
@@ -297,10 +298,14 @@ function Workspace({
   const [analysisJobs, setAnalysisJobs] = useState<ResearchAnalysisJob[]>([]);
   const [jobMessage, setJobMessage] = useState("");
   const [jobLoading, setJobLoading] = useState(false);
+  const [knowledgeEntries, setKnowledgeEntries] = useState<LiteratureKnowledgeEntry[]>([]);
+  const [knowledgeLoading, setKnowledgeLoading] = useState(false);
+  const [knowledgeMessage, setKnowledgeMessage] = useState("");
 
   useEffect(() => {
     void loadDocuments();
     void loadAnalysisJobs();
+    void loadKnowledgeBase();
     const intervalId = window.setInterval(() => {
       void loadAnalysisJobs();
     }, 15000);
@@ -314,14 +319,17 @@ function Workspace({
 
   const groupedDocuments = useMemo(
     () =>
-      documentCategories.map((category) => ({
-        ...category,
-        documents: documents.filter((document) => getDocumentCategory(document).id === category.id),
-      })),
+      documentCategories
+        .filter((category) => category.id !== "materials")
+        .map((category) => ({
+          ...category,
+          documents: documents.filter((document) => getDocumentCategory(document).id === category.id),
+        })),
     [documents],
   );
   const selectedCategory = selectedDocument ? getDocumentCategory(selectedDocument) : null;
   const selectedDocumentIsXdf = selectedDocument ? isXdfDocument(selectedDocument) : false;
+  const selectedDocumentIsLiterature = selectedDocument ? isLiteratureDocument(selectedDocument) : false;
   const totalStoredBytes = documents.reduce((total, document) => total + (document.size_bytes ?? 0), 0);
 
   async function loadDocuments() {
@@ -356,46 +364,70 @@ function Workspace({
     setAnalysisJobs(payload.jobs ?? []);
   }
 
+  async function loadKnowledgeBase() {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token ?? session.access_token;
+
+    const response = await fetch("/api/literature/knowledge", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) return;
+
+    const payload = (await response.json()) as { cards?: LiteratureKnowledgeEntry[] };
+    setKnowledgeEntries(payload.cards ?? []);
+  }
+
   async function handleUpload(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(event.target.files ?? []);
+    if (!files.length) return;
 
     setUploadState("uploading");
     setUploadMessage("");
 
-    const storagePath = buildStoragePath(user.id, file.name);
-    const { error: uploadError } = await supabase.storage.from("research-files").upload(storagePath, file, {
-      cacheControl: "3600",
-      upsert: false,
-    });
+    let uploaded = 0;
+    for (const file of files) {
+      const storagePath = buildStoragePath(user.id, file.name, getUploadCollection(file.name, file.type));
+      const { error: uploadError } = await supabase.storage.from("research-files").upload(storagePath, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
 
-    if (uploadError) {
-      setUploadState("error");
-      setUploadMessage(`上传失败：${uploadError.message}`);
-      event.target.value = "";
-      return;
-    }
+      if (uploadError) {
+        setUploadState("error");
+        setUploadMessage(`已上传 ${uploaded}/${files.length} 个文件；${file.name} 上传失败：${uploadError.message}`);
+        event.target.value = "";
+        await loadDocuments();
+        return;
+      }
 
-    const { error: insertError } = await supabase.from("research_documents").insert({
-      user_id: user.id,
-      filename: file.name,
-      storage_path: storagePath,
-      mime_type: file.type || null,
-      size_bytes: file.size,
-      notes: "",
-    });
+      const { error: insertError } = await supabase.from("research_documents").insert({
+        user_id: user.id,
+        filename: file.name,
+        storage_path: storagePath,
+        mime_type: file.type || null,
+        size_bytes: file.size,
+        notes: "",
+      });
 
-    if (insertError) {
-      setUploadState("error");
-      setUploadMessage(`文件已上传，但元数据保存失败：${insertError.message}`);
-      event.target.value = "";
-      return;
+      if (insertError) {
+        setUploadState("error");
+        setUploadMessage(`已上传 ${uploaded}/${files.length} 个文件；${file.name} 元数据保存失败：${insertError.message}`);
+        event.target.value = "";
+        await loadDocuments();
+        return;
+      }
+
+      uploaded += 1;
     }
 
     setUploadState("done");
-    setUploadMessage("文件已上传到私有存储。");
+    setUploadMessage(`${uploaded} 个文件已上传到私有存储。文献、XDF 原始数据和分析产物会按类型分区显示。`);
     event.target.value = "";
     await loadDocuments();
+    await loadKnowledgeBase();
   }
 
   async function openSignedUrl(document: ResearchDocument) {
@@ -508,6 +540,70 @@ function Workspace({
     setJobLoading(false);
   }
 
+  async function queueAllXdfAnalyses() {
+    const xdfDocuments = documents.filter(isXdfDocument);
+    if (!xdfDocuments.length) {
+      setJobMessage("当前还没有 XDF 文件。请先批量上传 LabRecorder .xdf。");
+      return;
+    }
+
+    setJobLoading(true);
+    setJobMessage(`正在提交 ${xdfDocuments.length} 个 XDF 分析任务...`);
+
+    let submitted = 0;
+    for (const document of xdfDocuments) {
+      const response = await fetch("/api/analysis/jobs", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          documentId: document.id,
+          analysisType: "advanced_python",
+        }),
+      });
+      if (response.ok) submitted += 1;
+    }
+
+    setJobMessage(`已提交 ${submitted}/${xdfDocuments.length} 个 XDF 分析任务。`);
+    await loadAnalysisJobs();
+    setJobLoading(false);
+  }
+
+  async function buildLiteratureKnowledgeCard() {
+    if (!selectedDocument || !selectedDocumentIsLiterature) {
+      setKnowledgeMessage("请先选择一篇文献 PDF、Markdown 或 TXT。");
+      return;
+    }
+
+    setKnowledgeLoading(true);
+    setKnowledgeMessage("");
+
+    const response = await fetch("/api/literature/knowledge", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        documentId: selectedDocument.id,
+      }),
+    });
+
+    const payload = (await response.json()) as { card?: LiteratureKnowledgeCard; error?: string };
+    if (!response.ok || !payload.card) {
+      setKnowledgeMessage(payload.error ?? "文献知识卡片生成失败。");
+      setKnowledgeLoading(false);
+      return;
+    }
+
+    setKnowledgeMessage("文献知识卡片已更新，写作助手会优先引用知识库。");
+    await loadDocuments();
+    await loadKnowledgeBase();
+    setKnowledgeLoading(false);
+  }
+
   async function signOut() {
     await supabase.auth.signOut();
   }
@@ -525,9 +621,6 @@ function Workspace({
           </a>
           <a className="nav-item" href="#blueprint">
             实验设计
-          </a>
-          <a className="nav-item" href="#materials">
-            场景与标识配置
           </a>
           <a className="nav-item" href="#ai">
             文献与写作助手
@@ -562,7 +655,7 @@ function Workspace({
               <p className="eyebrow">项目概览</p>
               <h2>VR 地铁撤离中的导向标识与 EEG 认知负荷研究</h2>
               <p className="summary-text">
-                按文献、实验设计、场景配置、数据文件、分析结果和写作材料分区管理，用于检索、分析和论文写作引用。
+                按文献知识库、实验设计、XDF 原始数据、分析结果和写作材料分区管理，用于检索、分析和论文写作引用。
               </p>
               <div className="module-grid">
                 {workspaceModules.map((module) => (
@@ -607,15 +700,16 @@ function Workspace({
           <div className="section-head">
             <div>
               <p className="eyebrow">研究资料库</p>
-              <h2>文献、场景与标识材料、原始数据与分析产物</h2>
+              <h2>文献知识库、XDF 原始数据与分析产物分区管理</h2>
             </div>
             <label className="file-button">
               <input
                 type="file"
+                multiple
                 accept=".pdf,.doc,.docx,.csv,.tsv,.xlsx,.mat,.set,.edf,.txt,.md,.svg,.png,.jpg,.jpeg,.xdf,.json,.jsonl,.py,.m,.ipynb"
                 onChange={handleUpload}
               />
-              {uploadState === "uploading" ? "上传中..." : "上传文件"}
+              {uploadState === "uploading" ? "上传中..." : "批量上传文件"}
             </label>
           </div>
 
@@ -659,7 +753,7 @@ function Workspace({
                 )
               ) : (
                 <p className="muted">
-                  还没有文件。上传后会按文献、场景与标识材料、原始数据、分析脚本和研究笔记分区显示。
+                  还没有文件。上传后会按文献知识库、XDF 原始数据、分析脚本与输出、研究笔记分区显示。
                 </p>
               )}
             </section>
@@ -693,21 +787,25 @@ function Workspace({
                 打开文件
               </button>
               <button className="primary-button" disabled={!selectedDocument} onClick={runDataAnalysis}>
-                生成分析摘要
+                {selectedDocumentIsLiterature ? "文献入库说明" : selectedDocumentIsXdf ? "即时 XDF 入口" : "生成摘要"}
               </button>
-              <button className="secondary-button" disabled={!selectedDocument || jobLoading} onClick={runAdvancedAnalysis}>
-                {jobLoading ? "提交中..." : "运行 XDF 高级分析"}
-              </button>
+              {selectedDocumentIsLiterature ? (
+                <button className="secondary-button" disabled={knowledgeLoading} onClick={buildLiteratureKnowledgeCard}>
+                  {knowledgeLoading ? "生成中..." : "生成/更新知识卡片"}
+                </button>
+              ) : null}
+              {selectedDocumentIsXdf ? (
+                <button className="secondary-button" disabled={jobLoading} onClick={runAdvancedAnalysis}>
+                  {jobLoading ? "提交中..." : "运行 XDF 高级分析"}
+                </button>
+              ) : null}
+              {knowledgeMessage ? <p className="muted">{knowledgeMessage}</p> : null}
             </section>
           </div>
         </section>
 
         <section className="view is-visible" id="blueprint">
           <ProjectBlueprint />
-        </section>
-
-        <section className="view is-visible" id="materials">
-          <MaterialsPanel />
         </section>
 
         <section className="view is-visible" id="ai">
@@ -734,6 +832,7 @@ function Workspace({
               <pre>{aiState.output || "运行后，这里会显示整理结果。"}</pre>
             </section>
           </div>
+          <LiteratureKnowledgePanel entries={knowledgeEntries} onRefresh={loadKnowledgeBase} />
         </section>
 
         <section className="view is-visible" id="pipeline">
@@ -746,7 +845,10 @@ function Workspace({
               <button className="secondary-button" onClick={loadAnalysisJobs}>
                 刷新任务
               </button>
-              <button className="secondary-button" disabled={!selectedDocument || jobLoading} onClick={runAdvancedAnalysis}>
+              <button className="secondary-button" disabled={jobLoading} onClick={queueAllXdfAnalyses}>
+                批量提交 XDF
+              </button>
+              <button className="secondary-button" disabled={!selectedDocumentIsXdf || jobLoading} onClick={runAdvancedAnalysis}>
                 {jobLoading ? "提交中..." : "XDF 高级分析"}
               </button>
               <button className="primary-button" disabled={!selectedDocument || analysisState.status === "loading"} onClick={runDataAnalysis}>
@@ -1064,6 +1166,65 @@ function AnalysisJobsPanel({
   );
 }
 
+function LiteratureKnowledgePanel({
+  entries,
+  onRefresh,
+}: {
+  entries: LiteratureKnowledgeEntry[];
+  onRefresh: () => void;
+}) {
+  const indexed = entries.filter((entry) => entry.card);
+  const pending = entries.length - indexed.length;
+
+  return (
+    <section className="work-panel knowledge-panel">
+      <div className="analysis-head">
+        <div>
+          <p className="eyebrow">文献知识库</p>
+          <h3>可引用论文卡片</h3>
+        </div>
+        <div className="top-actions">
+          <span className="status-pill compact">{indexed.length} 篇已入库</span>
+          <button className="secondary-button" onClick={onRefresh}>
+            刷新
+          </button>
+        </div>
+      </div>
+      {pending ? <p className="muted">{pending} 篇文献还没有知识卡片。请在资料库中选中文献后点击“生成/更新知识卡片”。</p> : null}
+      {indexed.length ? (
+        <div className="knowledge-grid">
+          {indexed.map(({ document, card }) =>
+            card ? (
+              <article className="knowledge-card" key={document.id}>
+                <span>{card.evidenceLevel || "文献证据"}</span>
+                <h4>{card.title || document.filename}</h4>
+                <p>{card.researchQuestion}</p>
+                <div className="keyword-row compact quiet">
+                  {card.keywords.slice(0, 6).map((keyword) => (
+                    <span key={`${document.id}-${keyword}`}>{keyword}</span>
+                  ))}
+                </div>
+                <dl>
+                  <div>
+                    <dt>方法</dt>
+                    <dd>{card.methods}</dd>
+                  </div>
+                  <div>
+                    <dt>可用于</dt>
+                    <dd>{card.usableForSections.join(" / ")}</dd>
+                  </div>
+                </dl>
+              </article>
+            ) : null,
+          )}
+        </div>
+      ) : (
+        <p className="muted">还没有文献知识卡片。上传论文后，先在文献区生成知识卡片，再让写作助手基于知识库回答。</p>
+      )}
+    </section>
+  );
+}
+
 function BarChart({
   chart,
 }: {
@@ -1160,11 +1321,11 @@ function getDocumentCategory(document: Pick<ResearchDocument, "filename" | "mime
   const filename = document.filename.toLowerCase();
   const extension = getDocumentExtension(document.filename);
 
-  if (["xdf", "edf", "set", "mat", "csv", "xlsx", "json", "jsonl"].includes(extension)) {
+  if (["xdf", "edf", "set", "mat"].includes(extension)) {
     return documentCategories[2];
   }
 
-  if (["py", "m", "ipynb", "tsv"].includes(extension)) {
+  if (["py", "m", "ipynb", "csv", "tsv", "xlsx", "json", "jsonl"].includes(extension)) {
     return documentCategories[3];
   }
 
@@ -1213,7 +1374,7 @@ function formatBytes(size: number | null) {
   return `${(size / 1024 / 1024).toFixed(1)} MB`;
 }
 
-function buildStoragePath(userId: string, filename: string) {
+function buildStoragePath(userId: string, filename: string, collection = "documents") {
   const dotIndex = filename.lastIndexOf(".");
   const rawBase = dotIndex > 0 ? filename.slice(0, dotIndex) : filename;
   const rawExtension = dotIndex > 0 ? filename.slice(dotIndex + 1) : "";
@@ -1228,8 +1389,17 @@ function buildStoragePath(userId: string, filename: string) {
       .replace(/-+$/g, "") || "document";
   const extension = rawExtension.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 12);
   const uniquePrefix = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
+  const safeCollection = collection.toLowerCase().replace(/[^a-z0-9-]/g, "") || "documents";
 
-  return `${userId}/${uniquePrefix}-${base}${extension ? `.${extension}` : ""}`;
+  return `${userId}/${safeCollection}/${uniquePrefix}-${base}${extension ? `.${extension}` : ""}`;
+}
+
+function getUploadCollection(filename: string, mimeType: string) {
+  const extension = getDocumentExtension(filename);
+  if (["pdf", "doc", "docx"].includes(extension) || mimeType.includes("pdf")) return "literature";
+  if (["xdf", "edf", "set", "mat"].includes(extension)) return "xdf-raw";
+  if (["py", "m", "ipynb", "csv", "tsv", "xlsx", "json", "jsonl"].includes(extension)) return "analysis-products";
+  return "documents";
 }
 
 function formatCompactNumber(value: number) {

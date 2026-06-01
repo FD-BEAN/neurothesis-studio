@@ -95,6 +95,12 @@ export async function POST(request: Request) {
     });
   }
 
+  if (extension === "pdf" || researchDocument.mime_type?.includes("pdf")) {
+    return NextResponse.json({
+      report: buildLiteratureEntryReport(researchDocument),
+    });
+  }
+
   if ((researchDocument.size_bytes ?? 0) > MAX_TEXT_ANALYSIS_BYTES) {
     return NextResponse.json(
       {
@@ -330,6 +336,39 @@ function buildXdfReport(document: ResearchDocument): AnalysisReport {
     notes: [
       "本仓库已有 `scripts/xdf_qc.py`，可以在本地或后续 Python worker 中读取 XDF 并输出 JSON 报告。",
       "等接入 worker 后，界面可以展示 stream 表、event count、session 时间轴和 EEG 时长概览。",
+    ],
+  };
+}
+
+function buildLiteratureEntryReport(document: ResearchDocument): AnalysisReport {
+  return {
+    title: `${document.filename} 文献知识库入口`,
+    kind: "LITERATURE",
+    summary:
+      "这是一篇文献 PDF。它不进入 XDF 高级分析；请在文献区使用“生成/更新知识卡片”，系统会抽取论文目的、方法、EEG/行为指标、主要发现、局限和对 Metro Rescue 的可引用价值。",
+    metrics: [
+      { label: "文件类型", value: "PDF" },
+      { label: "文件大小", value: formatBytes(document.size_bytes) },
+      { label: "推荐操作", value: "建立知识卡片" },
+      { label: "分析边界", value: "不作为实验原始数据" },
+    ],
+    charts: [],
+    tables: [
+      {
+        title: "文献知识卡片字段",
+        columns: ["字段", "用途"],
+        rows: [
+          ["研究问题", "写 Introduction 和研究假设时引用"],
+          ["方法与任务", "对照 VR / wayfinding / EEG 研究设计"],
+          ["EEG 或行为指标", "整理可比指标和分析窗口"],
+          ["主要发现", "形成文献矩阵，不替代本研究结果"],
+          ["局限与启发", "写 Discussion 和方法局限"],
+        ],
+      },
+    ],
+    notes: [
+      "文献知识库会持久保存结构化卡片；AI 写作助手回答时会优先读取这些卡片，并按论文标题或文件名引用。",
+      "如果 PDF 是扫描版，自动抽取可能不足，需要后续加 OCR 或上传可复制文本版本。",
     ],
   };
 }

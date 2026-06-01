@@ -775,6 +775,61 @@ textarea {
   gap: 16px;
 }
 
+.knowledge-panel {
+  margin-top: 20px;
+  display: grid;
+  gap: 16px;
+}
+
+.knowledge-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.knowledge-card {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  display: grid;
+  gap: 10px;
+}
+
+.knowledge-card span {
+  color: var(--green);
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.knowledge-card h4,
+.knowledge-card p {
+  margin: 0;
+}
+
+.knowledge-card p,
+.knowledge-card dd {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.knowledge-card dl {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.knowledge-card dt {
+  font-size: 0.76rem;
+  font-weight: 900;
+  color: var(--ink);
+}
+
+.knowledge-card dd {
+  margin: 4px 0 0;
+}
+
 .analysis-head {
   display: flex;
   justify-content: space-between;
@@ -1037,7 +1092,8 @@ textarea {
   .module-grid,
   .workflow-list,
   .analysis-metric-grid,
-  .analysis-chart-grid {
+  .analysis-chart-grid,
+  .knowledge-grid {
     grid-template-columns: 1fr;
   }
 }

@@ -104,16 +104,15 @@ git push origin main
 
 - 不写“今天先做什么”
 - 不写“把材料整理成可以写进论文的证据”这类过度设计感句子
-- 用中性的模块名：研究资料库、实验设计、场景与标识配置、文献与写作助手、数据分析与写作
-- UI 中优先使用“场景平面图”“导向标识配置”“场景与标识材料”，少用笼统的“图纸”，不要使用“图纸与刺激材料”这种混合说法
+- 用中性的模块名：研究资料库、实验设计、文献与写作助手、数据分析与写作
+- 场景平面图与导向标识资料暂时只作为研究背景存档，不作为主界面模块展示；不要在当前界面反复强调这条线
 - 用户自己决定研究顺序，系统只提供清楚入口
 
 研究资料库结构：
 
-- 文献与论文：已发表文献、综述、开题材料、论文草稿
-- 场景与标识材料：VR 场景平面图、导向标识方案、图注、实验说明
-- 原始数据：Unity 日志、LSL marker、EEG 文件、行为数据表
-- 分析脚本与输出：Python、MATLAB、notebook、统计表、中间结果
+- 文献与论文：已发表文献、综述、开题材料、论文草稿，并可生成结构化知识卡片
+- XDF 原始数据：LabRecorder `.xdf`、EEG stream、Unity marker stream 和正式实验数据
+- 分析脚本与输出：Python、MATLAB、notebook、统计表、中间结果、写作材料
 - 研究笔记：读书笔记、讨论记录、图表说明、写作备忘
 
 ## 研究内容结构
@@ -177,7 +176,7 @@ XDF 测试数据：
 
 当前产品应支持的下一步：
 
-- 研究资料库按文献、场景与标识材料、原始数据、分析脚本与输出、研究笔记分区显示。
+- 研究资料库按文献知识库、XDF 原始数据、分析脚本与输出、研究笔记分区显示。
 - 增加或保留 XDF 质控入口，用于判断一个文件是否能进入正式 EEG 预处理。
 - 不把 `.xdf`、未公开论文、真实实验日志提交到 GitHub；只保存脚本、schema、wiki 和 UI。
 
@@ -229,6 +228,16 @@ XDF worker 目前输出：
 - EEG 覆盖 QC：确认 EEG 是否覆盖 `map_start` 到 `evacuation_complete`，估计有效采样率和样本覆盖率。
 - EEG 通道 QC：标出 flat、event channel、高方差或缺失通道候选。
 - EEG 频带特征：trial-level theta、alpha、beta、theta/alpha，以及 sign_readable / decision_point_enter / audio_play 事件窗摘要。
+
+## 资料分区边界
+
+2026-06-01 后的产品边界：
+
+- 文献与论文：只做文献知识库。上传 PDF 后生成/更新“知识卡片”，卡片包含研究问题、方法、EEG/行为指标、主要发现、局限、可用于论文哪个章节等。AI 写作助手必须优先读取这些卡片，并用论文标题或文件名引用来源。
+- XDF 原始数据：只放 LabRecorder `.xdf`、EEG 原始文件和正式实验数据。XDF 高级分析只处理这里的 EEG stream + Unity marker stream。
+- 分析脚本与输出：放 Python/MATLAB/notebook、trial_features、event_features、中间统计表和写作产物。后续 90 名被试 × 3 trials = 270 个实验文件，应走批量上传和批量提交 XDF 队列。
+- 场景平面图与导向标识配置暂时不作为主要界面模块展示，避免干扰当前文献库和 XDF 分析主线。
+- 不把真实论文 PDF、XDF、EEG 原始数据或被试数据提交到公开 GitHub repo 的 `data` 目录。公开 GitHub 只保存代码、schema、wiki 和可公开的模板；私有数据优先放 Supabase private Storage。
 
 限制：
 
@@ -292,13 +301,13 @@ AI 不应该：
 
 ## 后续优先级
 
-1. 文献库：PDF 自动摘要、关键词、方法、指标、局限、可引用句子
-2. 文献矩阵：按 wayfinding / VR evacuation / EEG cognitive load 分类
-3. 场景与标识配置模块：把 SVG 场景平面图、坐标表、可读范围和图注结构化展示
-4. Signature 操控定义表：记录贴图、信息密度、箭头数、出口数、冗余度、歧义度和朝向
-5. XDF 质控：stream 检查、session 切分、marker 完整性、EEG stream 选择
-6. EEG 分析：MNE-Python / EEGLAB 预处理脚本模板
-7. 写作模块：英文 Methods、Introduction 证据链、Discussion 风险点
+1. 文献知识库：PDF 生成结构化知识卡片，包含研究问题、方法、指标、局限、可引用章节和与本研究的关系
+2. 文献矩阵：按 wayfinding / VR evacuation / EEG cognitive load 分类，并支持写作助手引用来源
+3. XDF 质控：stream 检查、session 切分、marker 完整性、EEG stream 选择
+4. EEG 分析：MNE-Python / EEGLAB 预处理脚本模板和 trial/event-level 特征表
+5. 批量实验数据：支持 90 名被试 × 3 次实验的 XDF 上传、排队和结果汇总
+6. 写作模块：英文 Methods、Introduction 证据链、Discussion 风险点
+7. 场景与标识配置：当前暂不作为主界面模块，未来确有需要再恢复
 
 ## 给后续开发者或 Codex 的提醒
 
