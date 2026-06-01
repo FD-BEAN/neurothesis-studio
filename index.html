@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NeuroThesis Studio</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Workspace navigation">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">NS</div>
+          <div>
+            <p class="eyebrow">脑电 + VR 论文</p>
+            <h1>NeuroThesis Studio</h1>
+          </div>
+        </div>
+
+        <nav class="nav-list">
+          <button class="nav-item is-active" data-view="dashboard">项目总览</button>
+          <button class="nav-item" data-view="reader">论文阅读</button>
+          <button class="nav-item" data-view="matrix">文献矩阵</button>
+          <button class="nav-item" data-view="planner">实验设计</button>
+          <button class="nav-item" data-view="data-lab">EEG / 数据分析</button>
+          <button class="nav-item" data-view="writer">论文写作</button>
+        </nav>
+
+        <div class="side-note">
+          <span class="note-label">研究主题</span>
+          <p>VR 地铁逃生、EEG 认知负荷、寻路指示牌、不同认知负荷条件。</p>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">原型 v0.1</p>
+            <h2>集论文阅读、数据分析和中英双语写作于一体的研究工作台</h2>
+          </div>
+          <div class="top-actions">
+            <button class="secondary-button" id="resetDemo">重置</button>
+            <button class="primary-button" id="loadDemo">加载示例项目</button>
+          </div>
+        </header>
+
+        <section class="view is-visible" id="dashboard" aria-labelledby="dashboard-title">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">项目总览</p>
+              <h3 id="dashboard-title">VR 地铁逃生中的认知负荷与指示牌设计</h3>
+            </div>
+            <span class="status-pill" id="projectStatus">示例数据已就绪</span>
+          </div>
+
+          <div class="metric-grid">
+            <article class="metric-card">
+              <span>论文记录</span>
+              <strong id="paperCount">0</strong>
+              <p>结构化摘要、方法、指标和局限提取。</p>
+            </article>
+            <article class="metric-card">
+              <span>实验条件</span>
+              <strong id="conditionCount">0</strong>
+              <p>认知负荷 x 指示牌设计的条件组合。</p>
+            </article>
+            <article class="metric-card">
+              <span>模拟被试</span>
+              <strong id="participantCount">0</strong>
+              <p>用于展示行为数据和 EEG 指标流程。</p>
+            </article>
+            <article class="metric-card">
+              <span>论文草稿章节</span>
+              <strong id="draftCount">0</strong>
+              <p>英文初稿配中文解释，方便修改。</p>
+            </article>
+          </div>
+
+          <div class="dashboard-grid">
+            <section class="work-panel">
+              <div class="panel-title">
+                <h4>研究流程</h4>
+                <button class="text-button" data-jump="writer">去写作</button>
+              </div>
+              <ol class="timeline">
+                <li>
+                  <span>1</span>
+                  <div>
+                    <strong>收集论文</strong>
+                    <p>上传 PDF，或先用示例文献梳理 VR、EEG、指示牌和认知负荷研究。</p>
+                  </div>
+                </li>
+                <li>
+                  <span>2</span>
+                  <div>
+                    <strong>提取论文变量</strong>
+                    <p>把阅读笔记转成研究假设、自变量、因变量和方法检查清单。</p>
+                  </div>
+                </li>
+                <li>
+                  <span>3</span>
+                  <div>
+                    <strong>分析 EEG 与行为数据</strong>
+                    <p>生成可复现的 MNE-Python 和 MATLAB/EEGLAB 分析流程。</p>
+                  </div>
+                </li>
+                <li>
+                  <span>4</span>
+                  <div>
+                    <strong>带证据写论文</strong>
+                    <p>生成英文论文段落，并配中文逻辑说明和可追溯依据。</p>
+                  </div>
+                </li>
+              </ol>
+            </section>
+
+            <section class="work-panel">
+              <div class="panel-title">
+                <h4>VR 路线场景</h4>
+                <button class="text-button" id="toggleRoute">切换路线</button>
+              </div>
+              <canvas id="routeCanvas" width="760" height="460" aria-label="VR 地铁逃生路线图"></canvas>
+              <div class="legend-row">
+                <span><i class="legend-dot start"></i>起点</span>
+                <span><i class="legend-dot exit"></i>出口</span>
+                <span><i class="legend-dot sign"></i>指示牌</span>
+                <span><i class="legend-dot hazard"></i>封闭/障碍</span>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="reader" aria-labelledby="reader-title">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">论文阅读</p>
+              <h3 id="reader-title">上传论文或查看示例记录</h3>
+            </div>
+            <label class="file-button">
+              <input id="paperUpload" type="file" multiple accept=".pdf,.txt,.md" />
+              添加论文
+            </label>
+          </div>
+
+          <div class="reader-layout">
+            <section class="paper-list" id="paperList" aria-label="论文列表"></section>
+            <section class="paper-detail">
+              <div class="panel-title">
+                <h4 id="activePaperTitle">尚未选择论文</h4>
+                <span class="status-pill compact" id="activePaperTag">等待中</span>
+              </div>
+              <div class="paper-summary" id="paperSummary">
+                <p>加载示例项目后，这里会显示与论文主题相关的结构化摘要。</p>
+              </div>
+              <div class="extract-grid" id="paperExtracts"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="matrix" aria-labelledby="matrix-title">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">文献矩阵</p>
+              <h3 id="matrix-title">支撑论文写作的证据表</h3>
+            </div>
+            <button class="secondary-button" id="exportMatrix">导出 CSV</button>
+          </div>
+
+          <div class="matrix-toolbar">
+            <label>
+              关键词筛选
+              <input id="matrixSearch" type="search" placeholder="例如：EEG、指示牌、认知负荷" />
+            </label>
+            <label>
+              阅读视角
+              <select id="matrixLens">
+                <option value="all">全部字段</option>
+                <option value="method">方法重点</option>
+                <option value="measure">指标重点</option>
+                <option value="limitation">局限重点</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>论文</th>
+                  <th>场景</th>
+                  <th>EEG / 行为指标</th>
+                  <th>主要发现</th>
+                  <th>中文要点</th>
+                </tr>
+              </thead>
+              <tbody id="matrixBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="view" id="planner" aria-labelledby="planner-title">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">实验设计</p>
+              <h3 id="planner-title">把研究想法转成可答辩的实验方案</h3>
+            </div>
+            <button class="secondary-button" id="copyPlan">复制方案</button>
+          </div>
+
+          <div class="planner-grid">
+            <section class="work-panel">
+              <h4>研究问题</h4>
+              <textarea id="researchQuestion" rows="5">不同紧急指示牌设计如何影响 VR 地铁站逃生任务中的寻路表现和 EEG 认知负荷？</textarea>
+
+              <div class="form-row">
+                <label>
+                  认知负荷操控
+                  <select id="loadDesign">
+                    <option>低负荷 vs 高负荷二级任务</option>
+                    <option>低 / 中 / 高路线记忆任务</option>
+                    <option>仅指示牌 vs 指示牌 + 声音警报</option>
+                  </select>
+                </label>
+                <label>
+                  指示牌条件
+                  <select id="signageDesign">
+                    <option>常规方向牌 vs 增强方向牌</option>
+                    <option>静态指示牌 vs 动态箭头</option>
+                    <option>纯文字 vs 图标 + 颜色编码</option>
+                  </select>
+                </label>
+              </div>
+              <button class="primary-button" id="generatePlan">生成设计表</button>
+            </section>
+
+            <section class="work-panel">
+              <h4>生成结果</h4>
+              <div id="designOutput" class="design-output"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="data-lab" aria-labelledby="data-title">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">EEG / 数据分析</p>
+              <h3 id="data-title">行为与 EEG 认知负荷示例分析</h3>
+            </div>
+            <div class="top-actions">
+              <label class="file-button compact-file">
+                <input id="dataUpload" type="file" accept=".csv,.xlsx,.mat,.set,.edf" />
+                添加数据
+              </label>
+              <button class="primary-button" id="runAnalysis">运行示例分析</button>
+            </div>
+          </div>
+
+          <div class="data-grid">
+            <section class="work-panel">
+              <div class="panel-title">
+                <h4>条件汇总</h4>
+                <span class="status-pill compact" id="analysisStatus">未运行</span>
+              </div>
+              <canvas id="workloadChart" width="720" height="420" aria-label="EEG 认知负荷指数图"></canvas>
+              <div id="statsSummary" class="stats-summary"></div>
+            </section>
+            <section class="work-panel">
+              <h4>可复现分析流程</h4>
+              <div class="tabs" role="tablist" aria-label="分析语言">
+                <button class="tab-button is-active" data-code="python">Python / MNE</button>
+                <button class="tab-button" data-code="matlab">MATLAB / EEGLAB</button>
+              </div>
+              <pre><code id="pipelineCode"></code></pre>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="writer" aria-labelledby="writer-title">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">论文写作</p>
+              <h3 id="writer-title">英文草稿 + 中文逻辑说明</h3>
+            </div>
+            <button class="secondary-button" id="exportDraft">导出 Markdown</button>
+          </div>
+
+          <div class="writer-layout">
+            <aside class="draft-controls">
+              <label>
+                章节
+                <select id="draftSection">
+                  <option value="abstract">摘要 Abstract</option>
+                  <option value="introduction">引言 Introduction</option>
+                  <option value="methods">方法 Methods</option>
+                  <option value="results">结果 Results</option>
+                  <option value="discussion">讨论 Discussion</option>
+                </select>
+              </label>
+              <label>
+                写作风格
+                <select id="draftTone">
+                  <option>简洁学术风格</option>
+                  <option>论文开题风格</option>
+                  <option>期刊论文风格</option>
+                </select>
+              </label>
+              <button class="primary-button" id="generateDraft">生成章节</button>
+              <button class="secondary-button" id="copyDraft">复制草稿</button>
+            </aside>
+
+            <section class="draft-preview">
+              <article>
+                <span class="draft-label">英文草稿</span>
+                <div id="englishDraft" class="draft-box"></div>
+              </article>
+              <article>
+                <span class="draft-label">中文解释</span>
+                <div id="chineseDraft" class="draft-box"></div>
+              </article>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
