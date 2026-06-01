@@ -1043,6 +1043,93 @@ textarea {
   line-height: 1.45;
 }
 
+.subject-batch-panel {
+  margin-top: 16px;
+  display: grid;
+  gap: 16px;
+}
+
+.batch-controls {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.batch-layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.9fr) minmax(0, 1.1fr);
+  gap: 16px;
+}
+
+.batch-file-list,
+.subject-group-list {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.batch-file-list {
+  max-height: 380px;
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+}
+
+.batch-file-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--ink);
+}
+
+.batch-file-row input {
+  width: 18px;
+  min-height: 18px;
+  margin-top: 3px;
+}
+
+.batch-file-row strong,
+.batch-file-row small {
+  display: block;
+}
+
+.batch-file-row strong {
+  overflow-wrap: anywhere;
+}
+
+.batch-file-row small {
+  margin-top: 4px;
+  color: var(--muted);
+}
+
+.subject-group-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+}
+
+.subject-group-card h4,
+.subject-group-card p {
+  margin: 6px 0 0;
+}
+
+.subject-group-card p {
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
 .knowledge-panel {
   margin-top: 20px;
   display: grid;
@@ -1355,6 +1442,8 @@ textarea {
   .library-status-grid,
   .library-layout,
   .manager-toolbar,
+  .batch-controls,
+  .batch-layout,
   .ai-grid,
   .materials-grid,
   .alert-grid,
@@ -1397,7 +1486,8 @@ textarea {
   }
 
   .document-item,
-  .queue-row {
+  .queue-row,
+  .subject-group-card {
     grid-template-columns: 1fr;
   }
 

@@ -324,6 +324,8 @@ function Workspace({
   const [libraryFilter, setLibraryFilter] = useState<LibraryFilter>("all");
   const [jobViewFilter, setJobViewFilter] = useState<JobViewFilter>("all");
   const [jobsLastLoadedAt, setJobsLastLoadedAt] = useState<string | null>(null);
+  const [selectedBatchIds, setSelectedBatchIds] = useState<string[]>([]);
+  const [batchSubjectId, setBatchSubjectId] = useState("");
 
   useEffect(() => {
     void loadDocuments();
@@ -366,12 +368,17 @@ function Workspace({
   const totalStoredBytes = documents.reduce((total, document) => total + (document.size_bytes ?? 0), 0);
   const filteredDocumentCount = groupedDocuments.reduce((total, group) => total + group.documents.length, 0);
   const xdfDocuments = useMemo(() => documents.filter(isXdfDocument), [documents]);
+  const selectedBatchDocuments = useMemo(
+    () => xdfDocuments.filter((document) => selectedBatchIds.includes(document.id)),
+    [selectedBatchIds, xdfDocuments],
+  );
+  const inferredSubjectGroups = useMemo(() => groupXdfDocumentsBySubject(xdfDocuments), [xdfDocuments]);
   const latestJobByDocumentId = useMemo(() => buildLatestJobByDocumentId(analysisJobs), [analysisJobs]);
   const selectedDocumentJobs = useMemo(
     () =>
       selectedDocument
         ? analysisJobs
-            .filter((job) => job.document_id === selectedDocument.id)
+            .filter((job) => getJobDocumentIds(job).includes(selectedDocument.id))
             .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
         : [],
     [analysisJobs, selectedDocument],
@@ -604,6 +611,41 @@ function Workspace({
     setJobLoading(false);
   }
 
+  async function runSubjectBatchAnalysis(documentIds = selectedBatchIds, subjectId = batchSubjectId) {
+    const uniqueDocumentIds = Array.from(new Set(documentIds));
+    if (uniqueDocumentIds.length < 2) {
+      setJobMessage("被试批量分析至少需要选择 2 个 XDF；正式数据建议同一被试 3 个 run 一起提交。");
+      return;
+    }
+
+    setJobLoading(true);
+    setJobMessage("");
+
+    const response = await fetch("/api/analysis/jobs", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        documentIds: uniqueDocumentIds,
+        subjectId: subjectId.trim() || inferSubjectIdFromFilename(selectedBatchDocuments[0]?.filename ?? ""),
+        analysisType: "subject_batch",
+      }),
+    });
+
+    const payload = (await response.json()) as { job?: ResearchAnalysisJob; error?: string; warning?: string };
+    if (!response.ok && !payload.job) {
+      setJobMessage(payload.error ?? "被试批量 XDF 分析任务创建失败。");
+      setJobLoading(false);
+      return;
+    }
+
+    setJobMessage(payload.warning ?? `已提交 ${uniqueDocumentIds.length} 个 XDF 的被试批量分析任务。`);
+    await loadAnalysisJobs();
+    setJobLoading(false);
+  }
+
   async function queueAllXdfAnalyses() {
     if (!xdfDocuments.length) {
       setJobMessage("当前还没有 XDF 文件。请先批量上传 LabRecorder .xdf。");
@@ -632,6 +674,40 @@ function Workspace({
     setJobMessage(`已提交 ${submitted}/${xdfDocuments.length} 个 XDF 分析任务。`);
     await loadAnalysisJobs();
     setJobLoading(false);
+  }
+
+  async function deleteAnalysisJobs(jobIds: string[]) {
+    const uniqueJobIds = Array.from(new Set(jobIds));
+    if (!uniqueJobIds.length) {
+      setJobMessage("当前没有可清理的任务。");
+      return;
+    }
+
+    setJobLoading(true);
+    const response = await fetch("/api/analysis/jobs", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ jobIds: uniqueJobIds }),
+    });
+    const payload = (await response.json().catch(() => ({}))) as { error?: string };
+    if (!response.ok) {
+      setJobMessage(payload.error ?? "删除任务失败。");
+      setJobLoading(false);
+      return;
+    }
+
+    setJobMessage(`已删除 ${uniqueJobIds.length} 个任务。`);
+    await loadAnalysisJobs();
+    setJobLoading(false);
+  }
+
+  function toggleBatchDocument(documentId: string) {
+    setSelectedBatchIds((current) =>
+      current.includes(documentId) ? current.filter((id) => id !== documentId) : [...current, documentId],
+    );
   }
 
   async function buildLiteratureKnowledgeCard() {
@@ -940,9 +1016,30 @@ function Workspace({
             </section>
           </div>
 
+          <SubjectBatchPanel
+            documents={xdfDocuments}
+            groups={inferredSubjectGroups}
+            selectedIds={selectedBatchIds}
+            subjectId={batchSubjectId}
+            jobLoading={jobLoading}
+            onSubjectIdChange={setBatchSubjectId}
+            onToggleDocument={toggleBatchDocument}
+            onClear={() => setSelectedBatchIds([])}
+            onRunSelected={() => runSubjectBatchAnalysis()}
+            onRunGroup={(group) => {
+              setBatchSubjectId(group.subjectId);
+              setSelectedBatchIds(group.documents.map((document) => document.id));
+              void runSubjectBatchAnalysis(
+                group.documents.map((document) => document.id),
+                group.subjectId,
+              );
+            }}
+          />
+
           <AnalysisQueueOverview
             jobs={filteredXdfJobs}
             filter={jobViewFilter}
+            onDeleteJobs={deleteAnalysisJobs}
             onOpenReport={(report) => setAnalysisState({ status: "done", report, error: "" })}
           />
         </section>
@@ -1136,12 +1233,16 @@ function SelectedDocumentJobs({
 function AnalysisQueueOverview({
   jobs,
   filter,
+  onDeleteJobs,
   onOpenReport,
 }: {
   jobs: ResearchAnalysisJob[];
   filter: JobViewFilter;
+  onDeleteJobs: (jobIds: string[]) => void;
   onOpenReport: (report: DataAnalysisReport) => void;
 }) {
+  const deletableJobs = jobs.filter((job) => job.status === "completed" || job.status === "failed" || job.status === "configuration_required" || isStaleJob(job));
+
   return (
     <section className="work-panel queue-overview">
       <div className="analysis-head">
@@ -1149,7 +1250,12 @@ function AnalysisQueueOverview({
           <p className="eyebrow">XDF 队列</p>
           <h3>{jobViewFilters.find((item) => item.id === filter)?.label ?? "任务"} · {jobs.length}</h3>
         </div>
-        <p className="muted compact-note">疑似卡住表示任务超过 10 分钟没有状态回写，通常需要查看 GitHub Actions 或重新提交。</p>
+        <div className="top-actions">
+          <p className="muted compact-note">疑似卡住表示任务超过 10 分钟没有状态回写，通常需要查看 GitHub Actions 或重新提交。</p>
+          <button className="secondary-button" disabled={!deletableJobs.length} onClick={() => onDeleteJobs(deletableJobs.map((job) => job.id))}>
+            清理当前列表
+          </button>
+        </div>
       </div>
       {jobs.length ? (
         <div className="queue-table">
@@ -1158,7 +1264,7 @@ function AnalysisQueueOverview({
             return (
               <article className="queue-row" key={job.id}>
                 <div>
-                  <strong>{job.research_documents?.filename ?? job.document_id}</strong>
+                  <strong>{getJobDisplayTitle(job)}</strong>
                   <span>{new Date(job.created_at).toLocaleString("zh-CN")}</span>
                 </div>
                 <span className={`state-chip ${getJobTone(job)}`}>{isStaleJob(job) ? "疑似卡住" : formatJobStatus(job.status)}</span>
@@ -1172,6 +1278,9 @@ function AnalysisQueueOverview({
                   <button className="secondary-button" disabled={!report} onClick={() => report && onOpenReport(report)}>
                     结果
                   </button>
+                  <button className="secondary-button" onClick={() => onDeleteJobs([job.id])}>
+                    删除
+                  </button>
                 </div>
                 <p>{getJobMessage(job)}</p>
               </article>
@@ -1181,6 +1290,101 @@ function AnalysisQueueOverview({
       ) : (
         <p className="muted">当前筛选下没有 XDF 分析任务。</p>
       )}
+    </section>
+  );
+}
+
+function SubjectBatchPanel({
+  documents,
+  groups,
+  selectedIds,
+  subjectId,
+  jobLoading,
+  onSubjectIdChange,
+  onToggleDocument,
+  onClear,
+  onRunSelected,
+  onRunGroup,
+}: {
+  documents: ResearchDocument[];
+  groups: Array<{ subjectId: string; documents: ResearchDocument[] }>;
+  selectedIds: string[];
+  subjectId: string;
+  jobLoading: boolean;
+  onSubjectIdChange: (value: string) => void;
+  onToggleDocument: (documentId: string) => void;
+  onClear: () => void;
+  onRunSelected: () => void;
+  onRunGroup: (group: { subjectId: string; documents: ResearchDocument[] }) => void;
+}) {
+  return (
+    <section className="work-panel subject-batch-panel">
+      <div className="analysis-head">
+        <div>
+          <p className="eyebrow">被试批量分析</p>
+          <h3>同一被试的多个 XDF 一起分析</h3>
+        </div>
+        <span className="status-pill compact">{selectedIds.length} 个已选</span>
+      </div>
+      <p className="muted">
+        正式实验建议每名被试 3 个 run 一起提交。系统会先逐 run 做 EEG + Unity marker QC，再汇总成被试内 run 表，供后续组内/组间 mixed-effects model 使用。
+      </p>
+      <div className="batch-controls">
+        <label>
+          被试编号
+          <input
+            value={subjectId}
+            placeholder="例如 sub-P001"
+            onChange={(event) => onSubjectIdChange(event.target.value)}
+          />
+        </label>
+        <div className="top-actions">
+          <button className="primary-button" disabled={jobLoading || selectedIds.length < 2} onClick={onRunSelected}>
+            提交所选 XDF
+          </button>
+          <button className="secondary-button" disabled={!selectedIds.length} onClick={onClear}>
+            清空选择
+          </button>
+        </div>
+      </div>
+      <div className="batch-layout">
+        <div className="batch-file-list">
+          {documents.map((document) => (
+            <label className="batch-file-row" key={document.id}>
+              <input
+                type="checkbox"
+                checked={selectedIds.includes(document.id)}
+                onChange={() => onToggleDocument(document.id)}
+              />
+              <span>
+                <strong>{document.filename}</strong>
+                <small>{formatBytes(document.size_bytes)} · {inferSubjectIdFromFilename(document.filename)}</small>
+              </span>
+            </label>
+          ))}
+        </div>
+        <div className="subject-group-list">
+          <strong>按文件名推断的被试组</strong>
+          {groups.length ? (
+            groups.map((group) => (
+              <article className="subject-group-card" key={group.subjectId}>
+                <div>
+                  <span className={group.documents.length === 3 ? "state-chip completed" : "state-chip warning"}>
+                    {group.documents.length} 个 XDF
+                  </span>
+                  <h4>{group.subjectId}</h4>
+                  <p>{group.documents.map((document) => inferRunLabelFromFilename(document.filename)).join(" / ")}</p>
+                </div>
+                <button className="secondary-button" disabled={jobLoading || group.documents.length < 2} onClick={() => onRunGroup(group)}>
+                  分析此被试
+                </button>
+              </article>
+            ))
+          ) : (
+            <p className="muted">还没有 XDF 文件。上传后会按文件名中的 sub- 编号推断分组。</p>
+          )}
+        </div>
+      </div>
     </section>
   );
 }
@@ -1436,7 +1640,7 @@ function AnalysisJobsPanel({
             return (
               <article className="job-item" key={job.id}>
                 <div>
-                  <strong>{job.research_documents?.filename ?? job.document_id}</strong>
+                  <strong>{getJobDisplayTitle(job)}</strong>
                   <span>
                     {formatJobStatus(job.status)} · {new Date(job.created_at).toLocaleString("zh-CN")}
                   </span>
@@ -1712,12 +1916,43 @@ function isDataAnalysisReport(value: unknown): value is DataAnalysisReport {
 function buildLatestJobByDocumentId(jobs: ResearchAnalysisJob[]) {
   const map = new Map<string, ResearchAnalysisJob>();
   for (const job of jobs) {
-    const current = map.get(job.document_id);
-    if (!current || Date.parse(job.created_at) > Date.parse(current.created_at)) {
-      map.set(job.document_id, job);
+    for (const documentId of getJobDocumentIds(job)) {
+      const current = map.get(documentId);
+      if (!current || Date.parse(job.created_at) > Date.parse(current.created_at)) {
+        map.set(documentId, job);
+      }
     }
   }
   return map;
+}
+
+function getJobDisplayTitle(job: ResearchAnalysisJob) {
+  const result = job.result_json as
+    | {
+        batch?: { subjectId?: string; documentIds?: string[] };
+        subjectId?: string;
+        sourceDocumentIds?: string[];
+      }
+    | null
+    | undefined;
+  const batch = result?.batch;
+
+  if (job.analysis_type === "subject_batch" || batch || result?.sourceDocumentIds?.length) {
+    const subjectId = batch?.subjectId ?? result?.subjectId ?? inferSubjectIdFromFilename(job.research_documents?.filename ?? "");
+    const count = batch?.documentIds?.length ?? result?.sourceDocumentIds?.length ?? 1;
+    return `${subjectId} · ${count} 个 XDF`;
+  }
+
+  return job.research_documents?.filename ?? job.document_id;
+}
+
+function getJobDocumentIds(job: ResearchAnalysisJob) {
+  const result = job.result_json as
+    | { batch?: { documentIds?: string[] }; sourceDocumentIds?: string[] }
+    | null
+    | undefined;
+  const ids = result?.batch?.documentIds ?? result?.sourceDocumentIds ?? [job.document_id];
+  return Array.from(new Set(ids.filter(Boolean)));
 }
 
 function getXdfJobStats(jobs: ResearchAnalysisJob[]) {
@@ -1762,10 +1997,22 @@ function getJobTone(job: ResearchAnalysisJob) {
 function getJobProgress(job: ResearchAnalysisJob) {
   if (job.status === "completed") return 100;
   if (job.status === "failed" || job.status === "configuration_required" || isStaleJob(job)) return 100;
+  const batchProgress = getBatchProgressFromMessage(job.status_message);
+  if (batchProgress !== null) return batchProgress;
   if (job.status === "running") return 72;
   if (job.status === "queued") return 42;
   if (job.status === "pending") return 18;
   return 0;
+}
+
+function getBatchProgressFromMessage(message: string | null) {
+  if (!message) return null;
+  const match = message.match(/(\d+)\s*\/\s*(\d+)/);
+  if (!match) return null;
+  const current = Number(match[1]);
+  const total = Number(match[2]);
+  if (!Number.isFinite(current) || !Number.isFinite(total) || total <= 0) return null;
+  return Math.min(95, Math.max(18, Math.round((current / total) * 88)));
 }
 
 function getJobMessage(job: ResearchAnalysisJob) {
@@ -1786,4 +2033,34 @@ function formatJobStatus(status: ResearchAnalysisJob["status"]) {
   };
 
   return labels[status] ?? status;
+}
+
+function groupXdfDocumentsBySubject(documents: ResearchDocument[]) {
+  const grouped = new Map<string, ResearchDocument[]>();
+  for (const document of documents) {
+    const subjectId = inferSubjectIdFromFilename(document.filename);
+    grouped.set(subjectId, [...(grouped.get(subjectId) ?? []), document]);
+  }
+  return Array.from(grouped.entries())
+    .map(([subjectId, groupDocuments]) => ({
+      subjectId,
+      documents: groupDocuments.sort((a, b) => inferRunLabelFromFilename(a.filename).localeCompare(inferRunLabelFromFilename(b.filename))),
+    }))
+    .sort((a, b) => a.subjectId.localeCompare(b.subjectId));
+}
+
+function inferSubjectIdFromFilename(filename: string) {
+  const bidsMatch = filename.match(/sub-([A-Za-z0-9]+)/i);
+  if (bidsMatch?.[1]) return `sub-${bidsMatch[1]}`;
+  const subjectMatch = filename.match(/(?:subject|subj|participant|p)[-_]?([A-Za-z0-9]+)/i);
+  if (subjectMatch?.[1]) return `sub-${subjectMatch[1]}`;
+  return "subject-unknown";
+}
+
+function inferRunLabelFromFilename(filename: string) {
+  const runMatch = filename.match(/run-([A-Za-z0-9]+)/i);
+  if (runMatch?.[1]) return `run-${runMatch[1]}`;
+  const signatureMatch = filename.match(/signature[-_]?([A-Za-z0-9]+)/i);
+  if (signatureMatch?.[1]) return `signature-${signatureMatch[1]}`;
+  return formatDocumentKind({ filename });
 }

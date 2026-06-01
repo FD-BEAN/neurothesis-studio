@@ -240,6 +240,8 @@ XDF worker 目前输出：
 - 不把真实论文 PDF、XDF、EEG 原始数据或被试数据提交到公开 GitHub repo 的 `data` 目录。公开 GitHub 只保存代码、schema、wiki 和可公开的模板；私有数据优先放 Supabase private Storage。
 - GitHub Actions 的 `SUPABASE_SERVICE_ROLE_KEY` 可以使用新版 `sb_secret_...` 或旧版 JWT `service_role`。worker 请求头需要区分两者：新版 secret key 只放 `apikey`，旧版 JWT 才放 `Authorization: Bearer ...`。
 - 文件管理界面必须以“文件为中心”呈现分析状态：XDF 文件旁边直接显示未提交、排队、运行、完成、失败、疑似卡住；任务队列支持状态筛选和进度条。270 个实验文件不能只靠一串卡片堆叠。
+- XDF 正式分析必须支持“被试批量任务”：同一被试的 2-3 个 XDF run 一起提交，先逐 run 做 QC，再汇总成 subject-level run table。组内因素包括 Signature、Metro/map、audio/cognitive-load；组间因素需要用户额外提供 subject metadata 表，例如 subject_id、group、age、sex、VR experience、实验顺序/分组等。
+- 运行完成、失败、配置错误、疑似卡住的任务应该能从界面删除，避免历史错误任务堆积影响判断。
 
 用户提供的 XDF 报告脚本参考：
 

@@ -3,7 +3,14 @@ import { getSupabaseServerClient, type ResearchAnalysisJob, type ResearchDocumen
 
 type CreateJobBody = {
   documentId?: string;
+  documentIds?: string[];
+  subjectId?: string;
   analysisType?: string;
+};
+
+type DeleteJobsBody = {
+  jobIds?: string[];
+  mode?: "failed_or_stale" | "completed";
 };
 
 const DEFAULT_WORKFLOW = "analysis-worker.yml";
@@ -20,7 +27,7 @@ export async function GET(request: Request) {
     )
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
-    .limit(20);
+    .limit(500);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -34,45 +41,66 @@ export async function POST(request: Request) {
   if ("response" in auth) return auth.response;
 
   const { supabase, userId } = auth;
-  const { documentId, analysisType } = (await request.json()) as CreateJobBody;
+  const { documentId, documentIds, subjectId, analysisType } = (await request.json()) as CreateJobBody;
+  const requestedDocumentIds = uniqueStrings(documentIds?.length ? documentIds : documentId ? [documentId] : []);
+  const isSubjectBatch = analysisType === "subject_batch" || requestedDocumentIds.length > 1;
 
-  if (!documentId) {
-    return NextResponse.json({ error: "documentId is required." }, { status: 400 });
+  if (!requestedDocumentIds.length) {
+    return NextResponse.json({ error: "documentId or documentIds is required." }, { status: 400 });
   }
 
-  const { data: document, error: documentError } = await supabase
+  const { data: ownedDocuments, error: documentsError } = await supabase
     .from("research_documents")
     .select("*")
-    .eq("id", documentId)
-    .single();
+    .eq("user_id", userId)
+    .in("id", requestedDocumentIds);
 
-  if (documentError || !document) {
-    return NextResponse.json({ error: documentError?.message ?? "Document not found." }, { status: 404 });
+  if (documentsError) {
+    return NextResponse.json({ error: documentsError.message }, { status: 500 });
   }
 
-  const researchDocument = document as ResearchDocument;
-  if (researchDocument.user_id !== userId) {
-    return NextResponse.json({ error: "Document does not belong to current user." }, { status: 403 });
+  const documents = ((ownedDocuments ?? []) as ResearchDocument[]).sort(
+    (a, b) => requestedDocumentIds.indexOf(a.id) - requestedDocumentIds.indexOf(b.id),
+  );
+
+  if (documents.length !== requestedDocumentIds.length) {
+    return NextResponse.json({ error: "Some documents were not found or do not belong to current user." }, { status: 404 });
   }
 
-  if (getExtension(researchDocument.filename) !== "xdf") {
+  const nonXdfDocument = documents.find((document) => getExtension(document.filename) !== "xdf");
+  if (nonXdfDocument) {
     return NextResponse.json(
-      {
-        error:
-          "XDF 高级分析当前只面向 LabRecorder .xdf 文件，也就是 EEG stream + Unity marker stream。PDF/CSV 等资料请使用即时摘要。",
-      },
+      { error: `XDF 高级分析只接受 .xdf 文件：${nonXdfDocument.filename} 不是 XDF。` },
       { status: 400 },
     );
   }
+
+  if (isSubjectBatch && requestedDocumentIds.length < 2) {
+    return NextResponse.json({ error: "被试批量分析至少需要 2 个 XDF；正式数据建议 3 个 run 一起提交。" }, { status: 400 });
+  }
+
+  const resolvedAnalysisType = isSubjectBatch ? "subject_batch" : analysisType || "advanced_python";
+  const representativeDocument = documents[0];
+  const batchPayload = isSubjectBatch
+    ? {
+        kind: "subject_batch",
+        subjectId: subjectId?.trim() || inferSubjectId(representativeDocument.filename),
+        documentIds: requestedDocumentIds,
+        filenames: documents.map((document) => document.filename),
+      }
+    : null;
 
   const { data: insertedJob, error: insertError } = await supabase
     .from("research_analysis_jobs")
     .insert({
       user_id: userId,
-      document_id: documentId,
-      analysis_type: analysisType || "advanced_python",
+      document_id: representativeDocument.id,
+      analysis_type: resolvedAnalysisType,
       status: "pending",
-      status_message: "XDF 分析任务已创建，等待 Python worker。",
+      status_message: batchPayload
+        ? `被试 ${batchPayload.subjectId} 的 ${documents.length} 个 XDF 批量分析任务已创建，等待 Python worker。`
+        : "XDF 分析任务已创建，等待 Python worker。",
+      result_json: batchPayload ? { batch: batchPayload } : null,
     })
     .select("*")
     .single();
@@ -106,7 +134,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const dispatch = await dispatchGithubWorkflow(dispatchConfig, job.id);
+  const dispatch = await dispatchGithubWorkflow(dispatchConfig, job.id, resolvedAnalysisType);
 
   if (!dispatch.ok) {
     const { data: failedJob } = await supabase
@@ -133,13 +161,41 @@ export async function POST(request: Request) {
     .from("research_analysis_jobs")
     .update({
       status: "queued",
-      status_message: "已触发 GitHub Actions XDF Python worker。",
+      status_message: batchPayload
+        ? `已触发 GitHub Actions：被试 ${batchPayload.subjectId} 的 ${documents.length} 个 XDF 将一起分析。`
+        : "已触发 GitHub Actions XDF Python worker。",
     })
     .eq("id", job.id)
     .select("*")
     .single();
 
   return NextResponse.json({ job: (queuedJob ?? job) as ResearchAnalysisJob });
+}
+
+export async function DELETE(request: Request) {
+  const auth = await authenticate(request);
+  if ("response" in auth) return auth.response;
+
+  const { supabase, userId } = auth;
+  const { jobIds, mode } = (await request.json().catch(() => ({}))) as DeleteJobsBody;
+
+  let query = supabase.from("research_analysis_jobs").delete().eq("user_id", userId);
+  if (jobIds?.length) {
+    query = query.in("id", uniqueStrings(jobIds));
+  } else if (mode === "failed_or_stale") {
+    query = query.in("status", ["failed", "configuration_required"]);
+  } else if (mode === "completed") {
+    query = query.eq("status", "completed");
+  } else {
+    return NextResponse.json({ error: "jobIds or cleanup mode is required." }, { status: 400 });
+  }
+
+  const { error } = await query;
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true });
 }
 
 async function authenticate(request: Request) {
@@ -189,16 +245,13 @@ function getDispatchConfig() {
   const repo = process.env.GITHUB_ANALYSIS_REPO;
   const workflow = process.env.GITHUB_ANALYSIS_WORKFLOW || DEFAULT_WORKFLOW;
   const ref = process.env.GITHUB_ANALYSIS_REF || "main";
-  const missing = [
-    !token ? "GITHUB_ANALYSIS_TOKEN" : "",
-    !repo ? "GITHUB_ANALYSIS_REPO" : "",
-  ].filter(Boolean);
+  const missing = [!token ? "GITHUB_ANALYSIS_TOKEN" : "", !repo ? "GITHUB_ANALYSIS_REPO" : ""].filter(Boolean);
 
   return {
     ready: missing.length === 0,
     missing,
     token: token ?? "",
-    repo: repo ?? "",
+    repo,
     workflow,
     ref,
   };
@@ -207,6 +260,7 @@ function getDispatchConfig() {
 async function dispatchGithubWorkflow(
   config: ReturnType<typeof getDispatchConfig>,
   jobId: string,
+  analysisType: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const response = await fetch(
     `https://api.github.com/repos/${config.repo}/actions/workflows/${config.workflow}/dispatches`,
@@ -222,7 +276,7 @@ async function dispatchGithubWorkflow(
         ref: config.ref,
         inputs: {
           job_id: jobId,
-          analysis_type: "advanced_python",
+          analysis_type: analysisType,
         },
       }),
     },
@@ -237,4 +291,16 @@ async function dispatchGithubWorkflow(
     ok: false,
     error: `GitHub workflow dispatch failed (${response.status}): ${text.slice(0, 500)}`,
   };
+}
+
+function uniqueStrings(values: string[]) {
+  return Array.from(new Set(values.filter(Boolean)));
+}
+
+function inferSubjectId(filename: string) {
+  const bidsMatch = filename.match(/sub-([A-Za-z0-9]+)/i);
+  if (bidsMatch?.[1]) return `sub-${bidsMatch[1]}`;
+  const subjectMatch = filename.match(/(?:subject|subj|participant|p)[-_]?([A-Za-z0-9]+)/i);
+  if (subjectMatch?.[1]) return `sub-${subjectMatch[1]}`;
+  return "subject-unknown";
 }

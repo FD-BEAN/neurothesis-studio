@@ -75,6 +75,15 @@ class SupabaseRest:
             raise RuntimeError(f"No row found in {table}: {query}")
         return rows[0]
 
+    def select_many(self, table: str, query: str) -> list[dict[str, Any]]:
+        response = requests.get(
+            f"{self.url}/rest/v1/{table}?{query}",
+            headers={**self.headers, "Accept": "application/json"},
+            timeout=30,
+        )
+        response.raise_for_status()
+        return response.json()
+
     def update_job(self, job_id: str, payload: dict[str, Any]) -> None:
         response = requests.patch(
             f"{self.url}/rest/v1/research_analysis_jobs?id=eq.{job_id}",
@@ -126,6 +135,7 @@ def main() -> None:
 
 
 def run_job(client: SupabaseRest, job_id: str, run_url: str) -> None:
+    job = client.select_one("research_analysis_jobs", f"id=eq.{job_id}&select=*")
     client.update_job(
         job_id,
         {
@@ -135,17 +145,19 @@ def run_job(client: SupabaseRest, job_id: str, run_url: str) -> None:
         },
     )
 
-    job = client.select_one("research_analysis_jobs", f"id=eq.{job_id}&select=*")
-    document = client.select_one("research_documents", f"id=eq.{job['document_id']}&select=*")
-    extension = get_extension(document["filename"])
+    if job.get("analysis_type") == "subject_batch":
+        report = run_subject_batch_job(client, job, run_url)
+    else:
+        document = client.select_one("research_documents", f"id=eq.{job['document_id']}&select=*")
+        extension = get_extension(document["filename"])
 
-    if extension != "xdf":
-        raise RuntimeError("XDF 高级分析当前只面向 LabRecorder .xdf 文件。PDF/CSV 可用即时摘要，不进入 EEG+Unity marker 分析流水线。")
+        if extension != "xdf":
+            raise RuntimeError("XDF 高级分析当前只面向 LabRecorder .xdf 文件。PDF/CSV 可用即时摘要，不进入 EEG+Unity marker 分析流水线。")
 
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        local_file = Path(tmp_dir) / "input.xdf"
-        client.download_storage_object(document["storage_path"], local_file)
-        report = analyze_xdf(document, local_file)
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            local_file = Path(tmp_dir) / "input.xdf"
+            client.download_storage_object(document["storage_path"], local_file)
+            report = analyze_xdf(document, local_file)
 
     client.update_job(
         job_id,
@@ -158,6 +170,233 @@ def run_job(client: SupabaseRest, job_id: str, run_url: str) -> None:
             "github_run_url": run_url,
         },
     )
+
+
+def run_subject_batch_job(client: SupabaseRest, job: dict[str, Any], run_url: str) -> dict[str, Any]:
+    batch = extract_batch_payload(job)
+    document_ids = batch.get("documentIds", [])
+    if len(document_ids) < 2:
+        raise RuntimeError("subject_batch 任务缺少 documentIds；至少需要 2 个 XDF，正式数据推荐 3 个 run。")
+
+    id_filter = ",".join(document_ids)
+    documents = client.select_many("research_documents", f"id=in.({id_filter})&select=*")
+    documents_by_id = {document["id"]: document for document in documents}
+    ordered_documents = [documents_by_id[document_id] for document_id in document_ids if document_id in documents_by_id]
+    if len(ordered_documents) != len(document_ids):
+        raise RuntimeError("subject_batch 中有 XDF 文件在 research_documents 中找不到。")
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        reports = []
+        for index, document in enumerate(ordered_documents, start=1):
+            if get_extension(document["filename"]) != "xdf":
+                raise RuntimeError(f"subject_batch 只接受 XDF：{document['filename']} 不是 .xdf。")
+            local_file = tmp_path / f"run-{index:03d}.xdf"
+            client.update_job(
+                job["id"],
+                {
+                    "status": "running",
+                    "status_message": f"正在分析被试 {batch.get('subjectId', 'unknown')}：{index}/{len(ordered_documents)} {document['filename']}",
+                    "github_run_url": run_url,
+                },
+            )
+            client.download_storage_object(document["storage_path"], local_file)
+            reports.append(analyze_xdf(document, local_file))
+
+    return analyze_subject_batch(batch, ordered_documents, reports)
+
+
+def extract_batch_payload(job: dict[str, Any]) -> dict[str, Any]:
+    payload = job.get("result_json") or {}
+    if isinstance(payload, str):
+        try:
+            payload = json.loads(payload)
+        except json.JSONDecodeError:
+            payload = {}
+    batch = payload.get("batch") if isinstance(payload, dict) else None
+    if not isinstance(batch, dict):
+        raise RuntimeError("subject_batch 任务缺少 batch payload。")
+    return batch
+
+
+def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]], reports: list[dict[str, Any]]) -> dict[str, Any]:
+    subject_id = batch.get("subjectId") or infer_subject_id(documents[0]["filename"])
+    run_rows = [extract_run_summary(document, report) for document, report in zip(documents, reports)]
+    maps = sorted({row.get("map", "") for row in run_rows if row.get("map")})
+    signatures = sorted({row.get("signature", "") for row in run_rows if row.get("signature")})
+    audio_levels = sorted({row.get("audio", "") for row in run_rows if row.get("audio")})
+    completed_runs = sum(1 for row in run_rows if row.get("has_completion") == "yes")
+    durations = [to_float(row.get("duration_s")) for row in run_rows]
+    durations = [value for value in durations if value is not None]
+    notes = []
+
+    if len(run_rows) != 3:
+        notes.append(f"当前被试批次包含 {len(run_rows)} 个 XDF；正式设计预期每名被试 3 个实验 run。")
+    if len(signatures) < min(3, len(run_rows)):
+        notes.append("当前批次没有覆盖 3 个不同 Signature；如果文件名或 marker 没写清楚条件，需要补 subject-run 条件表。")
+    if not audio_levels:
+        notes.append("未从 marker 中稳定识别 audio 条件；组间/组内模型需要明确 cognitive load/audio 条件编码。")
+    notes.append("组内因素建议包含 Signature、Metro/map、audio/cognitive-load；组间因素需要额外上传 subject-level 分组表，例如 group、sex、age、VR experience 或实验顺序。")
+    notes.append("当前批量报告仍属于 QC + 特征提取，不直接给显著性结论；正式结果需要汇总所有被试后做 mixed-effects model。")
+
+    return {
+        "title": f"{subject_id} 被试批量 XDF 分析",
+        "kind": "Subject Batch XDF",
+        "subjectId": subject_id,
+        "sourceDocumentIds": [document["id"] for document in documents],
+        "summary": "该报告把同一被试的多个 XDF run 作为一个被试内单元处理：先逐文件完成 EEG + Unity marker QC，再汇总 run-level 行为、EEG 频带和事件窗指标，为后续组内/组间混合效应建模准备数据。",
+        "metrics": [
+            {"label": "被试编号", "value": str(subject_id)},
+            {"label": "XDF run", "value": str(len(run_rows))},
+            {"label": "完整 run", "value": f"{completed_runs}/{len(run_rows)}"},
+            {"label": "地图条件", "value": str(len(maps)), "text": " / ".join(maps) or "-"},
+            {"label": "Signature 条件", "value": str(len(signatures)), "text": " / ".join(signatures) or "-"},
+            {"label": "Audio 条件", "value": str(len(audio_levels)), "text": " / ".join(audio_levels) or "-"},
+            {"label": "平均时长", "value": fmt_seconds(float(np.mean(durations)) if durations else None)},
+        ],
+        "charts": [
+            {
+                "type": "bar",
+                "title": "run 完成时长",
+                "xLabel": "run",
+                "yLabel": "seconds",
+                "data": [
+                    {"label": row["run_label"], "value": safe_chart_value(to_float(row.get("duration_s")))}
+                    for row in run_rows
+                ],
+            },
+            {
+                "type": "bar",
+                "title": "行为负荷代理指标",
+                "xLabel": "run",
+                "yLabel": "count",
+                "data": [
+                    {"label": row["run_label"], "value": safe_chart_value(to_float(row.get("behavior_load_proxy")))}
+                    for row in run_rows
+                ],
+            },
+            {
+                "type": "bar",
+                "title": "EEG load proxy",
+                "xLabel": "run",
+                "yLabel": "index",
+                "data": [
+                    {"label": row["run_label"], "value": safe_chart_value(to_float(row.get("eeg_load_proxy")))}
+                    for row in run_rows
+                ],
+            },
+        ],
+        "tables": [
+            {
+                "title": "被试内 run 汇总",
+                "columns": [
+                    "file",
+                    "subject",
+                    "session",
+                    "map",
+                    "signature",
+                    "audio",
+                    "duration_s",
+                    "distance_m",
+                    "exit",
+                    "behavior_load_proxy",
+                    "eeg_load_proxy",
+                ],
+                "rows": [
+                    [
+                        row["file"],
+                        row["subject"],
+                        row["session"],
+                        row["map"],
+                        row["signature"],
+                        row["audio"],
+                        row["duration_s"],
+                        row["horizontal_distance_m"],
+                        row["exit_label"],
+                        row["behavior_load_proxy"],
+                        row["eeg_load_proxy"],
+                    ]
+                    for row in run_rows
+                ],
+            },
+            {
+                "title": "混合效应模型数据结构建议",
+                "columns": ["字段", "层级", "用途"],
+                "rows": [
+                    ["subject", "被试间", "随机截距；必要时加入 Signature/audio 随机斜率"],
+                    ["run/order", "被试内", "控制练习、疲劳和顺序效应"],
+                    ["signature", "被试内", "导向标识方案主效应与 planned contrast"],
+                    ["map/metro", "被试内", "场景布局复杂度控制变量或固定效应"],
+                    ["audio/cognitive_load", "被试内或组间，取决于实验安排", "认知负荷操控；需要明确你的正式设计"],
+                    ["group", "被试间", "如果存在实验组/对照组、专业背景、VR经验等，需要单独上传 subject metadata"],
+                ],
+            },
+        ],
+        "notes": notes[:12],
+    }
+
+
+def extract_run_summary(document: dict[str, Any], report: dict[str, Any]) -> dict[str, str]:
+    metrics = {metric.get("label"): metric.get("value") for metric in report.get("metrics", [])}
+    session_parts = parse_session_label(str(metrics.get("主 trial", "")))
+    behavior = extract_metric_table(report, ["trial_duration_s", "horizontal_distance_m", "exit_label", "behavior_load_proxy"])
+    eeg = extract_metric_table(report, ["eeg_load_proxy", "frontal_theta_4_7", "posterior_alpha_8_12", "theta_alpha_ratio"])
+    file = document["filename"]
+    return {
+        "file": file,
+        "run_label": infer_run_label(file),
+        "subject": session_parts.get("subject") or infer_subject_id(file),
+        "session": session_parts.get("session", ""),
+        "map": session_parts.get("map", ""),
+        "signature": session_parts.get("signature", ""),
+        "audio": session_parts.get("audio", ""),
+        "duration_s": behavior.get("trial_duration_s", "-"),
+        "horizontal_distance_m": behavior.get("horizontal_distance_m", "-"),
+        "exit_label": behavior.get("exit_label", "-"),
+        "behavior_load_proxy": behavior.get("behavior_load_proxy", "-"),
+        "eeg_load_proxy": eeg.get("eeg_load_proxy", "-"),
+        "has_completion": "yes" if behavior.get("trial_duration_s") not in (None, "", "-") else "no",
+    }
+
+
+def extract_metric_table(report: dict[str, Any], wanted: list[str]) -> dict[str, str]:
+    values: dict[str, str] = {}
+    wanted_set = set(wanted)
+    for table in report.get("tables", []):
+        for row in table.get("rows", []):
+            if not row:
+                continue
+            key = str(row[0])
+            if key in wanted_set and len(row) > 1:
+                values[key] = str(row[1])
+    return values
+
+
+def parse_session_label(label: str) -> dict[str, str]:
+    parts = [part.strip() for part in label.split(" / ") if part.strip()]
+    keys = ["subject", "session", "map", "signature", "audio"]
+    return {key: parts[index] for index, key in enumerate(keys) if index < len(parts)}
+
+
+def infer_subject_id(filename: str) -> str:
+    import re
+
+    match = re.search(r"sub-([A-Za-z0-9]+)", filename, re.IGNORECASE)
+    if match:
+        return f"sub-{match.group(1)}"
+    return "subject-unknown"
+
+
+def infer_run_label(filename: str) -> str:
+    import re
+
+    run = re.search(r"run-([A-Za-z0-9]+)", filename, re.IGNORECASE)
+    if run:
+        return f"run-{run.group(1)}"
+    signature = re.search(r"signature[-_]?([A-Za-z0-9]+)", filename, re.IGNORECASE)
+    if signature:
+        return f"signature-{signature.group(1)}"
+    return filename[:24]
 
 
 def analyze_xdf(document: dict[str, Any], path: Path) -> dict[str, Any]:
