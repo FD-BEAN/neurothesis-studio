@@ -384,7 +384,8 @@ textarea {
 .ai-grid,
 .materials-grid,
 .alert-grid,
-.desk-layout,
+.module-overview,
+.module-grid,
 .workflow-list {
   display: grid;
   gap: 16px;
@@ -416,16 +417,21 @@ textarea {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.desk-layout {
+.module-overview {
   grid-template-columns: minmax(0, 1.55fr) minmax(320px, 0.85fr);
   align-items: start;
+}
+
+.module-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 24px;
 }
 
 .workflow-list {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-.desk-panel {
+.project-summary {
   padding: clamp(20px, 3vw, 30px);
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -433,53 +439,48 @@ textarea {
   box-shadow: var(--shadow);
 }
 
-.desk-primary h2 {
+.project-summary h2 {
   max-width: 760px;
   margin: 0;
-  font-size: clamp(1.6rem, 3vw, 2.45rem);
-  line-height: 1.16;
+  font-size: clamp(1.45rem, 2.5vw, 2.05rem);
+  line-height: 1.2;
 }
 
-.desk-lead {
+.summary-text {
   max-width: 800px;
   margin: 16px 0 0;
   color: var(--muted);
-  font-size: 1.02rem;
+  font-size: 1rem;
   line-height: 1.7;
 }
 
-.task-list {
-  margin-top: 28px;
-  border-top: 1px solid var(--line);
+.compact-summary {
+  align-self: stretch;
 }
 
-.task-row {
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
-  gap: 14px;
-  padding: 18px 0;
-  border-bottom: 1px solid var(--line);
-}
-
-.task-row > span,
-.step-number {
-  width: 28px;
-  height: 28px;
+.module-card {
+  min-height: 132px;
+  padding: 18px;
   border: 1px solid var(--line);
-  border-radius: 999px;
-  display: inline-grid;
-  place-items: center;
-  color: var(--blue);
-  font-size: 0.78rem;
-  font-weight: 900;
+  border-radius: 8px;
+  background: var(--paper);
+  display: grid;
+  align-content: start;
+  gap: 9px;
 }
 
-.task-row strong {
+.module-card:hover,
+.module-card:focus-visible {
+  border-color: #91bcb6;
+  background: #f4faf8;
+}
+
+.module-card strong {
   display: block;
 }
 
-.task-row p {
-  margin: 7px 0 0;
+.module-card p {
+  margin: 0;
   color: var(--muted);
   line-height: 1.55;
 }
@@ -689,7 +690,8 @@ textarea {
   .ai-grid,
   .materials-grid,
   .alert-grid,
-  .desk-layout,
+  .module-overview,
+  .module-grid,
   .workflow-list {
     grid-template-columns: 1fr;
   }

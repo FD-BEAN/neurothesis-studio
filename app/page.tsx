@@ -14,26 +14,39 @@ type AiState = {
 
 const thesisKeywords = researchProject.keywords;
 
-const deskTasks = [
+const workspaceModules = [
   {
-    title: "把文献先分成三类",
-    text: "wayfinding / signage design、VR evacuation、EEG cognitive load。先建立能支撑 Introduction 的证据框架。",
+    href: "#files",
+    title: "资料库",
+    text: "论文 PDF、图纸、Unity 日志、EEG 文件和研究笔记。",
   },
   {
-    title: "核对图纸与图注",
-    text: "优先统一标识可读范围文字，避免 Methods 里出现 0-5m、0-8m、8-12m 的口径冲突。",
+    href: "#blueprint",
+    title: "实验设计",
+    text: "3×3×2 条件、marker 逻辑、行为数据和 EEG 同步关系。",
   },
   {
-    title: "整理 3×3×2 条件表",
-    text: "把地图、标识方案、音频负荷、Unity marker 和 EEG 同步关系整理成可直接写入论文的表。",
+    href: "#materials",
+    title: "图纸与刺激",
+    text: "9 张平面图、标识可读范围、图注和口径提醒。",
+  },
+  {
+    href: "#ai",
+    title: "研究助理",
+    text: "文献摘要、双语矩阵、Methods 草稿和分析计划。",
+  },
+  {
+    href: "#pipeline",
+    title: "分析与写作",
+    text: "PDF 解析、EEG 脚本、文献矩阵和英文论文段落。",
   },
 ];
 
-const workflowSteps = [
-  { title: "读文献", text: "摘要、变量、任务范式、EEG 指标和局限先做成双语卡片。" },
-  { title: "定材料", text: "图纸、图注、Unity 日志、LSL marker 和 .xdf 文件逐项对齐。" },
-  { title: "跑分析", text: "先固定行为指标，再接 EEG 预处理和事件锁定分析。" },
-  { title: "写论文", text: "Methods 先成型，再补 Introduction 和 Discussion 的证据链。" },
+const analysisModules = [
+  { title: "文献矩阵", text: "按 wayfinding、VR evacuation、EEG cognitive load 整理研究问题、方法和指标。" },
+  { title: "行为数据", text: "整理 Unity 路径、停留、回退、决策点扫描和任务完成情况。" },
+  { title: "EEG 预处理", text: "保留 MNE-Python 和 EEGLAB 的脚本入口，用于事件锁定和认知负荷分析。" },
+  { title: "论文段落", text: "为 Introduction、Methods、Results 和 Discussion 保存中英双语草稿。" },
 ];
 
 export default function HomePage() {
@@ -321,7 +334,7 @@ function Workspace({
         <Brand />
         <nav className="nav-list" aria-label="Workspace navigation">
           <a className="nav-item is-active" href="#overview">
-            今天
+            工作区
           </a>
           <a className="nav-item" href="#files">
             资料库
@@ -336,7 +349,7 @@ function Workspace({
             研究助理
           </a>
           <a className="nav-item" href="#pipeline">
-            写作流程
+            分析与写作
           </a>
         </nav>
         <div className="side-note">
@@ -348,8 +361,8 @@ function Workspace({
       <section className="workspace">
         <header className="topbar">
           <div>
-            <p className="eyebrow">研究桌面</p>
-            <h1>Metro Rescue 论文工作台</h1>
+            <p className="eyebrow">项目空间</p>
+            <h1>Metro Rescue</h1>
           </div>
           <div className="top-actions">
             <span className="status-pill compact">私人空间</span>
@@ -360,28 +373,25 @@ function Workspace({
         </header>
 
         <section className="view is-visible" id="overview">
-          <div className="desk-layout">
-            <section className="desk-panel desk-primary">
-              <p className="eyebrow">今天先做什么</p>
-              <h2>把材料整理成可以写进论文的证据</h2>
-              <p className="desk-lead">
-                这里不是展示系统功能的地方，而是每天打开后能立刻接着做研究的桌面。先把文献、图纸、实验条件和数据口径理顺，再进入分析与英文写作。
+          <div className="module-overview">
+            <section className="project-summary">
+              <p className="eyebrow">研究模块</p>
+              <h2>VR 地铁撤离与 EEG 认知负荷研究</h2>
+              <p className="summary-text">
+                这里按研究材料和工作环节组织，不替你安排顺序。需要处理哪一块，就直接进入对应模块。
               </p>
-              <div className="task-list">
-                {deskTasks.map((task, index) => (
-                  <article className="task-row" key={task.title}>
-                    <span>{index + 1}</span>
-                    <div>
-                      <strong>{task.title}</strong>
-                      <p>{task.text}</p>
-                    </div>
-                  </article>
+              <div className="module-grid">
+                {workspaceModules.map((module) => (
+                  <a className="module-card" href={module.href} key={module.title}>
+                    <strong>{module.title}</strong>
+                    <p>{module.text}</p>
+                  </a>
                 ))}
               </div>
             </section>
 
-            <aside className="desk-panel desk-side">
-              <p className="eyebrow">资料状态</p>
+            <aside className="project-summary compact-summary">
+              <p className="eyebrow">项目记录</p>
               <dl className="status-list">
                 <div>
                   <dt>已入库文件</dt>
@@ -489,13 +499,13 @@ function Workspace({
         <section className="view is-visible" id="pipeline">
           <div className="section-head">
             <div>
-              <p className="eyebrow">写作流程</p>
-              <h2>从材料到论文草稿</h2>
+              <p className="eyebrow">分析与写作</p>
+              <h2>论文分析模块</h2>
             </div>
           </div>
           <div className="workflow-list">
-            {workflowSteps.map((step, index) => (
-              <PipelineCard key={step.title} index={index + 1} title={step.title} text={step.text} />
+            {analysisModules.map((module) => (
+              <PipelineCard key={module.title} title={module.title} text={module.text} />
             ))}
           </div>
         </section>
@@ -620,10 +630,9 @@ function Metric({ label, value, text }: { label: string; value: number | string;
   );
 }
 
-function PipelineCard({ index, title, text }: { index?: number; title: string; text: string }) {
+function PipelineCard({ title, text }: { title: string; text: string }) {
   return (
     <article className="work-panel">
-      {index ? <span className="step-number">{index}</span> : null}
       <h3>{title}</h3>
       <p className="muted">{text}</p>
     </article>
