@@ -16,10 +16,12 @@ Add these in Vercel Project Settings -> Environment Variables:
 
 ```text
 NEXT_PUBLIC_SUPABASE_URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 OPENAI_API_KEY
 OPENAI_MODEL
 ```
+
+Older Supabase projects may show `NEXT_PUBLIC_SUPABASE_ANON_KEY` instead. The app accepts either variable name.
 
 `OPENAI_API_KEY` must never be committed to git.
 

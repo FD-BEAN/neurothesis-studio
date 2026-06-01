@@ -35,7 +35,7 @@ http://localhost:3000
 
 1. 新建 Supabase project。
 2. 在 `Authentication` 里创建用户。
-3. 复制 project URL 和 anon key 到 `.env.local`。
+3. 复制 project URL 和 publishable key 到 `.env.local`。新版 Supabase 会显示 `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`；旧版可能显示 `NEXT_PUBLIC_SUPABASE_ANON_KEY`，两个变量名都可以。
 4. 打开 `SQL Editor`，运行 `supabase/schema.sql`。
 5. 确认 `research-files` bucket 是 private。
 
@@ -45,7 +45,7 @@ http://localhost:3000
 2. 选择 `next-supabase-secure` 分支。
 3. 添加环境变量：
    - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
    - `OPENAI_API_KEY`
    - `OPENAI_MODEL`
 4. Deploy。
