@@ -50,6 +50,28 @@ a {
   text-decoration: none;
 }
 
+.preview-shell {
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+.preview-hero {
+  padding: clamp(24px, 5vw, 54px);
+  border-bottom: 1px solid var(--line);
+  background: #ffffff;
+  display: grid;
+  gap: 22px;
+}
+
+.preview-hero h1 {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 4rem);
+}
+
+.preview-hero p {
+  max-width: 880px;
+}
+
 .auth-screen {
   min-height: 100vh;
   display: grid;
@@ -356,7 +378,9 @@ textarea {
 .metric-grid,
 .dashboard-grid,
 .document-grid,
-.ai-grid {
+.ai-grid,
+.materials-grid,
+.alert-grid {
   display: grid;
   gap: 16px;
 }
@@ -373,6 +397,14 @@ textarea {
 .document-grid,
 .ai-grid {
   grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+}
+
+.materials-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.alert-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .metric-card,
@@ -407,6 +439,65 @@ textarea {
   background: #ffffff;
   color: var(--muted);
   font-weight: 800;
+}
+
+.keyword-row.compact span {
+  font-size: 0.78rem;
+}
+
+.blueprint-stack {
+  display: grid;
+  gap: 20px;
+}
+
+.quality-alert {
+  padding: 18px;
+  border: 1px solid #f0d0c9;
+  border-left: 5px solid var(--coral);
+  border-radius: 8px;
+  background: #fff7f5;
+}
+
+.quality-alert strong,
+.material-card strong,
+.figure-list strong {
+  display: block;
+}
+
+.quality-alert p,
+.material-card p,
+.figure-list p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.material-card {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: var(--shadow);
+}
+
+.material-card span,
+.figure-list span {
+  color: var(--blue);
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.figure-list {
+  display: grid;
+  gap: 14px;
+}
+
+.figure-list article {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfc;
 }
 
 .document-list {
@@ -478,7 +569,9 @@ textarea {
   .metric-grid,
   .dashboard-grid,
   .document-grid,
-  .ai-grid {
+  .ai-grid,
+  .materials-grid,
+  .alert-grid {
     grid-template-columns: 1fr;
   }
 }

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Session, SupabaseClient, User } from "@supabase/supabase-js";
 import { getSupabaseBrowserClient, hasSupabaseBrowserConfig, type ResearchDocument } from "@/lib/supabase";
+import { metroAiPrompt, researchProject } from "@/lib/researchProject";
 
 type UploadState = "idle" | "uploading" | "done" | "error";
 
@@ -11,7 +12,7 @@ type AiState = {
   output: string;
 };
 
-const thesisKeywords = ["VR 地铁逃生", "EEG 认知负荷", "寻路指示牌", "MNE-Python", "MATLAB/EEGLAB"];
+const thesisKeywords = researchProject.keywords;
 
 export default function HomePage() {
   const hasConfig = hasSupabaseBrowserConfig();
@@ -41,7 +42,7 @@ export default function HomePage() {
   }, [supabase]);
 
   if (!supabase) {
-    return <MissingConfigScreen />;
+    return <LocalPreview />;
   }
 
   if (authLoading) {
@@ -55,19 +56,27 @@ export default function HomePage() {
   return <Workspace supabase={supabase} session={session} user={session.user} />;
 }
 
-function MissingConfigScreen() {
+function LocalPreview() {
   return (
-    <main className="auth-screen compact-auth">
-      <section className="auth-panel">
+    <main className="preview-shell">
+      <section className="preview-hero">
         <Brand />
-        <div className="auth-copy">
-          <p className="eyebrow">需要配置</p>
-          <h1>请先连接 Supabase</h1>
-          <p>
-            复制 <code>.env.example</code> 为 <code>.env.local</code>，填入
-            <code>NEXT_PUBLIC_SUPABASE_URL</code> 和 <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> 后重新启动。
-          </p>
+        <div>
+          <p className="eyebrow">本地预览模式</p>
+          <h1>{researchProject.name}</h1>
+          <p>{researchProject.subtitle}</p>
         </div>
+        <p className="auth-warning">
+          当前未连接 Supabase，因此只展示研究项目蓝图。配置 `.env.local` 后会启用登录、私有文件上传和后端 AI。
+        </p>
+      </section>
+
+      <section className="view is-visible">
+        <ProjectBlueprint />
+      </section>
+
+      <section className="view is-visible">
+        <MaterialsPanel />
       </section>
     </main>
   );
@@ -172,7 +181,7 @@ function Workspace({
   const [uploadState, setUploadState] = useState<UploadState>("idle");
   const [uploadMessage, setUploadMessage] = useState("");
   const [researchNote, setResearchNote] = useState(
-    "请基于这篇论文/数据说明，提取研究问题、实验设计、EEG 指标、统计方法、局限和可用于英文论文写作的要点。",
+    metroAiPrompt,
   );
   const [aiState, setAiState] = useState<AiState>({ status: "idle", output: "" });
 
@@ -291,6 +300,12 @@ function Workspace({
           <a className="nav-item is-active" href="#overview">
             项目总览
           </a>
+          <a className="nav-item" href="#blueprint">
+            研究蓝图
+          </a>
+          <a className="nav-item" href="#materials">
+            图纸索引
+          </a>
           <a className="nav-item" href="#files">
             私有论文库
           </a>
@@ -344,6 +359,14 @@ function Workspace({
           </div>
         </section>
 
+        <section className="view is-visible" id="blueprint">
+          <ProjectBlueprint />
+        </section>
+
+        <section className="view is-visible" id="materials">
+          <MaterialsPanel />
+        </section>
+
         <section className="view is-visible" id="files">
           <div className="section-head">
             <div>
@@ -351,7 +374,7 @@ function Workspace({
               <h2>私有论文与数据文件</h2>
             </div>
             <label className="file-button">
-              <input type="file" accept=".pdf,.csv,.xlsx,.mat,.set,.edf,.txt,.md" onChange={handleUpload} />
+              <input type="file" accept=".pdf,.csv,.xlsx,.mat,.set,.edf,.txt,.md,.svg,.xdf,.jsonl" onChange={handleUpload} />
               {uploadState === "uploading" ? "上传中..." : "上传文件"}
             </label>
           </div>
@@ -372,7 +395,7 @@ function Workspace({
                   </button>
                 ))
               ) : (
-                <p className="muted">还没有文件。先上传一篇论文 PDF 或一份实验数据。</p>
+                <p className="muted">还没有文件。建议先上传 9 张 SVG 图纸、研究图注 md、Unity 日志样例和 EEG .xdf 文件。</p>
               )}
             </section>
 
@@ -454,6 +477,90 @@ function PreviewCard({ title, text }: { title: string; text: string }) {
     <div className="auth-preview-card">
       <span>{title}</span>
       <strong>{text}</strong>
+    </div>
+  );
+}
+
+function ProjectBlueprint() {
+  return (
+    <div className="blueprint-stack">
+      <div className="section-head">
+        <div>
+          <p className="eyebrow">Project design</p>
+          <h2>Metro Rescue 研究蓝图</h2>
+        </div>
+        <span className="status-pill">{researchProject.design.totalConditions} 个实验组合</span>
+      </div>
+
+      <div className="metric-grid">
+        <Metric label="地图布局" value={researchProject.design.maps.length} text={researchProject.design.maps.join(" / ")} />
+        <Metric label="标识方案" value={researchProject.design.signatures.length} text={researchProject.design.signatures.join(" / ")} />
+        <Metric label="音频条件" value={researchProject.design.audio.length} text={researchProject.design.audio.join(" / ")} />
+        <Metric label="平面图" value={researchProject.planFiles.length} text="3 地图 × 3 标识方案，每张图含标识可读范围。" />
+      </div>
+
+      <div className="dashboard-grid">
+        {researchProject.markerGroups.map((group) => (
+          <article className="work-panel" key={group.title}>
+            <h3>{group.title}</h3>
+            <p className="muted">{group.detail}</p>
+            <div className="keyword-row compact">
+              {group.items.map((item) => (
+                <span key={item}>{item}</span>
+              ))}
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <div className="alert-grid">
+        {researchProject.qualityAlerts.map((alert) => (
+          <article className="quality-alert" key={alert.title}>
+            <strong>{alert.title}</strong>
+            <p>{alert.detail}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MaterialsPanel() {
+  return (
+    <div className="blueprint-stack">
+      <div className="section-head">
+        <div>
+          <p className="eyebrow">Private research materials</p>
+          <h2>图纸与图注索引</h2>
+        </div>
+        <span className="status-pill">不要提交到 public repo</span>
+      </div>
+
+      <div className="materials-grid">
+        {researchProject.planFiles.map((item) => (
+          <article className="material-card" key={item.file}>
+            <span>
+              {item.map} / {item.signature}
+            </span>
+            <strong>{item.file}</strong>
+            <p>{item.signs} 个实验标识点。建议上传到 Supabase private Storage，并与图注记录绑定。</p>
+          </article>
+        ))}
+      </div>
+
+      <section className="work-panel">
+        <h3>论文图表组织建议</h3>
+        <div className="figure-list">
+          {researchProject.figures.map((figure) => (
+            <article key={figure.id}>
+              <span>{figure.id}</span>
+              <strong>{figure.title}</strong>
+              <p>{figure.use}</p>
+              <p className="muted">{figure.caption}</p>
+            </article>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
