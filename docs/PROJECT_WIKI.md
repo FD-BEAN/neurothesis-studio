@@ -529,4 +529,14 @@ XDF 分析口径扩展：
 - Unity marker 层新增标识与决策指标：可见/可读标识数量、可读比例、首次可读时间、首次决策点时间、决策点数量、左右看次数、左右不平衡、双侧扫描、停留、掉头、回退和导航低效代理指标。
 - EEG 层新增事件窗指标：`sign_visible_enter`、`sign_readable`、`decision_point_enter` 和 `audio_play` 附近的 frontal theta、posterior alpha、theta/alpha 和 EEG load proxy，并标记事件窗附近是否出现音频、停留、掉头或回退。
 - 被试批量报告把这些 run-level 行为指标和事件窗 EEG 指标一起纳入低/中/高路径确认支持 planned contrast，不再只比较总时长和全程 EEG 平均。
+
+## 2026-06-02 XDF worker v2：按 PPT 研究模型重构报告
+
+- XDF HTML 报告要服务于 `路径确认信息链与应急疏散行为研究.pptx` 中的模型，而不只是列出 stream、marker 和频带功率。
+- 报告顶部增加“研究模型与变量映射”：`X` 路径确认支持水平、`Y` 行动迟滞、`auxY` 路径判断准确率、`M1` 感知信息可靠性、`M2` 信息加工负荷、`W` 保护性行动指令清晰度。
+- 单文件报告新增字段：提醒通道、保护性行动指令清晰度、首次行动启动时间、提示到首次确认线索、决策点停留总时长、可读标识最大间隔、决策点覆盖代理、确认链不流畅代理、首次选择正确、决策选择正确率和最终到达正确性。
+- 被试批量报告新增被试内标准化指数：`route_decision_hesitation_index`、`route_confirmation_disfluency_index`、`eeg_information_processing_load_index`。这些指数用于三条件 planned contrast；原始指标仍保留在表格中。
+- 全样本汇总同时突出 H1 行动迟滞和 H3 EEG 信息加工负荷；准确率指标用于解释 accuracy-effort trade-off，不自动当成“中等最高”的主结论。
+- 旧字段 `densityContrasts` 暂时保留用于兼容旧任务；新增 `supportContrasts` 作为后续主字段。
+- HTML 报告语言应保持中文论文/研究报告口吻，减少系统说明和模板化表达；避免使用“不是……而是……”这类句式。
 - 组内主检验仍是每名被试的 `medium - mean(low, high)`；组间分析仍需要 subject metadata，再检验 `SupportLevel × Group` 交互。

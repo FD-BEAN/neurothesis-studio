@@ -55,8 +55,32 @@ INEFFICIENCY_EVENTS = [
     "u_turn_detected",
     "route_backtrack_detected",
 ]
+ACTION_START_EVENTS = (
+    "movement_start",
+    "move_start",
+    "walking_start",
+    "locomotion_start",
+    "route_start",
+    "player_move_start",
+)
+PROMPT_EVENTS = (
+    "audio_play",
+    "warning_play",
+    "warning_message",
+    "mobile_prompt_show",
+    "popup_show",
+    "instruction_start",
+    "protective_action_prompt",
+)
+CONFIRMATION_EVENTS = (
+    "sign_readable",
+    "sign_visible_enter",
+    "direction_cue_readable",
+    "route_confirmation_cue",
+)
 BEHAVIOR_EVENTS = [
     "audio_play",
+    "movement_start",
     "sign_visible_enter",
     "sign_readable",
     "sign_readable_exit",
@@ -77,6 +101,53 @@ DENSITY_LABELS = {
     "high": "高路径确认支持",
 }
 PRIMARY_CONTRAST_WEIGHTS = {"low": -1.0, "medium": 2.0, "high": -1.0}
+
+PROJECT_MODEL_VARIABLES = [
+    {
+        "code": "X",
+        "name": "路径确认支持水平",
+        "definition": "官方目标提醒之后，现场路径确认线索在接近性、连续性、决策点覆盖和间距稳定性上的支持程度。",
+        "xdf_mapping": "由 Signature/文件三连号推断低、中、高支持；同时用首次确认线索时间、可读标识比例、决策点覆盖和线索间隔作为操纵检查。",
+    },
+    {
+        "code": "Y",
+        "name": "行动迟滞",
+        "definition": "等待、核对、犹豫、停顿和反复确认造成的行动启动延迟与决策点滞留。",
+        "xdf_mapping": "启动延迟、完成时长、决策点停留、左右查看、双侧扫描、停留、掉头和回退。",
+    },
+    {
+        "code": "auxY",
+        "name": "路径判断准确率",
+        "definition": "低迟滞需要与正确路径选择同时解释，避免把快速启发式判断误读为更优表现。",
+        "xdf_mapping": "读取 Unity marker 中的 first_choice_correct、decision_correct、route_correct、success 或 reached_target 等字段；缺失时在报告中标注待补。",
+    },
+    {
+        "code": "M1",
+        "name": "感知信息可靠性",
+        "definition": "被试认为官方路径确认线索一致、稳定、可追踪、值得继续依赖的程度。",
+        "xdf_mapping": "问卷为主；XDF 仅提供线索连续性、决策点覆盖和确认链断点的操纵检查。",
+    },
+    {
+        "code": "M2",
+        "name": "信息加工负荷",
+        "definition": "目标、线索与方向选择之间需要整合、核对和确认时产生的加工负荷。",
+        "xdf_mapping": "frontal theta、posterior alpha、theta/alpha、EEG load proxy，以及 sign_readable / decision_point_enter 事件窗指标。",
+    },
+    {
+        "code": "W",
+        "name": "保护性行动指令清晰度",
+        "definition": "警报是否明确说明目标、应依据的现场官方线索，以及关键决策点的确认规则。",
+        "xdf_mapping": "由 audio/message/popup/clarity 字段推断；正式组间或调节分析需要 subject/run metadata。",
+    },
+]
+
+PROJECT_HYPOTHESES = [
+    "H1：路径确认支持水平对行动迟滞呈倒 U 型影响，中等支持条件下行动迟滞最高。",
+    "H2：低支持提高到中等支持时，感知信息可靠性增强，被试更愿意继续核对官方线索。",
+    "H3：中等支持形成可依赖但未闭合的信息链，目标—线索—方向匹配负荷升高，并体现在 EEG 事件窗指标上。",
+    "H4：保护性行动指令清晰度调节路径确认支持对可靠性感知和 EEG 信息加工负荷的影响。",
+    "H5：路径确认支持水平应提高路径判断准确率，高支持条件应在较低迟滞下保持较高准确率。",
+]
 
 
 class SupabaseRest:
@@ -248,6 +319,7 @@ def render_html_report(report: dict[str, Any], job: dict[str, Any], generated_at
     tables = report.get("tables") if isinstance(report.get("tables"), list) else []
     notes = report.get("notes") if isinstance(report.get("notes"), list) else []
     narrative_sections = report.get("narrativeSections") if isinstance(report.get("narrativeSections"), list) else []
+    model_overview = report.get("modelOverview") if isinstance(report.get("modelOverview"), dict) else None
 
     parts = [
         "<!doctype html><html lang='zh-CN'><head><meta charset='utf-8'>",
@@ -258,12 +330,15 @@ def render_html_report(report: dict[str, Any], job: dict[str, Any], generated_at
         "<header class='hero'>",
         f"<p class='eyebrow'>{h(kind)}</p>",
         f"<h1>{h(title)}</h1>",
-        f"<p class='muted'>Generated at {h(generated_at)} · Job {h(job.get('id', ''))}</p>",
+        f"<p class='muted'>生成时间 {h(generated_at)} · 任务 {h(job.get('id', ''))}</p>",
         "</header>",
     ]
 
     if summary:
         parts.extend(["<section class='card'><h2>报告摘要</h2>", f"<p>{h(summary)}</p>", "</section>"])
+
+    if model_overview:
+        parts.append(render_model_overview(model_overview))
 
     if narrative_sections:
         parts.append(render_narrative_sections(narrative_sections))
@@ -313,14 +388,49 @@ def render_html_report(report: dict[str, Any], job: dict[str, Any], generated_at
     parts.extend(
         [
             "<section class='card'><h2>后续统计建模提醒</h2>",
-            "<p>该 HTML 是 QC 与特征提取报告，适合检查 XDF、Unity marker、EEG 覆盖和 run-level 指标。正式论文结论需要把所有被试汇总为 subject-level / trial-level 表，再检验路径确认支持条件的组内主效应、主 planned contrast：中等支持 - 低/高支持平均，以及必要的组间交互。</p>",
+            "<p>这份 HTML 用于检查 XDF、Unity marker、EEG 覆盖和 run-level 指标。正式论文结论需要把所有被试汇总为 subject-level / trial-level 表，再检验路径确认支持条件的组内主效应、主 planned contrast：中等支持 - 低/高支持平均，以及必要的组间交互。</p>",
             "</section>",
-            "<details class='card'><summary>机器可读 JSON 摘要</summary>",
+            "<details class='card'><summary>JSON 摘要</summary>",
             f"<pre>{h(json.dumps(to_jsonable(report), ensure_ascii=False, indent=2))}</pre>",
             "</details>",
             "</main></body></html>",
         ]
     )
+    return "".join(parts)
+
+
+def render_model_overview(model: dict[str, Any]) -> str:
+    variables = model.get("variables") if isinstance(model.get("variables"), list) else []
+    hypotheses = model.get("hypotheses") if isinstance(model.get("hypotheses"), list) else []
+    remarks = model.get("remarks") if isinstance(model.get("remarks"), list) else []
+    parts = ["<section class='card model-card'><h2>研究模型与变量映射</h2>"]
+    if model.get("purpose"):
+        parts.append(f"<p>{h(model.get('purpose'))}</p>")
+    if variables:
+        parts.append("<div class='table-wrap'><table><thead><tr><th>变量</th><th>研究含义</th><th>XDF 对应信息</th></tr></thead><tbody>")
+        for variable in variables:
+            if not isinstance(variable, dict):
+                continue
+            label = f"{variable.get('code', '')} {variable.get('name', '')}".strip()
+            parts.append(
+                "<tr>"
+                f"<td>{h(label)}</td>"
+                f"<td>{h(variable.get('definition', ''))}</td>"
+                f"<td>{h(variable.get('xdf_mapping', ''))}</td>"
+                "</tr>"
+            )
+        parts.append("</tbody></table></div>")
+    if hypotheses:
+        parts.append("<h3>本报告关注的假设</h3><ul>")
+        for item in hypotheses:
+            parts.append(f"<li>{h(item)}</li>")
+        parts.append("</ul>")
+    if remarks:
+        parts.append("<h3>报告边界</h3><ul>")
+        for item in remarks:
+            parts.append(f"<li>{h(item)}</li>")
+        parts.append("</ul>")
+    parts.append("</section>")
     return "".join(parts)
 
 
@@ -437,6 +547,34 @@ def render_table(table: dict[str, Any]) -> str:
     return "".join(parts)
 
 
+def build_model_overview(scope: str) -> dict[str, Any]:
+    if scope == "single_xdf":
+        purpose = "本报告把一个 LabRecorder XDF run 映射到路径确认信息链模型，用于检查 EEG stream、Unity marker 与关键行为/事件窗指标。"
+        remarks = [
+            "单个 run 只能用于质控和特征提取，不能支持显著性结论。",
+            "准确率、可靠性感知和保护性行动指令清晰度如果没有写入 marker 或 metadata，需要在后续表格中补充。",
+        ]
+    elif scope == "subject_batch":
+        purpose = "本报告把同一被试的低、中、高路径确认支持 run 作为一个组内单元，比较行动迟滞、准确率线索和 EEG 信息加工负荷。"
+        remarks = [
+            "被试内报告给出方向性 contrast，显著性需要进入全样本统计。",
+            "主 contrast 为 medium - mean(low, high)，正值表示中等支持高于低/高支持平均。",
+        ]
+    else:
+        purpose = "本报告汇总已完成被试批量报告，用于检验路径确认支持水平的组内主效应和主 planned contrast。"
+        remarks = [
+            "全样本结论应优先报告预先指定的主指标，再报告探索性指标。",
+            "组间或调节结论需要 subject/run metadata，例如保护性行动指令清晰度、提醒通道、VR 经验或专业背景。",
+        ]
+
+    return {
+        "purpose": purpose,
+        "variables": PROJECT_MODEL_VARIABLES,
+        "hypotheses": PROJECT_HYPOTHESES,
+        "remarks": remarks,
+    }
+
+
 def run_subject_batch_job(client: SupabaseRest, job: dict[str, Any], run_url: str) -> dict[str, Any]:
     batch = extract_batch_payload(job)
     document_ids = batch.get("documentIds", [])
@@ -455,7 +593,7 @@ def run_subject_batch_job(client: SupabaseRest, job: dict[str, Any], run_url: st
         reports = []
         for index, document in enumerate(ordered_documents, start=1):
             if get_extension(document["filename"]) != "xdf":
-                raise RuntimeError(f"subject_batch 只接受 XDF：{document['filename']} 不是 .xdf。")
+                raise RuntimeError(f"subject_batch 只接受 XDF：{document['filename']} 的扩展名并非 .xdf。")
             local_file = tmp_path / f"run-{index:03d}.xdf"
             client.update_job(
                 job["id"],
@@ -507,7 +645,7 @@ def extract_subject_contrast_rows(rows: list[dict[str, Any]]) -> list[dict[str, 
         if not isinstance(payload, dict):
             continue
         subject_id = str(payload.get("subjectId") or payload.get("title") or row.get("id", "subject-unknown"))
-        contrasts = payload.get("densityContrasts")
+        contrasts = payload.get("supportContrasts") or payload.get("densityContrasts")
         if not isinstance(contrasts, list):
             continue
         for contrast in contrasts:
@@ -540,14 +678,21 @@ def analyze_cohort_density(subject_rows: list[dict[str, Any]]) -> dict[str, Any]
     metric_charts = []
     metric_n_charts = []
     metric_p_charts = []
-    primary_result = None
+    primary_behavior_result = None
+    primary_eeg_result = None
+    fallback_eeg_result = None
     for metric, rows in sorted(by_metric.items(), key=lambda item: metric_priority(item[0])):
         values = [float(row["estimate"]) for row in rows]
         stats = one_sample_contrast_stats(values)
         metric_label = str(rows[0].get("metricLabel") or metric)
-        conclusion = contrast_conclusion(stats)
-        if metric == "eeg_load_proxy":
-            primary_result = {**stats, "metricLabel": metric_label, "conclusion": conclusion}
+        conclusion = contrast_conclusion(stats, metric)
+        result_payload = {**stats, "metricLabel": metric_label, "conclusion": conclusion}
+        if metric == "route_decision_hesitation_index":
+            primary_behavior_result = result_payload
+        elif metric == "eeg_information_processing_load_index":
+            primary_eeg_result = result_payload
+        elif metric == "eeg_load_proxy":
+            fallback_eeg_result = result_payload
         summary_rows.append(
             [
                 metric_label,
@@ -576,11 +721,9 @@ def analyze_cohort_density(subject_rows: list[dict[str, Any]]) -> dict[str, Any]
         for row in sorted(subject_rows, key=lambda item: (str(item["subject"]), metric_priority(str(item["metric"]))))[:600]
     ]
     unique_subjects = sorted({str(row["subject"]) for row in subject_rows})
-    primary_text = (
-        f"{primary_result['metricLabel']}：n={primary_result['n']}，mean contrast={fmt(primary_result['mean'])}，p={fmt_p(primary_result['p'])}，{primary_result['conclusion']}"
-        if primary_result
-        else "尚未形成 EEG load proxy 主指标汇总；请确认每个被试报告里都有低/中/高路径确认支持完整 contrast。"
-    )
+    primary_eeg_result = primary_eeg_result or fallback_eeg_result
+    behavior_text = format_primary_result("H1 行动迟滞", primary_behavior_result)
+    eeg_text = format_primary_result("H3 EEG 信息加工负荷", primary_eeg_result)
 
     notes = [
         "该报告只汇总已经完成的被试批量 XDF HTML/JSON 结果；未完成、失败或路径确认支持条件缺失的被试不会进入统计。",
@@ -593,8 +736,9 @@ def analyze_cohort_density(subject_rows: list[dict[str, Any]]) -> dict[str, Any]
         "title": "全样本路径确认支持统计汇总",
         "kind": "Cohort Route-confirmation Support Summary",
         "subjectId": "cohort-density-summary",
-        "summary": f"从 {len(unique_subjects)} 名被试的已完成批量报告中汇总低/中/高路径确认支持 planned contrast。主结论口径：{primary_text}",
-        "narrativeSections": build_cohort_narrative(unique_subjects, primary_result, summary_rows),
+        "summary": f"从 {len(unique_subjects)} 名被试的已完成批量报告中汇总低/中/高路径确认支持 planned contrast。{behavior_text}；{eeg_text}。",
+        "modelOverview": build_model_overview("cohort"),
+        "narrativeSections": build_cohort_narrative(unique_subjects, primary_behavior_result, primary_eeg_result, summary_rows),
         "design": {
             "expected_subjects": 90,
             "runs_per_subject": 3,
@@ -607,7 +751,8 @@ def analyze_cohort_density(subject_rows: list[dict[str, Any]]) -> dict[str, Any]
         "metrics": [
             {"label": "已纳入被试", "value": f"{len(unique_subjects)}/90"},
             {"label": "contrast 行", "value": str(len(subject_rows))},
-            {"label": "主指标", "value": primary_result["conclusion"] if primary_result else "未形成", "text": primary_text},
+            {"label": "H1 行动迟滞", "value": primary_behavior_result["conclusion"] if primary_behavior_result else "未形成", "text": behavior_text},
+            {"label": "H3 EEG 负荷", "value": primary_eeg_result["conclusion"] if primary_eeg_result else "未形成", "text": eeg_text},
         ],
         "charts": [
             {
@@ -660,31 +805,42 @@ def analyze_cohort_density(subject_rows: list[dict[str, Any]]) -> dict[str, Any]
     }
 
 
-def build_cohort_narrative(unique_subjects: list[str], primary_result: dict[str, Any] | None, summary_rows: list[list[str]]) -> list[dict[str, Any]]:
-    n_subjects = len(unique_subjects)
-    primary_paragraph = (
-        f"当前全样本汇总纳入 {n_subjects} 名被试的已完成三条件报告。主指标为 {primary_result['metricLabel']}，"
-        f"其中 medium - mean(low, high) 的均值为 {fmt(primary_result['mean'])}，95% CI 为 {format_ci(primary_result)}，"
-        f"p={fmt_p(primary_result['p'])}，结论口径为“{primary_result['conclusion']}”。"
-        if primary_result
-        else f"当前全样本汇总纳入 {n_subjects} 名被试，但尚未形成 EEG load proxy 的完整主指标。应先检查各被试报告是否包含低/中/高三条件以及 EEG 特征。"
+def format_primary_result(label: str, result: dict[str, Any] | None) -> str:
+    if not result:
+        return f"{label}尚未形成完整汇总"
+    return (
+        f"{label}：{result['metricLabel']}，n={result['n']}，"
+        f"mean contrast={fmt(result['mean'])}，95% CI={format_ci(result)}，"
+        f"p={fmt_p(result['p'])}，{result['conclusion']}"
     )
-    supported_metrics = [row for row in summary_rows if len(row) >= 8 and ("支持" in row[7])]
-    unsupported_metrics = [row for row in summary_rows if len(row) >= 8 and ("未支持" in row[7] or "反向" in row[7])]
+
+
+def build_cohort_narrative(
+    unique_subjects: list[str],
+    primary_behavior_result: dict[str, Any] | None,
+    primary_eeg_result: dict[str, Any] | None,
+    summary_rows: list[list[str]],
+) -> list[dict[str, Any]]:
+    n_subjects = len(unique_subjects)
+    behavior_paragraph = format_primary_result("H1 行动迟滞", primary_behavior_result)
+    eeg_paragraph = format_primary_result("H3 EEG 信息加工负荷", primary_eeg_result)
+    supported_metrics = [row for row in summary_rows if len(row) >= 8 and ("符合" in row[7] or "高于" in row[7])]
+    unsupported_metrics = [row for row in summary_rows if len(row) >= 8 and ("未呈现" in row[7] or "未高于" in row[7])]
 
     return [
         {
             "title": "全样本结果解读",
             "paragraphs": [
-                primary_paragraph,
-                f"当前共有 {len(summary_rows)} 个指标进入 planned contrast 汇总，其中 {len(supported_metrics)} 个指标方向上支持“中等路径确认支持最高”，{len(unsupported_metrics)} 个指标未支持或方向相反。写作时应以预先指定主指标为核心，其他指标作为一致性证据或探索性补充。",
+                f"当前全样本汇总纳入 {n_subjects} 名被试的已完成三条件报告。{behavior_paragraph}。",
+                f"{eeg_paragraph}。",
+                f"当前共有 {len(summary_rows)} 个指标进入 planned contrast 汇总，其中 {len(supported_metrics)} 个指标呈现预期方向，{len(unsupported_metrics)} 个指标未呈现预期方向。写作时应以预先指定主指标为核心，其他指标作为一致性证据或探索性补充。",
             ],
         },
         {
             "title": "中文论文写作口径",
             "paragraphs": [
-                "如果主指标达到显著且方向为正，可以写作：中等路径确认支持条件下，被试表现出高于低支持和高支持平均水平的信息加工负荷。若行为负荷、决策扫描或完成时长也呈同向结果，可进一步说明该效应在神经和行为层面具有一致性。",
-                "如果主指标未显著或方向不一致，应写作：当前数据未能支持中等路径确认支持最高的主假设，并转向解释可能的原因，例如条件操纵不足、样本量不足、个体策略差异、marker 覆盖不足或 EEG 噪声。",
+                "当行动迟滞和 EEG 信息加工负荷两个主指标均为正向且达到显著，可以写作：中等路径确认支持条件下，被试表现出更高的行动迟滞和信息加工负荷。若准确率指标同步改善或下降，需要分别讨论 accuracy–effort trade-off 的方向。",
+                "当主指标未显著或方向不一致，结果部分应写为：当前数据尚未支持中等路径确认支持最高的主假设。讨论部分可进一步检查条件操纵、样本量、个体策略、marker 覆盖和 EEG 噪声。",
                 "组间结论不能从该汇总自动推出。只有在 subject metadata 中提供分组变量后，才能进一步检验 SupportLevel × Group 交互。",
             ],
         },
@@ -693,10 +849,13 @@ def build_cohort_narrative(unique_subjects: list[str], primary_result: dict[str,
 
 def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]], reports: list[dict[str, Any]]) -> dict[str, Any]:
     subject_id = batch.get("subjectId") or infer_subject_id(documents[0]["filename"])
-    run_rows = sort_run_rows_by_density([extract_run_summary(document, report) for document, report in zip(documents, reports)])
+    run_rows = attach_subject_level_indices(
+        sort_run_rows_by_density([extract_run_summary(document, report) for document, report in zip(documents, reports)])
+    )
     maps = sorted({row.get("map", "") for row in run_rows if row.get("map")})
     signatures = sorted({row.get("signature", "") for row in run_rows if row.get("signature")})
     audio_levels = sorted({row.get("audio", "") for row in run_rows if row.get("audio")})
+    clarity_levels = sorted({row.get("instruction_clarity", "") for row in run_rows if row.get("instruction_clarity") and row.get("instruction_clarity") != "-"})
     density_levels = sorted({row.get("density", "") for row in run_rows if row.get("density")}, key=density_sort_key)
     complete_density_set = set(DENSITY_LEVELS).issubset(set(density_levels))
     completed_runs = sum(1 for row in run_rows if row.get("has_completion") == "yes")
@@ -733,8 +892,10 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
             "primary_hypothesis": "medium route-confirmation support produces the highest route-decision hesitation and information-processing load",
             "primary_contrast_weights": PRIMARY_CONTRAST_WEIGHTS,
         },
+        "supportContrasts": contrast_json,
         "densityContrasts": contrast_json,
-        "summary": "该报告把同一被试的低/中/高路径确认支持 XDF run 作为一个被试内单元处理：先逐文件完成 EEG + Unity marker QC，再汇总 run-level 行为、EEG 频带和事件窗指标，并计算主 planned contrast（中等支持 - 低/高支持平均）。",
+        "summary": "本报告把同一被试的低、中、高路径确认支持 XDF run 作为一个组内单元。报告先完成 EEG 与 Unity marker 质控，再汇总行动迟滞、路径判断准确率线索、确认链不流畅指标和 EEG 事件窗负荷，并计算主 planned contrast：中等支持 - 低/高支持平均。",
+        "modelOverview": build_model_overview("subject_batch"),
         "narrativeSections": build_subject_batch_narrative(subject_id, run_rows, contrast_json, complete_density_set),
         "metrics": [
             {"label": "被试编号", "value": str(subject_id)},
@@ -744,6 +905,7 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
             {"label": "地图条件", "value": str(len(maps)), "text": " / ".join(maps) or "-"},
             {"label": "标识版本", "value": str(len(signatures)), "text": " / ".join(signatures) or "-"},
             {"label": "附加条件", "value": str(len(audio_levels)), "text": " / ".join(audio_levels) or "-"},
+            {"label": "指令清晰度", "value": str(len(clarity_levels)), "text": " / ".join(clarity_levels) or "待补 marker/metadata"},
             {"label": "平均时长", "value": fmt_seconds(float(np.mean(durations)) if durations else None)},
         ],
         "charts": build_subject_batch_charts(run_rows, contrast_json),
@@ -758,13 +920,19 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
                     "map",
                     "signage/version",
                     "extra_condition",
+                    "instruction_clarity",
                     "duration_s",
+                    "first_action_s",
                     "distance_m",
                     "exit",
+                    "prompt_to_first_confirmation_s",
                     "first_sign_s",
                     "first_decision_s",
+                    "decision_dwell_total_s",
                     "readable_signs",
                     "readable_ratio",
+                    "max_confirmation_gap_s",
+                    "decision_coverage",
                     "decision_points",
                     "look_count",
                     "look_balance",
@@ -774,12 +942,20 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
                     "inefficiency",
                     "decision_load",
                     "behavior_load_proxy",
+                    "confirmation_disfluency",
+                    "H1_hesitation_index",
+                    "M1_disfluency_index",
+                    "H3_eeg_load_index",
                     "eeg_load_proxy",
                     "theta_alpha_ratio",
                     "frontal_theta_4_7",
                     "posterior_alpha_8_12",
                     "sign_readable_event_load",
                     "decision_event_load",
+                    "first_choice_correct",
+                    "decision_accuracy",
+                    "final_correct",
+                    "accuracy_effort_profile",
                 ],
                 "rows": [
                     [
@@ -790,13 +966,19 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
                         row["map"],
                         row["signature"],
                         row["audio"],
+                        row["instruction_clarity"],
                         row["duration_s"],
+                        row["first_action_latency_s"],
                         row["horizontal_distance_m"],
                         row["exit_label"],
+                        row["prompt_to_first_confirmation_s"],
                         row["time_to_first_sign_readable_s"],
                         row["time_to_first_decision_s"],
+                        row["decision_dwell_total_s"],
                         row["sign_readable_count"],
                         row["sign_readable_ratio"],
+                        row["sign_readable_max_gap_s"],
+                        row["decision_point_coverage_proxy"],
                         row["decision_point_count"],
                         row["decision_total_look_count"],
                         row["decision_look_balance_abs"],
@@ -806,12 +988,20 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
                         row["navigation_inefficiency_proxy"],
                         row["decision_load_proxy"],
                         row["behavior_load_proxy"],
+                        row["route_confirmation_disfluency_proxy"],
+                        row["route_decision_hesitation_index"],
+                        row["route_confirmation_disfluency_index"],
+                        row["eeg_information_processing_load_index"],
                         row["eeg_load_proxy"],
                         row["theta_alpha_ratio"],
                         row["frontal_theta_4_7"],
                         row["posterior_alpha_8_12"],
                         row["sign_readable_eeg_load_proxy"],
                         row["decision_point_enter_eeg_load_proxy"],
+                        row["first_choice_correct"],
+                        row["decision_choice_accuracy_ratio"],
+                        row["final_arrival_correct"],
+                        row["accuracy_effort_profile"],
                     ]
                     for row in run_rows
                 ],
@@ -839,8 +1029,17 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
 
 def build_subject_batch_charts(run_rows: list[dict[str, str]], contrast_json: list[dict[str, Any]]) -> list[dict[str, Any]]:
     charts = [
+        build_run_metric_chart(run_rows, "H1 行动迟滞指数", "route_decision_hesitation_index", "within-subject z index", "该指数整合完成时长、启动延迟、决策点停留、左右查看、双侧扫描、停留、掉头和回退。"),
+        build_run_metric_chart(run_rows, "M1 确认链不流畅指数", "route_confirmation_disfluency_index", "within-subject z index", "该指数用于检查官方目标提醒之后，现场确认线索是否连续、及时并覆盖决策点。问卷中的感知可靠性仍需单独收集。"),
+        build_run_metric_chart(run_rows, "H3 EEG 信息加工负荷指数", "eeg_information_processing_load_index", "within-subject z index", "该指数整合 trial-level 与事件窗 EEG 负荷指标，用于检验目标—线索—方向匹配负荷。"),
         build_run_metric_chart(run_rows, "路径确认支持条件完成时长", "duration_s", "seconds", "完成时长用于检查行动迟滞的总体趋势，但正式结论应优先结合决策点停留、扫描和 EEG 事件窗。"),
+        build_run_metric_chart(run_rows, "首次行动启动时间", "first_action_latency_s", "seconds", "该指标对应行动迟滞中的启动延迟；需要 Unity marker 写入 movement_start 或同义事件。"),
+        build_run_metric_chart(run_rows, "提示到首次确认线索", "prompt_to_first_confirmation_s", "seconds", "该指标对应官方目标提醒到现场确认线索之间的匹配成本。"),
+        build_run_metric_chart(run_rows, "决策点停留总时长", "decision_dwell_total_s", "seconds", "该指标直接对应分岔、转向和出口选择点的滞留。"),
         build_run_metric_chart(run_rows, "可读标识覆盖率", "sign_readable_ratio", "ratio", "可读比例越高，通常代表现场线索更容易被确认；若中等支持仍表现出较高迟滞，需要结合连续性和关键决策点覆盖解释。"),
+        build_run_metric_chart(run_rows, "确认线索最大间隔", "sign_readable_max_gap_s", "seconds", "最大间隔用于识别确认链断点。间隔越长，被试越可能需要自行维持路径预期。"),
+        build_run_metric_chart(run_rows, "决策点覆盖代理指标", "decision_point_coverage_proxy", "ratio", "该指标用可读确认线索与决策点数量的比例近似决策点覆盖；正式操纵检查仍建议使用场景配置表。"),
+        build_run_metric_chart(run_rows, "路径判断准确率线索", "decision_choice_accuracy_ratio", "ratio", "如果 Unity marker 写入 choice_correct 或 route_correct，本图用于检查低迟滞是否伴随准确率下降。"),
         build_run_metric_chart(run_rows, "首次可读标识时间", "time_to_first_sign_readable_s", "seconds", "首次可读时间反映官方目标提醒后，个体多久能在环境中获得第一处可确认线索。"),
         build_run_metric_chart(run_rows, "首次决策点时间", "time_to_first_decision_s", "seconds", "首次决策点时间有助于区分早期路径搜索负担和后续决策确认负担。"),
         build_run_metric_chart(run_rows, "左右查看总次数", "decision_total_look_count", "count", "左右查看次数用于刻画路径确认过程中的主动扫描行为，是行动迟滞的行为侧证据。"),
@@ -875,12 +1074,16 @@ def build_run_metric_chart(run_rows: list[dict[str, str]], title: str, metric: s
 
 def build_contrast_estimate_chart(contrast_json: list[dict[str, Any]]) -> dict[str, Any]:
     priority_metrics = {
+        "route_decision_hesitation_index",
+        "route_confirmation_disfluency_index",
+        "eeg_information_processing_load_index",
         "eeg_load_proxy",
         "decision_point_enter_eeg_load_proxy",
         "sign_readable_eeg_load_proxy",
         "decision_load_proxy",
         "behavior_load_proxy",
         "navigation_inefficiency_proxy",
+        "decision_choice_accuracy_ratio",
         "duration_s",
     }
     rows = [
@@ -900,28 +1103,34 @@ def build_contrast_estimate_chart(contrast_json: list[dict[str, Any]]) -> dict[s
 
 
 def build_subject_batch_narrative(subject_id: str, run_rows: list[dict[str, str]], contrast_json: list[dict[str, Any]], complete_density_set: bool) -> list[dict[str, Any]]:
+    hesitation_contrast = find_contrast(contrast_json, "route_decision_hesitation_index")
+    disfluency_contrast = find_contrast(contrast_json, "route_confirmation_disfluency_index")
+    eeg_index_contrast = find_contrast(contrast_json, "eeg_information_processing_load_index")
     eeg_contrast = find_contrast(contrast_json, "eeg_load_proxy")
     behavior_contrast = find_contrast(contrast_json, "behavior_load_proxy")
     decision_contrast = find_contrast(contrast_json, "decision_load_proxy")
+    accuracy_contrast = find_contrast(contrast_json, "decision_choice_accuracy_ratio")
     duration_contrast = find_contrast(contrast_json, "duration_s")
     coverage_text = format_density_coverage(run_rows)
     condition_count = len({row.get("density", "") for row in run_rows if row.get("density")})
+    clarity_levels = sorted({row.get("instruction_clarity", "") for row in run_rows if row.get("instruction_clarity") and row.get("instruction_clarity") != "-"})
 
     return [
         {
-            "title": "主要结果解读",
+            "title": "被试内结果解读",
             "paragraphs": [
                 f"本报告将 {subject_id} 的 {len(run_rows)} 个 XDF run 作为同一被试的组内数据处理，当前识别到的路径确认支持条件为：{coverage_text}。{'三种条件已完整覆盖，可以计算主 planned contrast。' if complete_density_set else f'当前只覆盖 {condition_count}/3 个条件，因此部分 contrast 只能作为检查结果。'}",
-                f"从 EEG 角度看，主负荷代理指标的中等支持 contrast 为 {contrast_sentence(eeg_contrast)}。该指标不是正式临床或神经诊断结论，而是用于比较路径确认条件下信息加工负荷变化的探索性特征。",
-                f"从行为角度看，导航行为负荷的 contrast 为 {contrast_sentence(behavior_contrast)}，决策扫描与回退代理指标的 contrast 为 {contrast_sentence(decision_contrast)}。如果行为负荷和 EEG 负荷方向一致，后续论文可把它写成多指标一致性证据；如果方向不一致，应优先解释为行为策略与神经负荷分离。",
+                f"H1 行动迟滞指数的 contrast 为 {contrast_sentence(hesitation_contrast)}。同时参考完成时长 {contrast_sentence(duration_contrast)}、导航行为负荷 {contrast_sentence(behavior_contrast)} 和决策扫描/回退代理指标 {contrast_sentence(decision_contrast)}。",
+                f"M1 相关的确认链不流畅指数为 {contrast_sentence(disfluency_contrast)}。该指数来自提示到首次确认线索、可读标识间隔、决策点覆盖和低效行为，可作为感知信息可靠性问卷的操纵检查线索。",
+                f"H3 EEG 信息加工负荷指数的 contrast 为 {contrast_sentence(eeg_index_contrast)}；旧版 EEG load proxy 的 contrast 为 {contrast_sentence(eeg_contrast)}。若行为负荷和 EEG 负荷方向一致，论文可讨论神经和行为指标的一致性；若方向分离，应讨论策略差异或 EEG 噪声。",
             ],
         },
         {
             "title": "论文写作口径",
             "paragraphs": [
                 "单个被试报告只能用于质控、特征检查和方向性观察，不能直接写成统计显著。正式结果应在 90 名被试层面汇总每人的 medium - mean(low, high) contrast，并进行 one-sample test 或 mixed-effects contrast。",
-                f"完成时长的 contrast 为 {contrast_sentence(duration_contrast)}。完成时长可以作为行动迟滞的总体行为指标，但论文中应同时报告首次可读标识时间、首次决策点时间、左右查看、双侧扫描、掉头和回退等更贴近路径确认过程的指标。",
-                "如果后续加入组间变量，例如 VR 经验、专业背景、性别或保护性行动指令清晰度，应在 subject metadata 中显式记录，再检验 SupportLevel × Group 交互，而不是把不同被试的单个 run 直接横向比较。",
+                f"路径判断准确率的 contrast 为 {contrast_sentence(accuracy_contrast)}。低支持条件下如果迟滞较低且准确率较低，可作为 accuracy–effort trade-off 的结果线索；如果准确率字段缺失，需要在 Unity marker 中补写 choice_correct 或 route_correct。",
+                f"保护性行动指令清晰度当前识别为：{' / '.join(clarity_levels) if clarity_levels else '待补 marker/metadata'}。后续加入 VR 经验、专业背景、性别或指令清晰度时，应在 subject metadata 中显式记录，再检验 SupportLevel × Group 或 SupportLevel × Clarity 交互。",
             ],
         },
     ]
@@ -952,14 +1161,24 @@ def extract_run_summary(document: dict[str, Any], report: dict[str, Any]) -> dic
     behavior = extract_metric_table(
         report,
         [
+            "prompt_channel",
+            "protective_action_instruction_clarity",
             "trial_duration_s",
             "horizontal_distance_m",
             "exit_label",
+            "first_action_latency_s",
             "time_to_first_sign_readable_s",
+            "prompt_to_first_confirmation_s",
             "time_to_first_decision_s",
+            "decision_dwell_total_s",
+            "decision_dwell_mean_s",
+            "decision_dwell_episode_count",
             "sign_readable_count",
             "sign_readable_ratio",
+            "sign_readable_mean_gap_s",
+            "sign_readable_max_gap_s",
             "decision_point_count",
+            "decision_point_coverage_proxy",
             "decision_total_look_count",
             "decision_look_balance_abs",
             "decision_scan_both_count",
@@ -968,6 +1187,12 @@ def extract_run_summary(document: dict[str, Any], report: dict[str, Any]) -> dic
             "navigation_inefficiency_proxy",
             "decision_load_proxy",
             "behavior_load_proxy",
+            "route_confirmation_disfluency_proxy",
+            "first_choice_correct",
+            "decision_choice_accuracy_ratio",
+            "decision_choice_correct_count",
+            "decision_choice_total_count",
+            "final_arrival_correct",
         ],
     )
     eeg = extract_metric_table(
@@ -1000,17 +1225,26 @@ def extract_run_summary(document: dict[str, Any], report: dict[str, Any]) -> dic
         "session": session_parts.get("session", ""),
         "map": session_parts.get("map", ""),
         "signature": session_parts.get("signature", ""),
-        "audio": session_parts.get("audio", ""),
+        "audio": session_parts.get("audio", "") or behavior.get("prompt_channel", ""),
+        "instruction_clarity": behavior.get("protective_action_instruction_clarity", "-"),
         "density": density,
         "density_label": density_display(density) if density else "待标注",
         "duration_s": behavior.get("trial_duration_s", "-"),
         "horizontal_distance_m": behavior.get("horizontal_distance_m", "-"),
         "exit_label": behavior.get("exit_label", "-"),
+        "first_action_latency_s": behavior.get("first_action_latency_s", "-"),
         "time_to_first_sign_readable_s": behavior.get("time_to_first_sign_readable_s", "-"),
+        "prompt_to_first_confirmation_s": behavior.get("prompt_to_first_confirmation_s", "-"),
         "time_to_first_decision_s": behavior.get("time_to_first_decision_s", "-"),
+        "decision_dwell_total_s": behavior.get("decision_dwell_total_s", "-"),
+        "decision_dwell_mean_s": behavior.get("decision_dwell_mean_s", "-"),
+        "decision_dwell_episode_count": behavior.get("decision_dwell_episode_count", "-"),
         "sign_readable_count": behavior.get("sign_readable_count", "-"),
         "sign_readable_ratio": behavior.get("sign_readable_ratio", "-"),
+        "sign_readable_mean_gap_s": behavior.get("sign_readable_mean_gap_s", "-"),
+        "sign_readable_max_gap_s": behavior.get("sign_readable_max_gap_s", "-"),
         "decision_point_count": behavior.get("decision_point_count", "-"),
+        "decision_point_coverage_proxy": behavior.get("decision_point_coverage_proxy", "-"),
         "decision_total_look_count": behavior.get("decision_total_look_count", "-"),
         "decision_look_balance_abs": behavior.get("decision_look_balance_abs", "-"),
         "decision_scan_both_count": behavior.get("decision_scan_both_count", "-"),
@@ -1019,6 +1253,12 @@ def extract_run_summary(document: dict[str, Any], report: dict[str, Any]) -> dic
         "navigation_inefficiency_proxy": behavior.get("navigation_inefficiency_proxy", "-"),
         "decision_load_proxy": behavior.get("decision_load_proxy", "-"),
         "behavior_load_proxy": behavior.get("behavior_load_proxy", "-"),
+        "route_confirmation_disfluency_proxy": behavior.get("route_confirmation_disfluency_proxy", "-"),
+        "first_choice_correct": behavior.get("first_choice_correct", "-"),
+        "decision_choice_accuracy_ratio": behavior.get("decision_choice_accuracy_ratio", "-"),
+        "decision_choice_correct_count": behavior.get("decision_choice_correct_count", "-"),
+        "decision_choice_total_count": behavior.get("decision_choice_total_count", "-"),
+        "final_arrival_correct": behavior.get("final_arrival_correct", "-"),
         "eeg_load_proxy": eeg.get("eeg_load_proxy", "-"),
         "theta_alpha_ratio": eeg.get("theta_alpha_ratio", "-"),
         "frontal_theta_4_7": eeg.get("frontal_theta_4_7", "-"),
@@ -1099,6 +1339,90 @@ def sort_run_rows_by_density(rows: list[dict[str, str]]) -> list[dict[str, str]]
     return sorted(rows, key=lambda row: (infer_sequence_index(row.get("file", "")) or 999999, row.get("run_label", ""), row.get("file", "")))
 
 
+def attach_subject_level_indices(rows: list[dict[str, str]]) -> list[dict[str, str]]:
+    composite_specs = [
+        (
+            "route_decision_hesitation_index",
+            [
+                ("duration_s", 1.0),
+                ("first_action_latency_s", 1.0),
+                ("time_to_first_decision_s", 0.5),
+                ("decision_dwell_total_s", 1.0),
+                ("decision_total_look_count", 0.8),
+                ("decision_scan_both_count", 1.0),
+                ("navigation_inefficiency_proxy", 1.0),
+            ],
+        ),
+        (
+            "route_confirmation_disfluency_index",
+            [
+                ("prompt_to_first_confirmation_s", 1.0),
+                ("sign_readable_max_gap_s", 1.0),
+                ("route_confirmation_disfluency_proxy", 1.0),
+                ("sign_readable_ratio", -1.0),
+                ("decision_point_coverage_proxy", -1.0),
+            ],
+        ),
+        (
+            "eeg_information_processing_load_index",
+            [
+                ("eeg_load_proxy", 1.0),
+                ("decision_point_enter_eeg_load_proxy", 1.0),
+                ("sign_readable_eeg_load_proxy", 0.8),
+                ("theta_alpha_ratio", 0.6),
+                ("posterior_alpha_8_12", -0.4),
+            ],
+        ),
+    ]
+    for row in rows:
+        row.setdefault("route_decision_hesitation_index", "-")
+        row.setdefault("route_confirmation_disfluency_index", "-")
+        row.setdefault("eeg_information_processing_load_index", "-")
+        row.setdefault("accuracy_effort_profile", "-")
+
+    z_cache: dict[str, list[float | None]] = {}
+    for _name, components in composite_specs:
+        for metric, _direction in components:
+            if metric not in z_cache:
+                z_cache[metric] = zscores([to_float(row.get(metric)) for row in rows])
+
+    for target, components in composite_specs:
+        for index, row in enumerate(rows):
+            values = []
+            for metric, direction in components:
+                metric_z = z_cache.get(metric, [None] * len(rows))[index]
+                if metric_z is not None:
+                    values.append(metric_z * direction)
+            if values:
+                row[target] = fmt(float(np.mean(values)))
+
+    for row in rows:
+        accuracy = to_float(row.get("decision_choice_accuracy_ratio"))
+        hesitation = to_float(row.get("route_decision_hesitation_index"))
+        if accuracy is None or hesitation is None:
+            continue
+        if hesitation > 0 and accuracy < 0.5:
+            row["accuracy_effort_profile"] = "高迟滞 / 低准确"
+        elif hesitation <= 0 and accuracy < 0.5:
+            row["accuracy_effort_profile"] = "低迟滞 / 低准确"
+        elif hesitation > 0 and accuracy >= 0.5:
+            row["accuracy_effort_profile"] = "高迟滞 / 较高准确"
+        else:
+            row["accuracy_effort_profile"] = "低迟滞 / 较高准确"
+    return rows
+
+
+def zscores(values: list[float | None]) -> list[float | None]:
+    clean = np.asarray([value for value in values if value is not None and math.isfinite(value)], dtype=float)
+    if len(clean) < 2:
+        return [None for _ in values]
+    mean = float(np.mean(clean))
+    sd = float(np.std(clean, ddof=1))
+    if sd <= 0:
+        return [0.0 if value is not None and math.isfinite(value) else None for value in values]
+    return [((float(value) - mean) / sd) if value is not None and math.isfinite(value) else None for value in values]
+
+
 def condition_label(row: dict[str, str]) -> str:
     density = row.get("density", "")
     if density:
@@ -1116,6 +1440,9 @@ def format_density_coverage(rows: list[dict[str, str]]) -> str:
 
 def compute_density_planned_contrasts(rows: list[dict[str, str]]) -> tuple[list[list[str]], list[dict[str, Any]]]:
     metrics = [
+        ("route_decision_hesitation_index", "route-decision hesitation index"),
+        ("route_confirmation_disfluency_index", "confirmation-chain disfluency index"),
+        ("eeg_information_processing_load_index", "EEG information-processing load index"),
         ("eeg_load_proxy", "EEG load proxy"),
         ("decision_point_enter_eeg_load_proxy", "decision-point EEG load"),
         ("sign_readable_eeg_load_proxy", "sign-readable EEG load"),
@@ -1128,9 +1455,15 @@ def compute_density_planned_contrasts(rows: list[dict[str, str]]) -> tuple[list[
         ("decision_total_look_count", "left/right look count"),
         ("decision_look_balance_abs", "left-right imbalance"),
         ("decision_scan_both_count", "both-side scans"),
+        ("decision_dwell_total_s", "decision dwell total"),
+        ("first_action_latency_s", "first action latency"),
+        ("prompt_to_first_confirmation_s", "prompt to first confirmation"),
+        ("route_confirmation_disfluency_proxy", "route confirmation disfluency proxy"),
         ("sign_readable_ratio", "readable sign ratio"),
+        ("decision_point_coverage_proxy", "decision-point coverage proxy"),
         ("time_to_first_sign_readable_s", "time to first readable sign"),
         ("time_to_first_decision_s", "time to first decision point"),
+        ("decision_choice_accuracy_ratio", "decision choice accuracy"),
         ("duration_s", "completion time"),
     ]
     table_rows: list[list[str]] = []
@@ -1149,7 +1482,7 @@ def compute_density_planned_contrasts(rows: list[dict[str, str]]) -> tuple[list[
 
         means = {level: float(np.mean(values_by_density[level])) for level in DENSITY_LEVELS}
         estimate = means["medium"] - (means["low"] + means["high"]) / 2.0
-        direction = "支持假设方向" if estimate > 0 else "反向或不支持"
+        direction = contrast_direction_label(metric_key, estimate)
         table_rows.append(
             [
                 "medium - mean(low, high)",
@@ -1178,24 +1511,43 @@ def compute_density_planned_contrasts(rows: list[dict[str, str]]) -> tuple[list[
 
 def metric_priority(metric: str) -> tuple[int, str]:
     order = {
-        "eeg_load_proxy": 0,
-        "decision_point_enter_eeg_load_proxy": 1,
-        "sign_readable_eeg_load_proxy": 2,
-        "theta_alpha_ratio": 3,
-        "frontal_theta_4_7": 4,
-        "posterior_alpha_8_12": 5,
-        "decision_load_proxy": 6,
-        "behavior_load_proxy": 7,
-        "navigation_inefficiency_proxy": 8,
-        "decision_total_look_count": 9,
-        "decision_look_balance_abs": 10,
-        "decision_scan_both_count": 11,
-        "sign_readable_ratio": 12,
-        "time_to_first_sign_readable_s": 13,
-        "time_to_first_decision_s": 14,
-        "duration_s": 15,
+        "route_decision_hesitation_index": 0,
+        "eeg_information_processing_load_index": 1,
+        "route_confirmation_disfluency_index": 2,
+        "eeg_load_proxy": 3,
+        "decision_point_enter_eeg_load_proxy": 4,
+        "sign_readable_eeg_load_proxy": 5,
+        "theta_alpha_ratio": 6,
+        "frontal_theta_4_7": 7,
+        "posterior_alpha_8_12": 8,
+        "decision_load_proxy": 9,
+        "behavior_load_proxy": 10,
+        "navigation_inefficiency_proxy": 11,
+        "decision_total_look_count": 12,
+        "decision_look_balance_abs": 13,
+        "decision_scan_both_count": 14,
+        "decision_dwell_total_s": 15,
+        "first_action_latency_s": 16,
+        "prompt_to_first_confirmation_s": 17,
+        "route_confirmation_disfluency_proxy": 18,
+        "sign_readable_ratio": 19,
+        "decision_point_coverage_proxy": 20,
+        "decision_choice_accuracy_ratio": 21,
+        "time_to_first_sign_readable_s": 22,
+        "time_to_first_decision_s": 23,
+        "duration_s": 24,
     }
     return (order.get(metric, 99), metric)
+
+
+def contrast_direction_label(metric: str, estimate: float) -> str:
+    negative_load_metrics = {"posterior_alpha_8_12"}
+    descriptive_metrics = {"sign_readable_ratio", "decision_point_coverage_proxy", "decision_choice_accuracy_ratio"}
+    if metric in negative_load_metrics:
+        return "符合负荷升高方向" if estimate < 0 else "未呈现负荷升高方向"
+    if metric in descriptive_metrics:
+        return "中等条件高于低/高平均" if estimate > 0 else "中等条件未高于低/高平均"
+    return "符合中等最高方向" if estimate > 0 else "未呈现中等最高方向"
 
 
 def one_sample_contrast_stats(values: list[float]) -> dict[str, Any]:
@@ -1242,7 +1594,7 @@ def normal_cdf(value: float) -> float:
     return 0.5 * (1.0 + math.erf(value / math.sqrt(2.0)))
 
 
-def contrast_conclusion(stats: dict[str, Any]) -> str:
+def contrast_conclusion(stats: dict[str, Any], metric: str = "") -> str:
     mean = stats.get("mean")
     p_value = stats.get("p")
     n = int(stats.get("n") or 0)
@@ -1250,13 +1602,12 @@ def contrast_conclusion(stats: dict[str, Any]) -> str:
         return "样本量不足，仅供检查"
     if mean is None or p_value is None:
         return "统计量不足"
-    if mean > 0 and p_value < 0.05:
-        return "显著支持中等路径确认支持最高"
-    if mean < 0 and p_value < 0.05:
-        return "显著反向"
-    if mean > 0:
-        return "方向支持但未达显著"
-    return "未支持假设方向"
+    direction = contrast_direction_label(metric, float(mean))
+    if p_value < 0.05 and ("符合" in direction or "高于" in direction):
+        return f"显著，{direction}"
+    if p_value < 0.05:
+        return f"显著，{direction}"
+    return f"未达显著，{direction}"
 
 
 def format_ci(stats: dict[str, Any]) -> str:
@@ -1388,9 +1739,9 @@ def analyze_xdf(document: dict[str, Any], path: Path) -> dict[str, Any]:
     trial_duration = trial_window["duration_s"] if trial_window else None
 
     summary = (
-        "报告围绕 LabRecorder XDF 中的 EEG stream 与 Unity marker stream 展开："
-        "先检查 stream/session/trial 完整性，再提取 trial-level 行为事件、EEG 覆盖情况、通道质控、"
-        "theta/alpha/beta 频带摘要，以及 sign_readable 和 decision_point_enter 的事件锁定特征。"
+        "报告围绕路径确认信息链模型整理一个 LabRecorder XDF run：先检查 stream、session 和 trial 完整性，"
+        "再提取行动迟滞、路径判断准确率线索、确认链不流畅指标、EEG 覆盖、通道质控、"
+        "theta/alpha/beta 频带摘要，以及 sign_readable 和 decision_point_enter 附近的事件窗 EEG 特征。"
     )
 
     if not notes:
@@ -1400,6 +1751,7 @@ def analyze_xdf(document: dict[str, Any], path: Path) -> dict[str, Any]:
         "title": f"{document['filename']} XDF EEG + Unity marker 分析",
         "kind": "XDF EEG+Marker",
         "summary": summary,
+        "modelOverview": build_model_overview("single_xdf"),
         "narrativeSections": build_single_xdf_narrative(document, streams, marker_rows, primary_rows, trial_window, eeg_report, notes),
         "metrics": [
             {"label": "stream 数", "value": str(len(streams))},
@@ -1508,6 +1860,14 @@ def build_single_xdf_narrative(
     scan_count = counts.get("decision_scan_both_sides", 0)
     inefficiency_count = sum(counts.get(event, 0) for event in INEFFICIENCY_EVENTS)
     valid_epochs = eeg_report.get("metrics", {}).get("valid_event_epochs", 0) if isinstance(eeg_report.get("metrics"), dict) else 0
+    first_action = fmt_seconds(first_event_latency_any(primary_rows, ACTION_START_EVENTS, trial_window))
+    prompt_to_confirmation = fmt_seconds(latency_between_event_groups(primary_rows, PROMPT_EVENTS, CONFIRMATION_EVENTS))
+    dwell_total, dwell_mean, dwell_n = event_interval_stats(primary_rows, "decision_point_enter", "decision_point_exit", trial_window)
+    sign_gap_mean, sign_gap_max = event_gap_stats(primary_rows, "sign_readable")
+    completion = find_first_event(primary_rows, (END_EVENT,))
+    accuracy = marker_accuracy_summary(primary_rows, completion)
+    prompt_channel = infer_prompt_channel(primary_rows)
+    instruction_clarity = infer_instruction_clarity(primary_rows)
 
     return [
         {
@@ -1518,17 +1878,25 @@ def build_single_xdf_narrative(
             ],
         },
         {
-            "title": "行为与 EEG 的初步解读",
+            "title": "路径确认过程",
             "paragraphs": [
-                f"本 run 中双侧扫描事件为 {scan_count} 次，停留/掉头/回退类低效事件合计 {inefficiency_count} 次。这些指标可以作为行动迟滞和路径确认负担的行为侧证据，但单个 run 不能用于显著性判断。",
-                "EEG 频带和事件窗指标用于描述任务期间的信息加工负荷，尤其应关注 sign_readable 和 decision_point_enter 附近的事件窗。正式论文应在同一被试的低/中/高路径确认支持条件之间比较这些指标，再进入全样本统计。",
-                "如果 marker 序列显示先出现官方提醒或音频，再出现标识可读、决策点、扫描和完成事件，则这份数据可较好支撑“官方目标提醒—现场路径确认—行动执行”的信息链分析。",
+                f"提醒通道识别为 {prompt_channel}，保护性行动指令清晰度识别为 {instruction_clarity}。如果这里显示待补，后续需要在 Unity marker 或 subject-run metadata 中写入提醒通道和清晰度条件。",
+                f"首次行动启动时间为 {first_action}，提示到首次确认线索为 {prompt_to_confirmation}。决策点停留共 {fmt_seconds(dwell_total)}，平均 {fmt_seconds(dwell_mean)}，可识别停留段 {dwell_n} 个。",
+                f"本 run 中双侧扫描事件为 {scan_count} 次，停留/掉头/回退类低效事件合计 {inefficiency_count} 次。可读标识最大间隔为 {fmt_seconds(sign_gap_max)}，平均间隔为 {fmt_seconds(sign_gap_mean)}。这些指标共同描述路径确认链的连续性和行动迟滞。",
+                f"路径判断准确率线索：首次选择 {accuracy['first_choice_correct']}，决策选择正确率 {accuracy['decision_choice_accuracy_ratio']}，最终到达正确性 {accuracy['final_arrival_correct']}。如果这些字段为空，说明当前 marker 尚未写入准确率信息。",
+            ],
+        },
+        {
+            "title": "EEG 事件窗",
+            "paragraphs": [
+                "EEG 频带和事件窗指标用于描述任务期间的信息加工负荷。报告优先关注 sign_readable 和 decision_point_enter 附近的事件窗，因为它们最接近目标—线索—方向匹配过程。",
+                "正式分析应在同一被试的低、中、高路径确认支持条件之间比较这些指标，再进入 90 名被试层面的 planned contrast 或 mixed-effects model。",
             ],
         },
         {
             "title": "写作时的限制",
             "paragraphs": [
-                "单文件报告主要用于质控和特征提取。它可以写入方法部分作为数据处理流程示例，也可以用于排查异常 run；但不能直接写成研究假设获得支持。",
+                "单文件报告主要用于质控和特征提取。它可以写入方法部分作为数据处理流程示例，也可以用于排查异常 run；研究假设是否成立需要全样本统计支持。",
                 "如果报告中出现缺少开始/完成 marker、多个 EEG stream、EEG 覆盖不足或事件窗过少，应在正式分析前修正或建立排除规则。",
             ],
         },
@@ -1657,18 +2025,44 @@ def build_behavior_table(rows: list[dict[str, Any]], window: dict[str, float] | 
     readable_rate = sign_readable_count / duration_minutes if duration_minutes else None
     look_rate = look_total / duration_minutes if duration_minutes else None
     readable_ratio = safe_ratio(sign_readable_count, sign_visible_count)
+    first_action_latency = first_event_latency_any(rows, ACTION_START_EVENTS, window)
+    prompt_to_confirmation = latency_between_event_groups(rows, PROMPT_EVENTS, CONFIRMATION_EVENTS)
+    decision_dwell_total, decision_dwell_mean, decision_dwell_n = event_interval_stats(rows, "decision_point_enter", "decision_point_exit", window)
+    sign_gap_mean, sign_gap_max = event_gap_stats(rows, "sign_readable")
+    decision_coverage_proxy = safe_ratio(sign_readable_count, decision_count)
+    disfluency_proxy = route_confirmation_disfluency_proxy(
+        readable_ratio=readable_ratio,
+        prompt_to_confirmation=prompt_to_confirmation,
+        max_confirmation_gap=sign_gap_max,
+        decision_dwell_total=decision_dwell_total,
+        scan_both=scan_both,
+        inefficiency=navigation_inefficiency_proxy,
+    )
+    accuracy = marker_accuracy_summary(rows, completion)
+    prompt_channel = infer_prompt_channel(rows)
+    instruction_clarity = infer_instruction_clarity(rows)
     metrics = [
+        ["prompt_channel", prompt_channel],
+        ["protective_action_instruction_clarity", instruction_clarity],
         ["trial_duration_s", fmt(window["duration_s"]) if window else "-"],
         ["exit_label", completion.get("exit", "") if completion else "-"],
         ["horizontal_distance_m", fmt(to_float(completion.get("horizontal_distance_m"))) if completion else "-"],
+        ["first_action_latency_s", fmt(first_action_latency)],
         ["time_to_first_sign_readable_s", fmt(first_event_latency(rows, "sign_readable", window))],
+        ["prompt_to_first_confirmation_s", fmt(prompt_to_confirmation)],
         ["time_to_first_decision_s", fmt(first_event_latency(rows, "decision_point_enter", window))],
+        ["decision_dwell_total_s", fmt(decision_dwell_total)],
+        ["decision_dwell_mean_s", fmt(decision_dwell_mean)],
+        ["decision_dwell_episode_count", str(decision_dwell_n)],
         ["sign_readable_latency_from_visible_s", fmt(mean_sign_readable_latency(rows))],
         ["sign_visible_count", str(sign_visible_count)],
         ["sign_readable_count", str(sign_readable_count)],
         ["sign_readable_ratio", fmt(readable_ratio)],
         ["sign_readable_per_min", fmt(readable_rate)],
+        ["sign_readable_mean_gap_s", fmt(sign_gap_mean)],
+        ["sign_readable_max_gap_s", fmt(sign_gap_max)],
         ["decision_point_count", str(decision_count)],
+        ["decision_point_coverage_proxy", fmt(decision_coverage_proxy)],
         ["decision_left_look_count", str(left_looks)],
         ["decision_right_look_count", str(right_looks)],
         ["decision_total_look_count", str(look_total)],
@@ -1683,6 +2077,12 @@ def build_behavior_table(rows: list[dict[str, Any]], window: dict[str, float] | 
         ["decision_load_proxy", str(decision_load_proxy)],
         ["behavior_load_proxy", str(behavior_load_proxy)],
         ["behavior_load_proxy_per_min", fmt(behavior_load_rate)],
+        ["route_confirmation_disfluency_proxy", fmt(disfluency_proxy)],
+        ["first_choice_correct", accuracy["first_choice_correct"]],
+        ["decision_choice_accuracy_ratio", accuracy["decision_choice_accuracy_ratio"]],
+        ["decision_choice_correct_count", accuracy["decision_choice_correct_count"]],
+        ["decision_choice_total_count", accuracy["decision_choice_total_count"]],
+        ["final_arrival_correct", accuracy["final_arrival_correct"]],
     ]
     metrics.extend([[event, str(counts.get(event, 0))] for event in BEHAVIOR_EVENTS])
 
@@ -2089,6 +2489,194 @@ def first_event_latency(rows: list[dict[str, Any]], event: str, window: dict[str
         if row.get("event", "") == event:
             return float(row["_xdf_ts"]) - window["start_ts"]
     return None
+
+
+def first_event_latency_any(rows: list[dict[str, Any]], events: tuple[str, ...], window: dict[str, float] | None) -> float | None:
+    if not window:
+        return None
+    event_set = {event.lower() for event in events}
+    for row in sorted(rows, key=lambda item: item["_xdf_ts"]):
+        if str(row.get("event", "")).lower() in event_set:
+            return float(row["_xdf_ts"]) - window["start_ts"]
+    return None
+
+
+def latency_between_event_groups(rows: list[dict[str, Any]], start_events: tuple[str, ...], end_events: tuple[str, ...]) -> float | None:
+    start_set = {event.lower() for event in start_events}
+    end_set = {event.lower() for event in end_events}
+    start_ts: float | None = None
+    for row in sorted(rows, key=lambda item: item["_xdf_ts"]):
+        event = str(row.get("event", "")).lower()
+        if start_ts is None and event in start_set:
+            start_ts = float(row["_xdf_ts"])
+            continue
+        if start_ts is not None and event in end_set and float(row["_xdf_ts"]) >= start_ts:
+            return float(row["_xdf_ts"]) - start_ts
+    return None
+
+
+def event_interval_stats(
+    rows: list[dict[str, Any]],
+    enter_event: str,
+    exit_event: str,
+    window: dict[str, float] | None,
+) -> tuple[float | None, float | None, int]:
+    intervals: list[float] = []
+    open_ts: float | None = None
+    for row in sorted(rows, key=lambda item: item["_xdf_ts"]):
+        event = str(row.get("event", ""))
+        ts = float(row["_xdf_ts"])
+        if event == enter_event:
+            open_ts = ts
+        elif event == exit_event and open_ts is not None and ts >= open_ts:
+            intervals.append(ts - open_ts)
+            open_ts = None
+    if not intervals:
+        duration_values = []
+        for row in rows:
+            event = str(row.get("event", ""))
+            if event in {"dwell_detected", enter_event}:
+                value = first_numeric_field(row, ("duration_s", "dwell_s", "stay_s", "pause_s"))
+                if value is not None and value >= 0:
+                    duration_values.append(value)
+        intervals = duration_values
+    if not intervals:
+        return None, None, 0
+    return float(np.sum(intervals)), float(np.mean(intervals)), len(intervals)
+
+
+def event_gap_stats(rows: list[dict[str, Any]], event: str) -> tuple[float | None, float | None]:
+    timestamps = [float(row["_xdf_ts"]) for row in sorted(rows, key=lambda item: item["_xdf_ts"]) if row.get("event") == event]
+    if len(timestamps) < 2:
+        return None, None
+    gaps = np.diff(np.asarray(timestamps, dtype=float))
+    return float(np.mean(gaps)), float(np.max(gaps))
+
+
+def route_confirmation_disfluency_proxy(
+    *,
+    readable_ratio: float | None,
+    prompt_to_confirmation: float | None,
+    max_confirmation_gap: float | None,
+    decision_dwell_total: float | None,
+    scan_both: int,
+    inefficiency: int,
+) -> float | None:
+    parts = []
+    if readable_ratio is not None:
+        parts.append(max(0.0, 1.0 - readable_ratio) * 4.0)
+    if prompt_to_confirmation is not None:
+        parts.append(math.log1p(max(0.0, prompt_to_confirmation)))
+    if max_confirmation_gap is not None:
+        parts.append(math.log1p(max(0.0, max_confirmation_gap)))
+    if decision_dwell_total is not None:
+        parts.append(math.log1p(max(0.0, decision_dwell_total)))
+    parts.append(float(scan_both))
+    parts.append(float(inefficiency))
+    return float(np.sum(parts)) if parts else None
+
+
+def first_numeric_field(row: dict[str, Any], keys: tuple[str, ...]) -> float | None:
+    for key in keys:
+        value = to_float(row.get(key))
+        if value is not None:
+            return value
+    return None
+
+
+def marker_accuracy_summary(rows: list[dict[str, Any]], completion: dict[str, Any] | None) -> dict[str, str]:
+    decision_values: list[bool] = []
+    first_choice: bool | None = None
+    for row in sorted(rows, key=lambda item: item["_xdf_ts"]):
+        value = marker_bool_value(
+            row,
+            (
+                "first_choice_correct",
+                "direction_correct",
+                "decision_correct",
+                "choice_correct",
+                "route_choice_correct",
+                "correct",
+            ),
+        )
+        if value is None:
+            continue
+        if first_choice is None:
+            first_choice = value
+        decision_values.append(value)
+
+    final_correct = marker_bool_value(
+        completion or {},
+        (
+            "final_arrival_correct",
+            "arrived_correct_exit",
+            "route_correct",
+            "target_reached",
+            "reached_target",
+            "success",
+            "correct_exit",
+        ),
+    )
+    correct_count = sum(1 for value in decision_values if value)
+    total_count = len(decision_values)
+    return {
+        "first_choice_correct": bool_label(first_choice),
+        "decision_choice_accuracy_ratio": fmt(safe_ratio(correct_count, total_count)) if total_count else "-",
+        "decision_choice_correct_count": str(correct_count) if total_count else "-",
+        "decision_choice_total_count": str(total_count) if total_count else "-",
+        "final_arrival_correct": bool_label(final_correct),
+    }
+
+
+def marker_bool_value(row: dict[str, Any], keys: tuple[str, ...]) -> bool | None:
+    normalized_keys = {key.lower() for key in keys}
+    for key, value in row.items():
+        key_text = str(key).lower()
+        if key_text not in normalized_keys:
+            continue
+        parsed = parse_boolish(value)
+        if parsed is not None:
+            return parsed
+    return None
+
+
+def parse_boolish(value: Any) -> bool | None:
+    text = str(value).strip().lower()
+    if text in {"1", "true", "yes", "y", "correct", "success", "right", "target", "到达", "正确", "成功"}:
+        return True
+    if text in {"0", "false", "no", "n", "incorrect", "wrong", "fail", "failed", "错误", "失败"}:
+        return False
+    return None
+
+
+def bool_label(value: bool | None) -> str:
+    if value is True:
+        return "yes"
+    if value is False:
+        return "no"
+    return "-"
+
+
+def infer_prompt_channel(rows: list[dict[str, Any]]) -> str:
+    text = marker_text(rows)
+    if any(keyword in text for keyword in ("mobile", "popup", "phone", "handheld", "text_message", "visual_message", "手机", "弹窗")):
+        return "mobile_visual"
+    if any(keyword in text for keyword in ("audio", "broadcast", "voice", "sound", "广播", "语音", "听觉")):
+        return "auditory_broadcast"
+    return "待补 marker/metadata"
+
+
+def infer_instruction_clarity(rows: list[dict[str, Any]]) -> str:
+    text = marker_text(rows)
+    if any(keyword in text for keyword in ("clarity=high", "instruction_clarity=high", "clear", "高清晰", "高明确")):
+        return "high"
+    if any(keyword in text for keyword in ("clarity=low", "instruction_clarity=low", "unclear", "低清晰", "低明确")):
+        return "low"
+    return "待补 marker/metadata"
+
+
+def marker_text(rows: list[dict[str, Any]]) -> str:
+    return " ".join(str(value).lower() for row in rows for value in row.values() if value is not None)
 
 
 def mean_sign_readable_latency(rows: list[dict[str, Any]]) -> float | None:
