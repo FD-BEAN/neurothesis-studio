@@ -382,6 +382,7 @@ function Workspace({
   const selectedDocumentIsLiterature = selectedDocument ? isLiteratureDocument(selectedDocument) : false;
   const totalStoredBytes = documents.reduce((total, document) => total + (document.size_bytes ?? 0), 0);
   const filteredDocumentCount = groupedDocuments.reduce((total, group) => total + group.documents.length, 0);
+  const literatureDocuments = useMemo(() => documents.filter(isLiteratureDocument), [documents]);
   const xdfDocuments = useMemo(() => documents.filter(isXdfDocument), [documents]);
   const selectedBatchDocuments = useMemo(
     () => xdfDocuments.filter((document) => selectedBatchIds.includes(document.id)),
@@ -432,6 +433,7 @@ function Workspace({
     const token = data.session?.access_token ?? session.access_token;
 
     const response = await fetch("/api/analysis/jobs", {
+      cache: "no-store",
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -449,6 +451,7 @@ function Workspace({
     const token = data.session?.access_token ?? session.access_token;
 
     const response = await fetch("/api/literature/knowledge", {
+      cache: "no-store",
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -800,6 +803,10 @@ function Workspace({
                   <dd>{documents.length}</dd>
                 </div>
                 <div>
+                  <dt>文献文件</dt>
+                  <dd>{literatureDocuments.length}</dd>
+                </div>
+                <div>
                   <dt>存储容量</dt>
                   <dd>{formatBytes(totalStoredBytes)}</dd>
                 </div>
@@ -843,6 +850,7 @@ function Workspace({
 
           <div className="library-status-grid">
             <StatusMetric label="总文件" value={documents.length} text={formatBytes(totalStoredBytes)} />
+            <StatusMetric label="文献文件" value={literatureDocuments.length} text="PDF / DOC / TXT / MD" />
             <StatusMetric label="XDF 文件" value={xdfDocuments.length} text="EEG + Unity marker 原始数据" />
             <StatusMetric label="进行中" value={xdfJobStats.active} text="pending / queued / running" />
             <StatusMetric label="已完成" value={xdfJobStats.completed} text="可下载 HTML 报告" />
@@ -1599,6 +1607,7 @@ function LiteratureKnowledgePanel({
   const indexed = entries.filter((entry) => entry.card);
   const seeded = entries.filter((entry) => !entry.card && entry.seedMatch);
   const pending = entries.length - indexed.length - seeded.length;
+  const citable = indexed.length + seeded.length;
 
   return (
     <section className="work-panel knowledge-panel">
@@ -1608,7 +1617,8 @@ function LiteratureKnowledgePanel({
           <h3>可引用论文卡片</h3>
         </div>
         <div className="top-actions">
-          <span className="status-pill compact">{indexed.length + seeded.length} 篇可引用</span>
+          <span className="status-pill compact">{entries.length} 篇文献文件</span>
+          <span className="status-pill compact">{citable} 篇可引用</span>
           <button className="secondary-button" onClick={onRefresh}>
             刷新
           </button>
@@ -1616,8 +1626,8 @@ function LiteratureKnowledgePanel({
       </div>
       {seedStats ? (
         <p className="muted">
-          系统已接入 Metro Rescue 初始知识库：{seedStats.sources} 篇文献卡、{seedStats.claims} 条 claims、{seedStats.hypotheses} 个假设、
-          {seedStats.analysisModels} 个分析模型。新上传论文生成知识卡片后，会作为增量文献加入写作助手。
+          当前资料库有 {entries.length} 篇文献文件，其中 {seeded.length} 篇匹配内置 Metro Rescue KB、{indexed.length} 篇已有新增知识卡片、{pending} 篇待建卡。
+          内置 KB 本身固定包含 {seedStats.sources} 篇 source card、{seedStats.claims} 条 claims、{seedStats.hypotheses} 个假设和 {seedStats.analysisModels} 个分析模型；新上传论文会作为增量文献叠加，不会改写内置 KB 的固定数量。
         </p>
       ) : null}
       {seeded.length ? (

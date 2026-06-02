@@ -430,3 +430,11 @@ XDF 命名与分析规则：
 - 这样 PDF.js fake worker 会使用已经打包进服务端 bundle 的 worker handler，不再按相对路径寻找 worker 文件。
 - 仍然保留 `DOMMatrix/ImageData/Path2D` 最小 polyfill，用于 Vercel/Node 环境中的 PDF 文本抽取。
 - 修改后已用 `npm run build` 和内存 PDF 文本抽取验证。新增/更新文献知识卡片仍只在“未命中已有卡片、未命中内置 seed KB”时才会调用 OpenAI。
+
+## 2026-06-01 文献数量显示口径
+
+- `seedStats.sources` 是内置 Metro Rescue seed KB 的固定 source card 数量，例如 47；它不等于用户当前资料库里的 PDF 文献总数。
+- 用户资料库文献数量来自 `research_documents` 中被 `isLiteratureDocument` 识别的文件，例如当前可为 49。
+- 页面应同时显示：当前资料库文献数、已匹配内置 KB 数、已有新增知识卡片数、待建卡数。
+- “新增上传论文”会作为用户文献叠加；如果命中内置 KB，不重复调用 OpenAI；如果未命中，生成 `NT_KB_V1::` 知识卡后作为新增可引用文献。
+- `/api/literature/knowledge` 和前端刷新请求应使用 `no-store`，避免刷新按钮拿到旧的知识库统计。

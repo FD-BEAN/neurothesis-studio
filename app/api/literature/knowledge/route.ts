@@ -186,15 +186,18 @@ export async function GET(request: Request) {
   }
 
   const documents = ((data ?? []) as ResearchDocument[]).filter(isLiteratureDocument);
-  return NextResponse.json({
-    seedStats: getSeedKnowledgeStats(),
-    seedReview: getSeedKnowledgeReview(),
-    cards: documents.map((document) => ({
-      document,
-      card: parseLiteratureCard(document.notes),
-      seedMatch: findSeedLiteratureMatch(document),
-    })),
-  });
+  return NextResponse.json(
+    {
+      seedStats: getSeedKnowledgeStats(),
+      seedReview: getSeedKnowledgeReview(),
+      cards: documents.map((document) => ({
+        document,
+        card: parseLiteratureCard(document.notes),
+        seedMatch: findSeedLiteratureMatch(document),
+      })),
+    },
+    { headers: { "Cache-Control": "no-store" } },
+  );
 }
 
 export async function POST(request: Request) {
