@@ -24,6 +24,32 @@ type LiteratureChunkDigest = {
   quoteAnchors: string[];
 };
 
+type PdfJsTextItem = {
+  str?: string;
+  hasEOL?: boolean;
+};
+
+type PdfJsDocument = {
+  numPages: number;
+  getPage(pageNumber: number): Promise<{
+    getTextContent(options?: { includeMarkedContent?: boolean; disableNormalization?: boolean }): Promise<{ items: PdfJsTextItem[] }>;
+    cleanup(): void;
+  }>;
+  destroy(): Promise<void>;
+};
+
+type PdfJsModule = {
+  getDocument(options: {
+    data: Uint8Array;
+    isEvalSupported: false;
+    useWorkerFetch: false;
+  }): { promise: Promise<PdfJsDocument> };
+};
+
+type PdfJsWorkerModule = {
+  WorkerMessageHandler: unknown;
+};
+
 class PdfDomMatrixPolyfill {
   a = 1;
   b = 0;
@@ -283,20 +309,7 @@ async function extractDocumentText(supabase: ReturnType<typeof getSupabaseServer
 
   if (extension === "pdf" || document.mime_type?.includes("pdf")) {
     const buffer = Buffer.from(await fileBlob.arrayBuffer());
-    installPdfNodePolyfills();
-    const { PDFParse } = (await import("pdf-parse")) as unknown as {
-      PDFParse: new (options: { data: Buffer }) => {
-        getText(options?: { first?: number; last?: number }): Promise<{ text?: string }>;
-        destroy(): Promise<void>;
-      };
-    };
-    const parser = new PDFParse({ data: buffer });
-    try {
-      const parsed = await parser.getText();
-      return sanitizeExtractedText(parsed.text ?? "");
-    } finally {
-      await parser.destroy();
-    }
+    return sanitizeExtractedText(await extractPdfTextWithoutWorker(buffer));
   }
 
   if (["txt", "md"].includes(extension)) {
@@ -304,6 +317,46 @@ async function extractDocumentText(supabase: ReturnType<typeof getSupabaseServer
   }
 
   return "";
+}
+
+async function extractPdfTextWithoutWorker(buffer: Buffer) {
+  installPdfNodePolyfills();
+  const [pdfjs, pdfWorker] = (await Promise.all([
+    import("pdfjs-dist/legacy/build/pdf.mjs"),
+    import("pdfjs-dist/legacy/build/pdf.worker.mjs"),
+  ])) as unknown as [PdfJsModule, PdfJsWorkerModule];
+  const scope = globalThis as unknown as { pdfjsWorker?: { WorkerMessageHandler?: unknown } };
+  scope.pdfjsWorker = { WorkerMessageHandler: pdfWorker.WorkerMessageHandler };
+
+  const loadingTask = pdfjs.getDocument({
+    data: new Uint8Array(buffer),
+    isEvalSupported: false,
+    useWorkerFetch: false,
+  });
+  const pdf = await loadingTask.promise;
+  const pages: string[] = [];
+
+  try {
+    for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+      const page = await pdf.getPage(pageNumber);
+      try {
+        const content = await page.getTextContent({ includeMarkedContent: false, disableNormalization: false });
+        const parts: string[] = [];
+        for (const item of content.items) {
+          if (!item.str) continue;
+          parts.push(item.str);
+          parts.push(item.hasEOL ? "\n" : " ");
+        }
+        pages.push(parts.join(""));
+      } finally {
+        page.cleanup();
+      }
+    }
+  } finally {
+    await pdf.destroy();
+  }
+
+  return pages.join("\n\n");
 }
 
 async function buildKnowledgeCard(apiKey: string, document: ResearchDocument, extractedText: string): Promise<LiteratureKnowledgeCard> {

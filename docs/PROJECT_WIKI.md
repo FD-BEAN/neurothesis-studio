@@ -422,3 +422,11 @@ XDF 命名与分析规则：
 - 真实数据不要提交到 GitHub。
 - UI 文案要像研究者自己的工作台，不要像产品宣传。
 - 每次发现新需求、新约束、新坑，更新本文件。
+
+## 2026-06-01 PDF 知识卡片生成修复
+
+- Vercel serverless 环境中，`pdf-parse` / PDF.js 的 fake worker 可能会尝试运行时加载 `.next/server/chunks/pdf.worker.mjs`，导致新增文献点击“生成/更新知识卡片”时报 `Cannot find module ... pdf.worker.mjs`。
+- 文献知识卡片 API 现在直接使用 `pdfjs-dist/legacy/build/pdf.mjs` 和 `pdf.worker.mjs`，并在调用 `getDocument` 前把 `WorkerMessageHandler` 挂到 `globalThis.pdfjsWorker`。
+- 这样 PDF.js fake worker 会使用已经打包进服务端 bundle 的 worker handler，不再按相对路径寻找 worker 文件。
+- 仍然保留 `DOMMatrix/ImageData/Path2D` 最小 polyfill，用于 Vercel/Node 环境中的 PDF 文本抽取。
+- 修改后已用 `npm run build` 和内存 PDF 文本抽取验证。新增/更新文献知识卡片仍只在“未命中已有卡片、未命中内置 seed KB”时才会调用 OpenAI。
