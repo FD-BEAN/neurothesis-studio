@@ -426,15 +426,18 @@ async function main() {
   }
 
   const output = {
-    version: "literature-article-kb-v3-codex-curated",
-    generatedBy: "Codex local PDF evidence extraction plus curated single-article reading notes; no website API and no OpenAI key usage",
+    version: "literature-article-kb-v4-paper-notes",
+    generatedBy: "Codex local PDF evidence extraction plus dailypaper-style single-article notes; no website API and no OpenAI key usage",
     generatedAt: new Date().toISOString(),
     source: "Uploaded related-literature PDFs matched to Metro Rescue source cards",
     schema: [
       "文献身份",
+      "一句话贡献",
       "研究问题与定位",
+      "研究动机",
       "方法与数据",
-      "主要发现",
+      "关键结果",
+      "可迁移变量/指标",
       "对本研究的用途",
       "边界与不能声称",
       "关联证据单元",
@@ -503,6 +506,7 @@ function buildExtractiveArticleCard(source, matchedPdfFilename, extractedText) {
     ]).slice(0, 8),
     keywords: uniqueCompact([...splitTags(source.Theme_Tags), ...extractKeywords(extractedText)]).slice(0, 12),
     writingUse: curated.writingUse,
+    readingNote: buildPaperReadingNote(source, curated, linkedEvidence, extractedTitleCandidate),
     linkedEvidence,
     confidence: abstractText || methodText || resultText ? "medium" : "low",
     needsVerification: [
@@ -617,7 +621,7 @@ function buildCuratedArticleCard(source, linkedEvidence, extracted) {
   return {
     articleRole,
     evidenceType,
-    qualityTier: `Grade ${source.Grade}，${source.Depth}；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。`,
+    qualityTier: formatQualityTier(source.Grade, source.Depth),
     oneSentenceSummary: note.summary || source.Key_Takeaway_PDF_Free,
     researchQuestion:
       note.question ||
@@ -676,6 +680,77 @@ function buildCuratedArticleCard(source, linkedEvidence, extracted) {
       ...inferWritingUse(source),
     ]),
   };
+}
+
+function formatQualityTier(grade, depth) {
+  const meaningByGrade = {
+    A: "核心相关：可优先支撑本研究的背景、方法或变量定义",
+    B: "中等相关：可用于方法类比、背景论证或边界讨论，但通常不是主结论的直接证据",
+    C: "外围相关：只适合作为补充背景或未来工作",
+    D: "低相关：一般不进入正文主证据链",
+  };
+
+  return `Grade ${grade}，${depth}；${meaningByGrade[grade] ?? "相关性待人工复核"}。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。`;
+}
+
+function buildPaperReadingNote(source, curated, linkedEvidence, extractedTitleCandidate) {
+  const transferableConcepts = uniqueCompact([
+    ...curated.variablesAndMeasures,
+    ...curated.eegOrPhysioMeasures,
+    ...curated.behavioralMeasures,
+    ...curated.densityHypothesisRelevance,
+  ]).slice(0, 10);
+
+  return {
+    tldr: curated.oneSentenceSummary,
+    problem: curated.researchQuestion,
+    motivation: buildPaperMotivation(source, curated),
+    methodSummary: curated.studyDesign,
+    resultSummary: curated.keyFindings.slice(0, 4).join(" "),
+    transferableConcepts,
+    strengths: inferPaperStrengths(source, curated, linkedEvidence),
+    weaknesses: uniqueCompact([
+      ...curated.boundaries,
+      ...curated.limitations,
+      ...curated.doNotClaim,
+    ]).slice(0, 6),
+    writingAngles: uniqueCompact([
+      ...curated.metroRescueUse,
+      ...curated.methodTransfer,
+      ...curated.writingUse.map((item) => `适合写入：${item}`),
+    ]).slice(0, 8),
+    followUpQuestions: uniqueCompact([
+      extractedTitleCandidate && normalizeLiteratureKey(extractedTitleCandidate) !== normalizeLiteratureKey(source.Title)
+        ? `核对 PDF 首页标题是否应改为：${extractedTitleCandidate}`
+        : "",
+      "正式引用前核对作者、年份、期刊、DOI 和页码。",
+      "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+      "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。",
+    ]),
+  };
+}
+
+function buildPaperMotivation(source, curated) {
+  const role = curated.articleRole;
+  const tags = splitTags(source.Theme_Tags).join("、");
+  return uniqueCompact([
+    `该文被纳入知识库，是因为它能补足 ${role} 这一证据层。`,
+    tags ? `它关联的主题包括 ${tags}。` : "",
+    curated.densityHypothesisRelevance[0] ? `对当前研究的核心启发是：${curated.densityHypothesisRelevance[0]}` : "",
+  ]).join(" ");
+}
+
+function inferPaperStrengths(source, curated, linkedEvidence) {
+  const strengths = [];
+  const text = [source.Title, source.Theme_Tags, source.Method_or_Evidence, curated.studyDesign].join(" ").toLowerCase();
+
+  if (source.Grade === "A") strengths.push("与 Metro Rescue 的研究对象或方法高度接近，可优先用于 Introduction、Methods 或 Discussion。");
+  if (text.includes("vr") || text.includes("virtual")) strengths.push("包含 VR 或虚拟环境范式，可帮助论证实验场景的可控性与生态效度边界。");
+  if (text.includes("eeg") || text.includes("fnirs") || text.includes("physiological")) strengths.push("包含神经/生理测量，可用于说明认知负荷指标的理论或方法来源。");
+  if (text.includes("sign") || text.includes("wayfinding") || text.includes("navigation")) strengths.push("直接关联导向标识、寻路或室内导航，可用于定义行为指标和任务机制。");
+  if (linkedEvidence.claims.length || linkedEvidence.mechanisms.length) strengths.push("已经与知识库中的论点或机制相连，写作时更容易追溯证据链。");
+
+  return strengths.length ? strengths.slice(0, 6) : ["主要作为背景文献使用，写作时应避免把类比证据写成直接实验结果。"];
 }
 
 function translateBoundary(value) {

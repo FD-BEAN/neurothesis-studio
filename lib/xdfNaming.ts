@@ -14,6 +14,10 @@ const tripletDensityByPosition: Record<number, DensityLevel> = {
   3: "high",
 };
 
+function formatParticipantGroupId(index: number) {
+  return `P${String(index).padStart(2, "0")}`;
+}
+
 export function inferXdfSequenceIndex(filename: string) {
   const bidsMatch = filename.match(/(?:^|[_-])sub-?p?0*(\d{1,4})(?=[^0-9]|$)/i) ?? filename.match(/^sub-?p?0*(\d{1,4})(?=[^0-9]|$)/i);
   if (bidsMatch?.[1]) {
@@ -42,14 +46,14 @@ export function inferXdfRunPosition(filename: string) {
 
 export function inferXdfSubjectId(filename: string) {
   const tripletSubjectIndex = inferXdfTripletSubjectIndex(filename);
-  if (tripletSubjectIndex) return `sub-${String(tripletSubjectIndex).padStart(3, "0")}`;
+  if (tripletSubjectIndex) return formatParticipantGroupId(tripletSubjectIndex);
 
   const bidsMatch = filename.match(/sub-([A-Za-z0-9]+)/i);
   if (bidsMatch?.[1]) return `sub-${bidsMatch[1]}`;
   const subjectMatch = filename.match(/(?:^|[^a-z0-9])(?:subject|subj|participant)[-_]?([A-Za-z0-9]+)/i);
   if (subjectMatch?.[1]) return `sub-${subjectMatch[1]}`;
   const compactParticipantMatch = filename.match(/(?:^|[^a-z0-9])p[-_]?0*(\d{1,4})(?=[^0-9]|$)/i);
-  if (compactParticipantMatch?.[1]) return `sub-${compactParticipantMatch[1]}`;
+  if (compactParticipantMatch?.[1]) return formatParticipantGroupId(Number(compactParticipantMatch[1]));
   return "subject-unknown";
 }
 

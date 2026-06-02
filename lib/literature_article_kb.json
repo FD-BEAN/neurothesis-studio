@@ -1,13 +1,16 @@
 {
-  "version": "literature-article-kb-v3-codex-curated",
-  "generatedBy": "Codex local PDF evidence extraction plus curated single-article reading notes; no website API and no OpenAI key usage",
-  "generatedAt": "2026-06-02T07:02:03.905Z",
+  "version": "literature-article-kb-v4-paper-notes",
+  "generatedBy": "Codex local PDF evidence extraction plus dailypaper-style single-article notes; no website API and no OpenAI key usage",
+  "generatedAt": "2026-06-02T13:05:32.121Z",
   "source": "Uploaded related-literature PDFs matched to Metro Rescue source cards",
   "schema": [
     "文献身份",
+    "一句话贡献",
     "研究问题与定位",
+    "研究动机",
     "方法与数据",
-    "主要发现",
+    "关键结果",
+    "可迁移变量/指标",
     "对本研究的用途",
     "边界与不能声称",
     "关联证据单元",
@@ -33,7 +36,7 @@
       ],
       "articleRole": "导向标识与空间导航证据",
       "evidenceType": "实验研究",
-      "qualityTier": "Grade B，Medium；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade B，Medium；中等相关：可用于方法类比、背景论证或边界讨论，但通常不是主结论的直接证据。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文用沉浸式 VR 火灾疏散实验讨论从众线索如何改变路线选择，适合作为社会线索或人群行为混杂因素的背景文献。",
       "researchQuestion": "研究问题是：在室内火灾疏散场景中，周围人群的路线选择和性别构成是否会影响个体的 wayfinding decision。",
       "researchPosition": "知识库定位：导向标识与空间导航证据。 该文用沉浸式 VR 火灾疏散实验讨论从众线索如何改变路线选择，适合作为社会线索或人群行为混杂因素的背景文献。 对本项目的核心价值：如果后续 VR 场景加入 NPC 或群体线索，可用它解释 social cue confound。",
@@ -108,6 +111,50 @@
         "导向标识与寻路理论",
         "VR 实验范式与生态效度"
       ],
+      "readingNote": {
+        "tldr": "该文用沉浸式 VR 火灾疏散实验讨论从众线索如何改变路线选择，适合作为社会线索或人群行为混杂因素的背景文献。",
+        "problem": "研究问题是：在室内火灾疏散场景中，周围人群的路线选择和性别构成是否会影响个体的 wayfinding decision。",
+        "motivation": "该文被纳入知识库，是因为它能补足 导向标识与空间导航证据 这一证据层。 它关联的主题包括 Social influence、herd effect、VR evacuation。 对当前研究的核心启发是：可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+        "methodSummary": "方法上是 VR 图书馆火灾场景，被试在多种人群分流和性别比例条件下完成疏散选择任务。",
+        "resultSummary": "多数人群选择的路线会吸引个体跟随，但该效应会受到群体构成调节。 它说明路线选择不只由导向标识决定，还会受社会线索影响。 VR library/fire herd-effect study; pedestrians tend to follow majority crowd route; gender ratio/social composition can modulate route choice. Risk preference and neighbor/crowd cues can override optimal or designated routes.",
+        "transferableConcepts": [
+          "VR 场景、任务顺序、熟悉度和沉浸程度",
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "路线选择、出口选择或 compliance",
+          "寻路完成时间、错误、路径效率",
+          "路径长度、回退、绕行或距离",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "可用于把低/中/高密度转化为标识可见性、确认成本和路线决策事件的组内因素。"
+        ],
+        "strengths": [
+          "包含 VR 或虚拟环境范式，可帮助论证实验场景的可控性与生态效度边界。",
+          "直接关联导向标识、寻路或室内导航，可用于定义行为指标和任务机制。",
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "不能作为 EEG 或标识密度主效应证据。",
+          "不要 use as primary signage/EEG evidence.",
+          "A priori analysis was conducted through G-power, setting an effect size of 0.25, a significance level ( α ) of 0.05, and a power of 0.9 to determine a sample size of no less than 141.",
+          "Next, a generalized linear model was developed to explore the effect of the interaction between the proportion of NPCs in numbers exported and the proportion of gender on individual route choice.",
+          "4.5 Validity assessment In this study, two standardized instruments, the Virtual Reality Stun Scale (VRSQ) and the Sense of Spatial Orientation Scale (SBSOD), were used to assess the validity of the virtual experiment."
+        ],
+        "writingAngles": [
+          "如果后续 VR 场景加入 NPC 或群体线索，可用它解释 social cue confound。",
+          "当前主实验若没有人群线索，不应把它作为标识密度效应的直接证据。",
+          "Use only if adding social/NPC cues or discussing herd effects as a future confound.",
+          "方法上是 VR 图书馆火灾场景，被试在多种人群分流和性别比例条件下完成疏散选择任务。",
+          "Immersive VR library fire evacuation; multiple scenarios with NPC crowd patterns and gender-ratio cues.",
+          "Methods: We designed an immersive virtual reality (IVE) experiment to examine the wayfinding choices made by pedestrians during a library fire under conditions of different crowd patterns represented by non-game players and differences in gender ratios.",
+          "experiment to examine the wayfinding choices made by pedestrians during a library fire under conditions of different crowd patterns represented by non-game players and differences in gender ratios.",
+          "适合写入：Methods: VR"
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：TYPE Original Research PUBLISHED 30 September 2025 DOI 10.3389/fpsyg.2025.1558115 OPEN ACCESS EDITED BY Rosanna E.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -152,7 +199,7 @@
       ],
       "articleRole": "导向标识与空间导航证据",
       "evidenceType": "实验研究",
-      "qualityTier": "Grade A，High；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade A，High；核心相关：可优先支撑本研究的背景、方法或变量定义。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文把 BIM 与 VR 用于导向标识可见性评估，重点是覆盖、遮挡、视域和布点优化。",
       "researchQuestion": "研究问题是：如何在复杂公共建筑中更系统地评估导向标识是否真正可见、连续且覆盖关键决策点。",
       "researchPosition": "知识库定位：导向标识与空间导航证据。 该文把 BIM 与 VR 用于导向标识可见性评估，重点是覆盖、遮挡、视域和布点优化。 对本项目的核心价值：支持在 Metro Rescue 中建立 sign-level 操作表，例如可读距离、遮挡、方位、决策点覆盖。",
@@ -225,6 +272,50 @@
         "导向标识与寻路理论",
         "VR 实验范式与生态效度"
       ],
+      "readingNote": {
+        "tldr": "该文把 BIM 与 VR 用于导向标识可见性评估，重点是覆盖、遮挡、视域和布点优化。",
+        "problem": "研究问题是：如何在复杂公共建筑中更系统地评估导向标识是否真正可见、连续且覆盖关键决策点。",
+        "motivation": "该文被纳入知识库，是因为它能补足 导向标识与空间导航证据 这一证据层。 它关联的主题包括 Signage visibility、BIM、VR。 对当前研究的核心启发是：可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+        "methodSummary": "方法上结合 BIM、虚拟环境和可见性分析，对标识位置、遮挡和覆盖范围进行工程化评估。",
+        "resultSummary": "标识有效性不能只按数量理解，还要看视域、遮挡、连续性和关键节点覆盖。 这为把低/中/高密度从简单数量差异升级为可见性和信息负荷变量提供方法参考。 BIM-enabled VR can evaluate signage visibility, coverage, placement, and occlusion in subway-like public spaces. Signage is a system requiring continuity, clarity, conspicuity, consistency, correctness, and accessibility.",
+        "transferableConcepts": [
+          "标识可见性、标识方向、标识位置、标识连续性或信息密度",
+          "VR 场景、任务顺序、熟悉度和沉浸程度",
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "标识发现、标识确认、按标识行动",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "可用于把低/中/高密度转化为标识可见性、确认成本和路线决策事件的组内因素。"
+        ],
+        "strengths": [
+          "与 Metro Rescue 的研究对象或方法高度接近，可优先用于 Introduction、Methods 或 Discussion。",
+          "包含 VR 或虚拟环境范式，可帮助论证实验场景的可控性与生态效度边界。",
+          "直接关联导向标识、寻路或室内导航，可用于定义行为指标和任务机制。",
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "不能把当前 8m/12m readable circle 说成完整可见性模型。",
+          "不要 claim your current 8m/12m circles fully model visibility; they are a simplification.",
+          "Table 2 (Scenario 1) shows the results of a sample simulation.",
+          "Table 2 (Scenario 2) shows the results of a sample simulation.",
+          "Conclusions and future work This research investigated a method that integrates BIM and VR environments to analyze the visibility of the signage system."
+        ],
+        "writingAngles": [
+          "支持在 Metro Rescue 中建立 sign-level 操作表，例如可读距离、遮挡、方位、决策点覆盖。",
+          "Supports adding visibility/coverage/FoV/obstruction variables beyond simple readable radius.",
+          "方法上结合 BIM、虚拟环境和可见性分析，对标识位置、遮挡和覆盖范围进行工程化评估。",
+          "BIM + game engine/VR signage visibility analysis; subway station case studies.",
+          "Maps and signage systems therefore continue to play a significant role in helping pedestrians reach their destinations.",
+          "In addition to being positioning and navigational aids, maps and signs can pro- vide other types information, by indicating available services, reg- ulatory information, and the location of emergency exits.",
+          "For the purpose of pathfinding and navigation, pedestrians prefer to use signage rather than a map, as it is quicker to navigate using signage [12,18] .",
+          "适合写入：Methods: Signature manipulation"
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：Clear visibility, easy comprehension, and efficient placement are all important for successful sig- nage.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -269,7 +360,7 @@
       ],
       "articleRole": "神经生理与认知负荷证据",
       "evidenceType": "建模研究",
-      "qualityTier": "Grade B，Medium；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade B，Medium；中等相关：可用于方法类比、背景论证或边界讨论，但通常不是主结论的直接证据。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文用 VR 与 fNIRS 提出灾害刺激清晰度和强度可能产生非线性心理/脑反应。",
       "researchQuestion": "研究问题是：灾害线索的 clarity 与 intensity 如何共同影响恐慌或脑激活水平。",
       "researchPosition": "知识库定位：神经生理与认知负荷证据。 该文用 VR 与 fNIRS 提出灾害刺激清晰度和强度可能产生非线性心理/脑反应。 对本项目的核心价值：作为中等密度最高假设的理论类比，而不是本研究 EEG 结果。",
@@ -343,6 +434,50 @@
         "VR 实验范式与生态效度",
         "建模与未来应用"
       ],
+      "readingNote": {
+        "tldr": "该文用 VR 与 fNIRS 提出灾害刺激清晰度和强度可能产生非线性心理/脑反应。",
+        "problem": "研究问题是：灾害线索的 clarity 与 intensity 如何共同影响恐慌或脑激活水平。",
+        "motivation": "该文被纳入知识库，是因为它能补足 神经生理与认知负荷证据 这一证据层。 它关联的主题包括 Panic、fNIRS、nonlinear stimulus response。 对当前研究的核心启发是：可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+        "methodSummary": "方法上是 VR 灾害刺激结合 fNIRS，使用 clarity-intensity 框架建模生理反应。",
+        "resultSummary": "刺激强度与认知/情绪负荷不一定单调递增。 非线性结果可以帮助论证中等密度场景可能比低/高密度更容易诱发不确定性或认知负荷。 Panic/brain activation can vary nonlinearly with disaster stimulus clarity and intensity. Cognitive/emotional response to information clarity/intensity may be nonlinear, supporting a planned middle-peak contrast.",
+        "transferableConcepts": [
+          "VR 场景、任务顺序、熟悉度和沉浸程度",
+          "紧急度、风险感知、压力或情绪负荷",
+          "fNIRS / prefrontal activation",
+          "行为指标需回到原文 Methods/Results 核对。",
+          "可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "可用于支持“认知负荷可能呈非线性”这一理论前提。"
+        ],
+        "strengths": [
+          "包含 VR 或虚拟环境范式，可帮助论证实验场景的可控性与生态效度边界。",
+          "包含神经/生理测量，可用于说明认知负荷指标的理论或方法来源。",
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "fNIRS PFC 活动不能直接替代 EEG theta/alpha 指标。",
+          "不要 treat fNIRS PFC activation as direct evidence for EEG theta/alpha.",
+          "The validity of VR has been scrutinised by numerous re - searchers, and many conclude that the experiences in virtual and real environments are comparable (Chirico & Gaggioli, 2019; Pettr ´ e, Ond ˇ rej, Olivier, Cretual, & Donikian, 2009; Tcha-Tokey, Christmann, Loup-Escande, & Richir, 2016).",
+          "One of the studies concluded that the sample size was a determinant factor (Wulff, Mergenthaler-Canseco, & Hertwig, 2018).",
+          "In this regard, 313 questionnaire respondents and 104 experiment participants were recruited, which is a considerably large sample size in the field of pedestrian research, especially for single-user experiments."
+        ],
+        "writingAngles": [
+          "作为中等密度最高假设的理论类比，而不是本研究 EEG 结果。",
+          "Supports nonlinearity argument: cognitive/emotional response need not increase monotonically with information intensity.",
+          "Middle-peak EEG load",
+          "方法上是 VR 灾害刺激结合 fNIRS，使用 clarity-intensity 框架建模生理反应。",
+          "VR disaster stimuli + fNIRS; quadratic clarity-intensity model.",
+          "Physiology could function as such metrics, since psy - chological responses, panic included, are often displayed in the form of physiological signals (Bota, Wang, Fred, & Da Silva, 2019; Cacioppo & Tassinary, 1990).",
+          "The designated disaster in this paper is set to be a fire.",
+          "Due to con - cerns of safety and operability, the virtual reality (VR) technology is utilised to simulate a fire instead of burning a real one."
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：This study aims to construct a Clarity-Intensity model for evacuation panic through a VR experi - ment.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -394,7 +529,7 @@
       ],
       "articleRole": "VR 实验范式与生态效度证据",
       "evidenceType": "实验研究",
-      "qualityTier": "Grade B，Medium；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade B，Medium；中等相关：可用于方法类比、背景论证或边界讨论，但通常不是主结论的直接证据。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文比较虚拟与真实实验范式下的 hostile emergency pedestrian responses，用于支持 VR 疏散研究的生态效度讨论。",
       "researchQuestion": "研究问题是：VR 能否在安全可控条件下复现现实紧急事件中的心理和行动反应。",
       "researchPosition": "知识库定位：VR 实验范式与生态效度证据。 该文比较虚拟与真实实验范式下的 hostile emergency pedestrian responses，用于支持 VR 疏散研究的生态效度讨论。 对本项目的核心价值：放在 Methods 或 limitation 中解释为什么使用 VR，同时承认场景特异性。",
@@ -469,6 +604,48 @@
         "AR experimental validity",
         "VR 实验范式与生态效度"
       ],
+      "readingNote": {
+        "tldr": "该文比较虚拟与真实实验范式下的 hostile emergency pedestrian responses，用于支持 VR 疏散研究的生态效度讨论。",
+        "problem": "研究问题是：VR 能否在安全可控条件下复现现实紧急事件中的心理和行动反应。",
+        "motivation": "该文被纳入知识库，是因为它能补足 VR 实验范式与生态效度证据 这一证据层。 它关联的主题包括 VR validity、physical comparison。 对当前研究的核心启发是：可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+        "methodSummary": "方法上把虚拟实验与实体实验进行量化比较，关注应急反应和运动行为是否一致。",
+        "resultSummary": "VR 可以在一定程度上产生与现实接近的心理和移动反应。 它适合为 VR metro rescue task 的合理性提供方法论支持。 VR can produce psychological and movement responses close to physical reality in hostile emergency paradigms. VR is acceptable for controlled emergency/wayfinding experiments but needs caveats about realism, immersion, sickness, and social interaction.",
+        "transferableConcepts": [
+          "VR 场景、任务顺序、熟悉度和沉浸程度",
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "行为指标需回到原文 Methods/Results 核对。",
+          "可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "与中等密度最高假设关系较弱，主要作为背景、方法或边界文献。"
+        ],
+        "strengths": [
+          "包含 VR 或虚拟环境范式，可帮助论证实验场景的可控性与生态效度边界。",
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "该文不是地铁标识或 EEG 文献，不应作为主假设证据。",
+          "Scenario is hostile attack, not signage evacuation; keep as methodology support.",
+          "However, there remain questions regarding the validity of the results obtained from these environments, and no full validation of VR experiments has yet appeared.",
+          "Important considerations include: time and space constraints on any procedures, ethical limitations (e.g.",
+          "While VR therefore represents a great opportunity, there are limitations in performing experiments within VR 21 , including in measuring the interactions between participants 22 ."
+        ],
+        "writingAngles": [
+          "放在 Methods 或 limitation 中解释为什么使用 VR，同时承认场景特异性。",
+          "Use for VR ecological validity caveat and justification.",
+          "方法上把虚拟实验与实体实验进行量化比较，关注应急反应和运动行为是否一致。",
+          "Quantitative comparison of VR and physical experiments for hostile emergency responses.",
+          "Conversely, VR offers the opportunity for com- pletely controlled and repeatable experiments, allowing the investigation of extremely dangerous scenarios (where participants would be at physical risk, such as a building fire 16 ) within a safe environment, potentially with a smaller logistical requirement 17 .",
+          "The increasing quality of VR hardware allows the development of near-identical environments to real-world scenarios, which can be repeated perfectly for different participants 18,19 .",
+          "While VR therefore represents a great opportunity, there are limitations in performing experiments within VR 21 , including in measuring the interactions between participants 22 .",
+          "适合写入：Methods: VR"
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：However, there remain questions regarding the validity of the results obtained from these environments, and no full validation of VR experiments has yet appeared.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -513,7 +690,7 @@
       ],
       "articleRole": "导向标识与空间导航证据",
       "evidenceType": "综述",
-      "qualityTier": "Grade B，Medium；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade B，Medium；中等相关：可用于方法类比、背景论证或边界讨论，但通常不是主结论的直接证据。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该综述讨论大规模疏散中的行为建模和路径优化，指出人类行为模型与优化模型之间常有断裂。",
       "researchQuestion": "研究问题是：疏散规划中如何同时考虑人的决策行为和路径/容量优化。",
       "researchPosition": "知识库定位：导向标识与空间导航证据。 该综述讨论大规模疏散中的行为建模和路径优化，指出人类行为模型与优化模型之间常有断裂。 对本项目的核心价值：用于说明 Metro Rescue 的行为与 EEG 数据为什么能服务更真实的 evacuation modeling。",
@@ -581,6 +758,46 @@
         "建模与未来应用",
         "文献综述与理论框架"
       ],
+      "readingNote": {
+        "tldr": "该综述讨论大规模疏散中的行为建模和路径优化，指出人类行为模型与优化模型之间常有断裂。",
+        "problem": "研究问题是：疏散规划中如何同时考虑人的决策行为和路径/容量优化。",
+        "motivation": "该文被纳入知识库，是因为它能补足 导向标识与空间导航证据 这一证据层。 它关联的主题包括 Review、evacuation modeling、routing optimization。 对当前研究的核心启发是：可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+        "methodSummary": "方法上系统回顾疏散建模与 routing optimization 文献，梳理 ABM、离散选择和优化方法。",
+        "resultSummary": "许多模型过度依赖最短路径或理想行为假设。 真实行为数据可用于改进人因导向的疏散模型。 Human behavior modelling and routing optimization are often disconnected; ABM is common but routing models often overemphasize shortest paths. Unity behavior logs can support discrete-choice, interpretable ML, and ABM beyond hypothesis testing.",
+        "transferableConcepts": [
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "行为指标需回到原文 Methods/Results 核对。",
+          "可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "与中等密度最高假设关系较弱，主要作为背景、方法或边界文献。"
+        ],
+        "strengths": [
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "不能作为导向标识密度或 EEG 指标的直接实验证据。",
+          "不要 use for direct EEG/signage claim.",
+          "Treating the evacuees as a homogeneous group can result in reducing the validity of the simulation stud- ies.",
+          "The following sections illustrate limitations and future suggestions of methodologies employed to model/predict human factors/ behavior, along with planning evacuation routing in large-scale emergencies.",
+          "Research gaps and future directions After reviewing various studies, this review paper finds some limitations in the area of study as follows."
+        ],
+        "writingAngles": [
+          "用于说明 Metro Rescue 的行为与 EEG 数据为什么能服务更真实的 evacuation modeling。",
+          "Supports why Metro Rescue behavioral data matters for human-aware routing.",
+          "方法上系统回顾疏散建模与 routing optimization 文献，梳理 ABM、离散选择和优化方法。",
+          "Systematic review of 100 large-scale evacuation planning papers.",
+          "Heuristics/meta- heuristics and traffic assignment techniques dominate evacuation routing planning, often aiming to identify the shortest evacuation path.",
+          "The occurrence of disasters has increased significantly globally in recent decades, with 7348 disasters being recorded between 2000 and 2019, marking a 73 % increase compared to 1980 – 1999 [2].",
+          "适合写入：Future work: simulation",
+          "适合写入：digital twin"
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：International Journal of Disaster Risk Reduction 110 (2024) 104638 Available online 25 June 2024 2212-4209/© 2024 The Authors.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -625,7 +842,7 @@
       ],
       "articleRole": "导向标识与空间导航证据",
       "evidenceType": "实验研究",
-      "qualityTier": "Grade A，High；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade A，High；核心相关：可优先支撑本研究的背景、方法或变量定义。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文直接讨论疏散标识如何影响个体疏散行为，是标识变量操作和行为结果定义的重要核心文献。",
       "researchQuestion": "研究问题是：标识位置、间距、连续性和设计属性如何影响路线遵从、速度、距离和疏散效率。",
       "researchPosition": "知识库定位：导向标识与空间导航证据。 该文直接讨论疏散标识如何影响个体疏散行为，是标识变量操作和行为结果定义的重要核心文献。 对本项目的核心价值：用于定义 Signature/密度条件的操作化变量和 behavioral outcome。",
@@ -705,6 +922,52 @@
         "导向标识与寻路理论",
         "VR 实验范式与生态效度"
       ],
+      "readingNote": {
+        "tldr": "该文直接讨论疏散标识如何影响个体疏散行为，是标识变量操作和行为结果定义的重要核心文献。",
+        "problem": "研究问题是：标识位置、间距、连续性和设计属性如何影响路线遵从、速度、距离和疏散效率。",
+        "motivation": "该文被纳入知识库，是因为它能补足 导向标识与空间导航证据 这一证据层。 它关联的主题包括 Evacuation signage、VR、behavior。 对当前研究的核心启发是：可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+        "methodSummary": "方法上围绕建筑疏散标识进行实验或行为评估，关注标识属性与个体行为输出之间的关系。",
+        "resultSummary": "标识配置会影响个体是否沿指示路线行动，也会影响速度、路径长度和疏散效率。 标识效应不是“越多越好”，需要结合位置、可见性、连续性和空间情境。 Signage placement, spacing, height, and continuity affect adherence, speed, travel distance, and evacuation efficiency. Signage is a system requiring continuity, clarity, conspicuity, consistency, correctness, and accessibility.",
+        "transferableConcepts": [
+          "标识可见性、标识方向、标识位置、标识连续性或信息密度",
+          "VR 场景、任务顺序、熟悉度和沉浸程度",
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "标识发现、标识确认、按标识行动",
+          "路径长度、回退、绕行或距离",
+          "可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "可用于把低/中/高密度转化为标识可见性、确认成本和路线决策事件的组内因素。"
+        ],
+        "strengths": [
+          "与 Metro Rescue 的研究对象或方法高度接近，可优先用于 Introduction、Methods 或 Discussion。",
+          "包含 VR 或虚拟环境范式，可帮助论证实验场景的可控性与生态效度边界。",
+          "直接关联导向标识、寻路或室内导航，可用于定义行为指标和任务机制。",
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "不能简化为标识数量越多效果越好。",
+          "不要 reduce results to “more signs always better”; effects differ by sign type and spatial condition.",
+          "Participants and experimental procedures A total of 185 volunteers were recruited from the School of Public Order at public order through social media and posters, which is comparable to or exceeds the sample sizes commonly used in virtual reality-based evacuation research.",
+          "Given the controlled exper - imental setting, this sample size is considered adequate for detecting meaningful differences in behavioural responses.",
+          "To enhance ecological validity, participants were explicitly instructed to respond to the virtual environment based on their naturalistic behavioural patterns and everyday decision-making processes."
+        ],
+        "writingAngles": [
+          "用于定义 Signature/密度条件的操作化变量和 behavioral outcome。",
+          "Core support for Signature manipulation fields: spacing, height, continuity, sign location, route adherence, speed, distance.",
+          "方法上围绕建筑疏散标识进行实验或行为评估，关注标识属性与个体行为输出之间的关系。",
+          "VR evacuation signage experiment; examines ground/wall signage placements, distances, heights, and exit sign positioning.",
+          "method was proposed for full visual coverage of evacuation routes with fewer signs [ 26 ], while a genetic algorithm-based optimization for subway platform signage showed improved guiding performance [ 27 ].",
+          "Collectively, these studies underscore the importance of signage-related features such as exit properties, including signage design, placement, and environmental factors in shaping evacuation outcomes.",
+          "However, Virtual Reality (VR) presents an opportunity to expand this knowledge by offering a controlled yet immersive environment to further explore evacuation decision-making in dynamic and realistic scenarios.",
+          "适合写入：Methods: Signature manipulation"
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：However, wall sign height was associated with improved evacuation efficiency, as higher placements led to shorter evacuation times.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -757,7 +1020,7 @@
       ],
       "articleRole": "导向标识与空间导航证据",
       "evidenceType": "实验研究",
-      "qualityTier": "Grade A，High；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade A，High；核心相关：可优先支撑本研究的背景、方法或变量定义。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文关注人是否遵从 emergency evacuation signage 的方向，是区分看见标识与服从标识的关键依据。",
       "researchQuestion": "研究问题是：人在地下或复杂疏散空间中是否会按照紧急标识箭头选择路线。",
       "researchPosition": "知识库定位：导向标识与空间导航证据。 该文关注人是否遵从 emergency evacuation signage 的方向，是区分看见标识与服从标识的关键依据。 对本项目的核心价值：支持建立 sign_visible/sign_readable/sign_compliance 三层指标。",
@@ -838,6 +1101,52 @@
         "导向标识与寻路理论",
         "VR 实验范式与生态效度"
       ],
+      "readingNote": {
+        "tldr": "该文关注人是否遵从 emergency evacuation signage 的方向，是区分看见标识与服从标识的关键依据。",
+        "problem": "研究问题是：人在地下或复杂疏散空间中是否会按照紧急标识箭头选择路线。",
+        "motivation": "该文被纳入知识库，是因为它能补足 导向标识与空间导航证据 这一证据层。 它关联的主题包括 Signage compliance、arrow、underground VR。 对当前研究的核心启发是：可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+        "methodSummary": "方法上使用地下/VR 疏散任务，对标识方向、路径选择和 compliance 进行比较。",
+        "resultSummary": "导向标识能影响选择，但 compliance 不是自动发生。 标识方向、空间几何和个人策略会共同决定是否遵从。 Compliance with evacuation signage depends on viewer-sign angle, arrow type, and sign placement; visible area ratio is useful. Seeing or entering readable range of a sign is not equivalent to understanding or complying with it.",
+        "transferableConcepts": [
+          "标识可见性、标识方向、标识位置、标识连续性或信息密度",
+          "VR 场景、任务顺序、熟悉度和沉浸程度",
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "标识发现、标识确认、按标识行动",
+          "路径长度、回退、绕行或距离",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "可用于把低/中/高密度转化为标识可见性、确认成本和路线决策事件的组内因素。"
+        ],
+        "strengths": [
+          "与 Metro Rescue 的研究对象或方法高度接近，可优先用于 Introduction、Methods 或 Discussion。",
+          "包含 VR 或虚拟环境范式，可帮助论证实验场景的可控性与生态效度边界。",
+          "直接关联导向标识、寻路或室内导航，可用于定义行为指标和任务机制。",
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "不要把 readable 直接等同于理解或遵从。",
+          "不要 assume readable distance alone predicts compliance.",
+          "sign_readable overinterpreted: Use perception-compliance model and sign_compliance_events table.",
+          "The experiments were primarily focused on investigating a Japanese popu - lation, although the results are evaluated to identify issues which could be generalizable to all populations.",
+          "In addition, participants were young students without visual impairments, thus future studies should inves - tigate the performance of older populations, possibly considering the impact of functional limitations affecting vision.",
+          "It is speculated that people with functional limitations affecting vision may be even more prone to difficulties interpreting the direction indicated by the emer - gency evacuation signage."
+        ],
+        "writingAngles": [
+          "支持建立 sign_visible/sign_readable/sign_compliance 三层指标。",
+          "Use to justify face/front-back, angle_to_sign, visible area/FoV, and arrow-direction variables.",
+          "方法上使用地下/VR 疏散任务，对标识方向、路径选择和 compliance 进行比较。",
+          "HMD VR underground square scenario; 60 participants; signage distance/angle/arrow type; confidence questionnaire.",
+          "Method Given the need to systematically manipulate the type/placement of the signage in use (along with the relative initial location of the viewers), it was decided to investigate this issue with the use of Virtual Reality (VR).",
+          "VR is a relatively novel methodological approach in evacuation research, which allows high experimental control at a rela - tively lower cost compared to traditional laboratory experiments (Kin - ateder et al., 2014b).",
+          "VR has been used for the investigation of way- finding and evacuation systems for several other application (Arias et al., 2019; Cosma et al., 2016; Duarte et al., 2010; Ronchi et al., 2019; Ronchi et al., 2015a; Tang et al., 2009).",
+          "适合写入：Methods: Signature manipulation"
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：Safety Science 138 (2021) 105210 Available online 27 February 2021 0925-7535/© 2021 The Authors.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -902,7 +1211,7 @@
       ],
       "articleRole": "导向标识与空间导航证据",
       "evidenceType": "方法或背景研究",
-      "qualityTier": "Grade B，Medium；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade B，Medium；中等相关：可用于方法类比、背景论证或边界讨论，但通常不是主结论的直接证据。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文将 BIM 与 AR 用于室内应急导航，适合作为动态导向和数字化导航的背景方法。",
       "researchQuestion": "研究问题是：AR/BIM 能否在建筑应急中提供实时或情境化导航辅助。",
       "researchPosition": "知识库定位：导向标识与空间导航证据。 该文将 BIM 与 AR 用于室内应急导航，适合作为动态导向和数字化导航的背景方法。 对本项目的核心价值：用于 future work，不宜放在当前静态标识密度主证据里。",
@@ -966,6 +1275,46 @@
         "AR experimental validity",
         "VR 实验范式与生态效度"
       ],
+      "readingNote": {
+        "tldr": "该文将 BIM 与 AR 用于室内应急导航，适合作为动态导向和数字化导航的背景方法。",
+        "problem": "研究问题是：AR/BIM 能否在建筑应急中提供实时或情境化导航辅助。",
+        "motivation": "该文被纳入知识库，是因为它能补足 导向标识与空间导航证据 这一证据层。 它关联的主题包括 AR navigation、evacuation guidance。 对当前研究的核心启发是：可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+        "methodSummary": "方法上结合 BIM 模型、路径规划和 AR 显示，对室内疏散导航进行系统设计。",
+        "resultSummary": "数字化导航能提高信息呈现的情境性，但与传统静态标识的认知过程不同。 它说明未来可把 Metro Rescue 数据接入 adaptive guidance 或 digital twin。 BIM-based AR navigation can be intuitive and reduce restart/navigation time in emergency contexts, though may reduce walking speed slightly.",
+        "transferableConcepts": [
+          "眼动注视、扫视、视觉搜索指标",
+          "寻路完成时间、错误、路径效率",
+          "视觉搜索、注视次数、确认成本",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "与中等密度最高假设关系较弱，主要作为背景、方法或边界文献。"
+        ],
+        "strengths": [
+          "直接关联导向标识、寻路或室内导航，可用于定义行为指标和任务机制。"
+        ],
+        "weaknesses": [
+          "AR 导航不是本研究的实验条件。",
+          "Not a static signage or EEG paper.",
+          "Sample photographs of the recruited participants are shown in Fig.",
+          "If different experiments are conducted on the same subject to compare the differences in the outcomes, then the sample is not considered independent.",
+          "A paired t -test is used when a sample obeys a normal distribution and is subjected to two conditions."
+        ],
+        "writingAngles": [
+          "用于 future work，不宜放在当前静态标识密度主证据里。",
+          "Future work/training application; supports XR emergency guidance.",
+          "方法上结合 BIM 模型、路径规划和 AR 显示，对室内疏散导航进行系统设计。",
+          "AR vs 2D navigation; BIM-based system; eye tracking, walking speed, survey.",
+          "(2021) tracked the sub - ject ’ s gaze using an eye-tracking system to determine the difference between outdoor AR and 2D navigation.",
+          "(2021) reproduced a fire situation by implementing a dark environment on a virtual reality (VR) screen, and Diao and Shih (2018)conducted a pathfinding experiment using AR navigation with the flashlight of a smart mobile in a dark environment.",
+          "- Lastly, the use of indoor AR navigation in conjunction with surveys, eye-tracking, and walking speed has not been extensively studied.",
+          "适合写入：Methods: VR"
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：Expert Systems With Applications 255 (2024) 124469 Available online 20 June 2024 0957-4174/© 2024 Published by Elsevier Ltd.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [],
         "mechanisms": [],
@@ -1003,7 +1352,7 @@
       ],
       "articleRole": "导向标识与空间导航证据",
       "evidenceType": "建模研究",
-      "qualityTier": "Grade A，High；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade A，High；核心相关：可优先支撑本研究的背景、方法或变量定义。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文用机器学习、离散选择和 agent-based simulation 建模建筑疏散，是把实验行为数据转入仿真的方法参考。",
       "researchQuestion": "研究问题是：如何用数据驱动方式把个体 exit/route choice 转化为可模拟的疏散行为模型。",
       "researchPosition": "知识库定位：导向标识与空间导航证据。 该文用机器学习、离散选择和 agent-based simulation 建模建筑疏散，是把实验行为数据转入仿真的方法参考。 对本项目的核心价值：用于后续把 Metro Rescue 的 trial features 汇总为 choice model 或 simulation input。",
@@ -1084,6 +1433,52 @@
         "VR 实验范式与生态效度",
         "建模与未来应用"
       ],
+      "readingNote": {
+        "tldr": "该文用机器学习、离散选择和 agent-based simulation 建模建筑疏散，是把实验行为数据转入仿真的方法参考。",
+        "problem": "研究问题是：如何用数据驱动方式把个体 exit/route choice 转化为可模拟的疏散行为模型。",
+        "motivation": "该文被纳入知识库，是因为它能补足 导向标识与空间导航证据 这一证据层。 它关联的主题包括 ABM、ML、discrete choice、metro VR。 对当前研究的核心启发是：可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+        "methodSummary": "方法上结合行为数据、离散选择模型、机器学习和 agent-based simulation。",
+        "resultSummary": "微观路线选择数据可以改进 agent 行为规则。 离散选择和可解释机器学习适合连接实验数据与疏散仿真。 VR metro-station evacuation data can train ML/discrete-choice models of directional choices and then feed ABM simulations. VR subway/metro studies support the ecological relevance of Metro Rescue and show pressure/signage/spatial knowledge matter.",
+        "transferableConcepts": [
+          "标识可见性、标识方向、标识位置、标识连续性或信息密度",
+          "VR 场景、任务顺序、熟悉度和沉浸程度",
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "路线选择、出口选择或 compliance",
+          "标识发现、标识确认、按标识行动",
+          "可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "可用于把低/中/高密度转化为标识可见性、确认成本和路线决策事件的组内因素。"
+        ],
+        "strengths": [
+          "与 Metro Rescue 的研究对象或方法高度接近，可优先用于 Introduction、Methods 或 Discussion。",
+          "包含 VR 或虚拟环境范式，可帮助论证实验场景的可控性与生态效度边界。",
+          "直接关联导向标识、寻路或室内导航，可用于定义行为指标和任务机制。",
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "不要把仿真输出当作本研究的被试实验结果。",
+          "不要 claim model transfers automatically to your Metro maps without validation.",
+          "Additionally, as behavioral data is considered crucial for the reliability and validity of evacuation simulations, more and more studies have modeled occu - pants ’ decision-making processes during evacuation using empirical data.",
+          "Section 6 presents the limitations of this study and proposes recommendations for future research.",
+          "While macroscopic approach-based models can evaluate some high-level evacuation performance (e.g., flow rate), the main limitation is the lack of flexibility to represent fine- grained interactions among occupants [1]."
+        ],
+        "writingAngles": [
+          "用于后续把 Metro Rescue 的 trial features 汇总为 choice model 或 simulation input。",
+          "Strong support for future route-choice model and decision-point feature extraction.",
+          "方法上结合行为数据、离散选择模型、机器学习和 agent-based simulation。",
+          "Virtual metro station fire evacuation; social/environmental factors; ML + discrete choice + agent-based simulation.",
+          "methodology used in this paper, including the data source, data analysis, development of evacuation simulations, and building design evaluation.",
+          "The experiments in a virtual metro station, how different social (crowd flow) and environmental (visual access and vertical movement) factors would affect individuals ’ wayfinding behavior was predicted using machine learning and discrete choice models.",
+          "The trained models were further employed in agent-based evacuation simulations to examine crowd evacuation performance under different building design scenarios.",
+          "适合写入：Rationale: virtual metro"
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：Advanced Engineering Informatics 55 (2023) 101827 Available online 29 November 2022 1474-0346/© 2022 Elsevier Ltd.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -1134,7 +1529,7 @@
       ],
       "articleRole": "导向标识与空间导航证据",
       "evidenceType": "综述",
-      "qualityTier": "Grade C，Low；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade C，Low；外围相关：只适合作为补充背景或未来工作。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文讨论情绪刺激对运动抑制的影响，和疏散场景中的反应抑制/迟疑有弱相关。",
       "researchQuestion": "研究问题是：情绪内容是否会改变反应抑制或运动准备。",
       "researchPosition": "知识库定位：导向标识与空间导航证据。 该文讨论情绪刺激对运动抑制的影响，和疏散场景中的反应抑制/迟疑有弱相关。 对本项目的核心价值：若讨论压力或情绪负荷，可作为远端理论补充。",
@@ -1198,6 +1593,47 @@
       "writingUse": [
         "Background or archive"
       ],
+      "readingNote": {
+        "tldr": "该文讨论情绪刺激对运动抑制的影响，和疏散场景中的反应抑制/迟疑有弱相关。",
+        "problem": "研究问题是：情绪内容是否会改变反应抑制或运动准备。",
+        "motivation": "该文被纳入知识库，是因为它能补足 导向标识与空间导航证据 这一证据层。 它关联的主题包括 Emotion、action inhibition。 对当前研究的核心启发是：可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+        "methodSummary": "方法上是情绪刺激与 motor inhibition 任务，不是疏散或标识实验。",
+        "resultSummary": "情绪线索可能影响行动抑制。 它只能作为 emergency affect 对行动控制影响的背景。 Emotion can influence reactive motor inhibition, but this is not evacuation signage-specific.",
+        "transferableConcepts": [
+          "标识可见性、标识方向、标识位置、标识连续性或信息密度",
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "标识发现、标识确认、按标识行动",
+          "可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "可用于把低/中/高密度转化为标识可见性、确认成本和路线决策事件的组内因素。"
+        ],
+        "strengths": [
+          "直接关联导向标识、寻路或室内导航，可用于定义行为指标和任务机制。"
+        ],
+        "weaknesses": [
+          "不能用于证明地铁标识密度对 EEG 或行为的影响。",
+          "不要 cite as central evacuation/wayfinding evidence.",
+          "Moreover, the au - thors argued that the detrimental effect that emotions exert on action control suggested by Verbruggen & De Houwer, 2007 should generalize across different categories of stimuli.",
+          "In a subsequent study, the same author (Send - erecka, 2018) aimed to test whether their previous findings can be generalized to emotional stimuli from a different sensory modality (e.g., auditory).",
+          "In summary, generalized in - hibition deficits do not necessarily occur in psychiatric disorders, but more specifically they would emerge in response to particular stimuli and/or emotional contexts."
+        ],
+        "writingAngles": [
+          "若讨论压力或情绪负荷，可作为远端理论补充。",
+          "Peripheral if discussing emotional arousal/action inhibition.",
+          "方法上是情绪刺激与 motor inhibition 任务，不是疏散或标识实验。",
+          "Review of emotional stimuli in stop-signal/action inhibition research.",
+          "Attention-deficit/hyperactivity disorder and behavioral inhibition: A meta-analytic review of the stop-signal paradigm.",
+          "Stop-signal inhibition disrupted by damage to right inferior frontal gyrus in humans.",
+          "ERP components associated with an indirect emotional stop signal task in healthy and depressed participants.",
+          "适合写入：Background or archive"
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：Behaviour Research and Therapy 146 (2021) 103963 Available online 9 September 2021 0005-7967/© 2021 Elsevier Ltd.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [],
         "mechanisms": [],
@@ -1232,7 +1668,7 @@
       ],
       "articleRole": "VR 实验范式与生态效度证据",
       "evidenceType": "综述",
-      "qualityTier": "Grade A，High；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade A，High；核心相关：可优先支撑本研究的背景、方法或变量定义。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该系统综述总结 VR evacuation drills 的研究特点、优势和限制，是 VR 实验合理性的总背景。",
       "researchQuestion": "研究问题是：VR 疏散演练在安全建成环境研究中有哪些应用、优势和方法限制。",
       "researchPosition": "知识库定位：VR 实验范式与生态效度证据。 该系统综述总结 VR evacuation drills 的研究特点、优势和限制，是 VR 实验合理性的总背景。 对本项目的核心价值：作为 VR 研究设计与局限讨论的框架文献。",
@@ -1306,6 +1742,48 @@
         "VR 实验范式与生态效度",
         "文献综述与理论框架"
       ],
+      "readingNote": {
+        "tldr": "该系统综述总结 VR evacuation drills 的研究特点、优势和限制，是 VR 实验合理性的总背景。",
+        "problem": "研究问题是：VR 疏散演练在安全建成环境研究中有哪些应用、优势和方法限制。",
+        "motivation": "该文被纳入知识库，是因为它能补足 VR 实验范式与生态效度证据 这一证据层。 它关联的主题包括 VR evacuation drill review。 对当前研究的核心启发是：可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+        "methodSummary": "方法上系统综述 VR evacuation drill 文献，整理场景、指标、设备和验证问题。",
+        "resultSummary": "VR 能安全地操控危险情境并记录行为，但生态效度、晕动、样本和迁移性需要报告。 它适合支撑 Methods 中的 VR 选择和 limitations。 VR/IVR evacuation drills are promising but need better realism, emergency-system modelling, inclusiveness, NPCs, and sensory effects. VR is acceptable for controlled emergency/wayfinding experiments but needs caveats about realism, immersion, sickness, and social interaction.",
+        "transferableConcepts": [
+          "VR 场景、任务顺序、熟悉度和沉浸程度",
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "行为指标需回到原文 Methods/Results 核对。",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "与中等密度最高假设关系较弱，主要作为背景、方法或边界文献。"
+        ],
+        "strengths": [
+          "与 Metro Rescue 的研究对象或方法高度接近，可优先用于 Introduction、Methods 或 Discussion。",
+          "包含 VR 或虚拟环境范式，可帮助论证实验场景的可控性与生态效度边界。",
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "综述不能替代当前实验结果。",
+          "Review-level evidence; not a direct test of your Signature hypothesis.",
+          "A further limitation is the inconsistent and/or partial data collection during the emergency physical drills, often due to the lack of systematic and objective data collection meth- ods (Kinateder et al., 2021b).",
+          "However, as of today, studies on VR/IVR environments for safety drills still show restrictions, limitations, and lacks.",
+          "To understand how the primary studies’ authors have dealt with the known limitations (if mentioned), we set the following question."
+        ],
+        "writingAngles": [
+          "作为 VR 研究设计与局限讨论的框架文献。",
+          "Use for VR evacuation research background and limitations.",
+          "方法上系统综述 VR evacuation drill 文献，整理场景、指标、设备和验证问题。",
+          "Systematic review of VR/IVR evacuation drills.",
+          "The results mainly show that VR and IVR drills almost entirely tackle a single hazard, considers occupants as sole system recipients, and lack systems formalization.",
+          "Among the most relevant outcomes, the paper analyzes the need for enhancing the modeling of emergency systems (e.g., signage, alarms), user inclusiveness (i.e., impaired individuals), devices, non-player characters, and additional effects (e.g., heat reproduction, sounds, and smells).",
+          "These measures can improve the level of realism experienced by the user of IVR simulators and pave the way to more reliable outcomes.",
+          "适合写入：Methods: VR"
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：Safety Science 163 (2023) 106141 Available online 17 March 2023 0925-7535/© 2023 The Authors.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -1356,7 +1834,7 @@
       ],
       "articleRole": "神经生理与认知负荷证据",
       "evidenceType": "实验研究",
-      "qualityTier": "Grade B，Medium；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade B，Medium；中等相关：可用于方法类比、背景论证或边界讨论，但通常不是主结论的直接证据。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文使用 wearable EEG 与 VR 识别施工危险感知，说明 EEG 可用于 VR 中的风险/注意状态分类。",
       "researchQuestion": "研究问题是：VR 危险识别任务中的 EEG 特征能否区分不同 hazard perception 状态。",
       "researchPosition": "知识库定位：神经生理与认知负荷证据。 该文使用 wearable EEG 与 VR 识别施工危险感知，说明 EEG 可用于 VR 中的风险/注意状态分类。 对本项目的核心价值：支持 EEG 预处理、特征提取和分类/回归分析思路。",
@@ -1429,6 +1907,50 @@
         "EEG/认知负荷指标依据",
         "VR 实验范式与生态效度"
       ],
+      "readingNote": {
+        "tldr": "该文使用 wearable EEG 与 VR 识别施工危险感知，说明 EEG 可用于 VR 中的风险/注意状态分类。",
+        "problem": "研究问题是：VR 危险识别任务中的 EEG 特征能否区分不同 hazard perception 状态。",
+        "motivation": "该文被纳入知识库，是因为它能补足 神经生理与认知负荷证据 这一证据层。 它关联的主题包括 Wearable EEG、VR、hazard perception。 对当前研究的核心启发是：可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+        "methodSummary": "方法上结合 VR hazard 场景、可穿戴 EEG 和分类模型。",
+        "resultSummary": "EEG 可为风险感知和注意状态提供神经生理指标。 这种范式与 Metro Rescue 的 EEG + VR 数据结构相近。 Wearable EEG in immersive VR can classify hazard perception; frontal channels and high-frequency bands may carry safety-relevant information. EEG can potentially index wayfinding uncertainty states, supporting event-locked EEG analysis around signs and decision points.",
+        "transferableConcepts": [
+          "VR 场景、任务顺序、熟悉度和沉浸程度",
+          "EEG 频谱特征、事件窗特征或分类特征",
+          "行为指标需回到原文 Methods/Results 核对。",
+          "可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "与中等密度最高假设关系较弱，主要作为背景、方法或边界文献。"
+        ],
+        "strengths": [
+          "包含 VR 或虚拟环境范式，可帮助论证实验场景的可控性与生态效度边界。",
+          "包含神经/生理测量，可用于说明认知负荷指标的理论或方法来源。",
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "施工危险识别不同于地铁导向标识，不可直接迁移结论。",
+          "不要 use beta/gamma findings as proof for your theta/alpha workload index.",
+          "EEG polluted by movement/head turns: Control MovementSpeed and HeadYawRate; exclude noisy epochs; report QC.",
+          "However, there remain limitations in the current knowledge base to attain the ultimate goal of ubiquitous hazard identification.",
+          "Advanced hazard identification based on workers ’ responses To address limitations in manual human inspection, research at - tempts have been made by employing advanced technologies such as computer vision, building information modeling (BIM), and wearable sensors [33 – 35].",
+          "Despite their contributions, one of the critical limitations of this approach is that physical change does not occur in most people."
+        ],
+        "writingAngles": [
+          "支持 EEG 预处理、特征提取和分类/回归分析思路。",
+          "Supports feasibility of VR + wearable EEG in safety tasks.",
+          "方法上结合 VR hazard 场景、可穿戴 EEG 和分类模型。",
+          "Construction hazard recognition in IVR; wearable EEG; classifier; AF3/F3/F4 and beta/gamma noted.",
+          "Among them, electroencephalogram (EEG) holds unique potential since it shows immediate abnormal responses when a hazard is perceived.",
+          "In this context, this study investigates the feasibility of identifying construction hazards by developing an EEG classifier based on the experiments conducted in an immersive virtual reality (VR) environment.",
+          "experiments conducted in an immersive virtual reality (VR) environment.",
+          "适合写入：Theory"
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：Automation in Construction 132 (2021) 103975 Available online 29 September 2021 0926-5805/© 2021 Elsevier B.V.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -1486,7 +2008,7 @@
       ],
       "articleRole": "神经生理与认知负荷证据",
       "evidenceType": "实验研究",
-      "qualityTier": "Grade A，High；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade A，High；核心相关：可优先支撑本研究的背景、方法或变量定义。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "CogDNA 关注基于认知状态的应急室内导航辅助，是连接认知负荷、导航帮助和自适应系统的关键文献。",
       "researchQuestion": "研究问题是：能否通过认知状态或负荷指标来触发更合适的室内 wayfinding assistance。",
       "researchPosition": "知识库定位：神经生理与认知负荷证据。 CogDNA 关注基于认知状态的应急室内导航辅助，是连接认知负荷、导航帮助和自适应系统的关键文献。 对本项目的核心价值：用于论证认知负荷不是标识数量的线性函数，而与可解释性和决策状态有关。",
@@ -1559,6 +2081,50 @@
         "EEG/认知负荷指标依据",
         "导向标识与寻路理论"
       ],
+      "readingNote": {
+        "tldr": "CogDNA 关注基于认知状态的应急室内导航辅助，是连接认知负荷、导航帮助和自适应系统的关键文献。",
+        "problem": "研究问题是：能否通过认知状态或负荷指标来触发更合适的室内 wayfinding assistance。",
+        "motivation": "该文被纳入知识库，是因为它能补足 神经生理与认知负荷证据 这一证据层。 它关联的主题包括 Cognitive load、adaptive navigation、pupil-gaze。 对当前研究的核心启发是：可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+        "methodSummary": "方法上是 proof-of-concept 系统，结合导航任务、认知负荷线索和辅助策略。",
+        "resultSummary": "导航辅助的有效性应考虑人的当前认知状态。 这支持把中等密度解释为信息不足与信息过载之间的不确定区间。 Emergency wayfinding systems can create cognitive overload when information is excessive; adaptive guidance can reduce workload/performance cost. Metro Rescue should be framed as a signage-information and uncertainty-resolution study, not a simple “which sign set is best” comparison.",
+        "transferableConcepts": [
+          "眼动注视、扫视、视觉搜索指标",
+          "pupil / cognitive load proxy",
+          "寻路完成时间、错误、路径效率",
+          "可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "可用于解释中等密度可能因信息不充分但又需要判断而提高 uncertainty/cognitive load。",
+          "可用于把低/中/高密度转化为标识可见性、确认成本和路线决策事件的组内因素。"
+        ],
+        "strengths": [
+          "与 Metro Rescue 的研究对象或方法高度接近，可优先用于 Introduction、Methods 或 Discussion。",
+          "直接关联导向标识、寻路或室内导航，可用于定义行为指标和任务机制。",
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "不能把 proof-of-concept 当成已验证的地铁标识密度结论。",
+          "It uses pupil/gaze, not EEG; cite as cognitive/wayfinding mechanism, not EEG evidence.",
+          "However, both the generalized UI design principles and interactive wayfinding UX have their limitations in controlling cognitive overload due to excessive information or ineffective UI in wayfinding.",
+          "As for the generalized UI design method, the optimized and recommended prin - ciples are usually based on the average pattern learned from a large population in typical scenarios.",
+          "The Sample Entropy (SampEn Index) was used in this study to quantify gaze movement entropy as an indicator of the extraneous cognitive load (Richman and Moorman 2000)."
+        ],
+        "writingAngles": [
+          "用于论证认知负荷不是标识数量的线性函数，而与可解释性和决策状态有关。",
+          "Core theory for information overload, adaptive information, and cognitive-load mechanism.",
+          "Middle-peak EEG load",
+          "方法上是 proof-of-concept 系统，结合导航任务、认知负荷线索和辅助策略。",
+          "CogDNA system; pupillometry/gaze-based cognitive load/fatigue; firefighter wayfinding experiment.",
+          "Especially for emergency wayfinding where responders need to process a large amount of information while performing search and hazard identifi - cation tasks, an overdesigned wayfinding user interface and excessive information can cause confusion or disorientation among responders.",
+          "This study proposes and tests a real-time cognition-driven navigation assistive system for emergency wayfinding called CogDNA.",
+          "Then the elements and formats of the primary wayfinding information are adjusted based on the individualized cognitive load models and the mental fatigue status measured by the pupillometer data including gaze movement entropy and blink rate."
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：Safety Science 162 (2023) 106100 Available online 20 February 2023 0925-7535/© 2023 Elsevier Ltd.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -1638,7 +2204,7 @@
       ],
       "articleRole": "VR 实验范式与生态效度证据",
       "evidenceType": "实验研究",
-      "qualityTier": "Grade B，Medium；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade B，Medium；中等相关：可用于方法类比、背景论证或边界讨论，但通常不是主结论的直接证据。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文比较 immersive 与 non-immersive VR 中的火灾疏散决策，用于说明沉浸程度会影响 exit choice。",
       "researchQuestion": "研究问题是：不同 VR 沉浸程度是否改变疏散决策和行为。",
       "researchPosition": "知识库定位：VR 实验范式与生态效度证据。 该文比较 immersive 与 non-immersive VR 中的火灾疏散决策，用于说明沉浸程度会影响 exit choice。 对本项目的核心价值：用于 Methods validity 和 limitations。",
@@ -1715,6 +2281,48 @@
         "VR 实验范式与生态效度",
         "建模与未来应用"
       ],
+      "readingNote": {
+        "tldr": "该文比较 immersive 与 non-immersive VR 中的火灾疏散决策，用于说明沉浸程度会影响 exit choice。",
+        "problem": "研究问题是：不同 VR 沉浸程度是否改变疏散决策和行为。",
+        "motivation": "该文被纳入知识库，是因为它能补足 VR 实验范式与生态效度证据 这一证据层。 它关联的主题包括 Immersive vs non-immersive VR、exit choice。 对当前研究的核心启发是：可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+        "methodSummary": "方法上比较沉浸式与非沉浸式虚拟环境下的火灾疏散选择。",
+        "resultSummary": "沉浸性会影响场景临场感和决策反应。 这支持在论文中明确报告设备、视角、交互方式和场景沉浸程度。 Immersive and non-immersive VR may yield similar overall decisions but immersion changes sensitivity to factors like distance, smoke, familiarity, and social influence. VR is acceptable for controlled emergency/wayfinding experiments but needs caveats about realism, immersion, sickness, and social interaction.",
+        "transferableConcepts": [
+          "VR 场景、任务顺序、熟悉度和沉浸程度",
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "路线选择、出口选择或 compliance",
+          "路径长度、回退、绕行或距离",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "与中等密度最高假设关系较弱，主要作为背景、方法或边界文献。"
+        ],
+        "strengths": [
+          "包含 VR 或虚拟环境范式，可帮助论证实验场景的可控性与生态效度边界。",
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "不直接支持标识密度主效应。",
+          "不要 pool desktop and HMD data without device/platform metadata.",
+          "By elucidating the relative strengths and limitations of these VR formats, this research seeks to enhance the methodological rigor of evacuation studies and contribute to the development of more accurate and comprehensive emergency preparedness strategies.",
+          "This spatial limitation has spurred innovations to navi - gate larger digital spaces without physical constraints [ 57 ].",
+          "This limitation is particularly evident in research simulating emergency situations [ 19 , 63 ], where the stakes are high and the consequences of design choices can be critical."
+        ],
+        "writingAngles": [
+          "用于 Methods validity 和 limitations。",
+          "If comparing HMD vs desktop preview or discussing immersion limitations.",
+          "方法上比较沉浸式与非沉浸式虚拟环境下的火灾疏散选择。",
+          "VR fire-evacuation exit-choice comparison; immersive vs non-immersive conditions.",
+          "The use of immersive virtual reality (VR) and augmented reality (AR) has grown in fire evacuation research.",
+          "Specifically, VR environ - ments allow for the safe simulation of conditions, such as smoke or the presence of people with impairments [ 14 – 16 ].",
+          "Preliminary research suggests that immersive VR experiment was con - ducted in which participants navigated a room with three exits under varied conditions (e.g., social influence, smoke presence, exit distance, exit familiarity).",
+          "适合写入：Analysis: decision-point and route-choice modeling"
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：Comparative analysis of fire evacuation decision-making in immersive vs.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -1759,7 +2367,7 @@
       ],
       "articleRole": "VR 实验范式与生态效度证据",
       "evidenceType": "实验研究",
-      "qualityTier": "Grade B，Medium；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade B，Medium；中等相关：可用于方法类比、背景论证或边界讨论，但通常不是主结论的直接证据。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文讨论训练和紧急事件类型如何影响疏散行为，适合控制熟悉度、训练和任务顺序。",
       "researchQuestion": "研究问题是：不同训练经验和 emergency type 是否改变人们的疏散行为。",
       "researchPosition": "知识库定位：VR 实验范式与生态效度证据。 该文讨论训练和紧急事件类型如何影响疏散行为，适合控制熟悉度、训练和任务顺序。 对本项目的核心价值：用于分析模型中的 TrialOrder/familiarity 控制项。",
@@ -1823,6 +2431,46 @@
         "AR experimental validity",
         "VR 实验范式与生态效度"
       ],
+      "readingNote": {
+        "tldr": "该文讨论训练和紧急事件类型如何影响疏散行为，适合控制熟悉度、训练和任务顺序。",
+        "problem": "研究问题是：不同训练经验和 emergency type 是否改变人们的疏散行为。",
+        "motivation": "该文被纳入知识库，是因为它能补足 VR 实验范式与生态效度证据 这一证据层。 它关联的主题包括 Training、emergency type、VR。 对当前研究的核心启发是：可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+        "methodSummary": "方法上比较训练状态、事件类型与疏散选择或准备行为。",
+        "resultSummary": "训练和事件解释框架会影响行动准备、路线选择和反应时间。 实验中 trial order、熟悉度和说明方式需要控制。 Training and emergency type affect evacuation decisions; training improves preparedness and changes reliance on recommendations.",
+        "transferableConcepts": [
+          "VR 场景、任务顺序、熟悉度和沉浸程度",
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "行为指标需回到原文 Methods/Results 核对。",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "与中等密度最高假设关系较弱，主要作为背景、方法或边界文献。"
+        ],
+        "strengths": [
+          "包含 VR 或虚拟环境范式，可帮助论证实验场景的可控性与生态效度边界。"
+        ],
+        "weaknesses": [
+          "不能用于直接解释 EEG 密度效应。",
+          "Not directly about signage information density.",
+          "Some of the limitations in prior studies include unrealistic user experience (Li et al., 2017), initial differences between groups (Lovreglio et al., 2021), biased sample (Ford & Frei, 2016), and lack of evacuation measurements (Peterson et al., 2015).",
+          "Even knowledge tests (written or oral) have limitations because they cannot evoke a participant's emotional response.",
+          "Although a study tested the impact of video-based training on people's safety salience, safety knowledge, and self-efficacy, the sam- ple collected in the experiment was significantly biased to a single gender, that is, females, which limited the generalizability of the con- clusions (Ford & Frei, 2016)."
+        ],
+        "writingAngles": [
+          "用于分析模型中的 TrialOrder/familiarity 控制项。",
+          "Background for emergency preparedness/training and emergency type effects.",
+          "方法上比较训练状态、事件类型与疏散选择或准备行为。",
+          "Virtual office fire/active shooter experiment; 108 participants; video-based training.",
+          "Methods: We simulated fire and active shooter emergencies in a virtual office building and conducted evacuation experiments to examine participants' emergency responses using both objective and subjective metrics.",
+          "适合写入：Methods: VR",
+          "适合写入：AR experimental validity",
+          "适合写入：VR 实验范式与生态效度"
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：A R T I C L E Be prepared: How training and emergency type affect evacuation behaviour Ruying Liu 1 | Runhe Zhu 2 | Burcin Becerik-Gerber 1 | Gale M.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [],
         "mechanisms": [],
@@ -1858,7 +2506,7 @@
       ],
       "articleRole": "VR 实验范式与生态效度证据",
       "evidenceType": "建模研究",
-      "qualityTier": "Grade C，Low；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade C，Low；外围相关：只适合作为补充背景或未来工作。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文介绍 crowdsourced VR 在行人与疏散动力学研究中的方法潜力和数据质量问题。",
       "researchQuestion": "研究问题是：在线或众包 VR 能否为 pedestrian dynamics 提供可扩展实验数据。",
       "researchPosition": "知识库定位：VR 实验范式与生态效度证据。 该文介绍 crowdsourced VR 在行人与疏散动力学研究中的方法潜力和数据质量问题。 对本项目的核心价值：作为数据质量、样本控制和 VR 实验规范的参考。",
@@ -1931,6 +2579,46 @@
         "AR experimental validity",
         "VR 实验范式与生态效度"
       ],
+      "readingNote": {
+        "tldr": "该文介绍 crowdsourced VR 在行人与疏散动力学研究中的方法潜力和数据质量问题。",
+        "problem": "研究问题是：在线或众包 VR 能否为 pedestrian dynamics 提供可扩展实验数据。",
+        "motivation": "该文被纳入知识库，是因为它能补足 VR 实验范式与生态效度证据 这一证据层。 它关联的主题包括 Crowdsourced VR、PED methodology。 对当前研究的核心启发是：可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+        "methodSummary": "方法上是 crowdsourced VR 实验路线，关注远程数据收集、质量控制和可重复性。",
+        "resultSummary": "大样本 VR 数据有扩展性，但设备差异和控制不足会影响质量。 它提醒本研究需要明确 QC 和排除规则。 Crowdsourced VR offers a workflow for online pedestrian/evacuation dynamics experiments.",
+        "transferableConcepts": [
+          "VR 场景、任务顺序、熟悉度和沉浸程度",
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "行为指标需回到原文 Methods/Results 核对。",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "与中等密度最高假设关系较弱，主要作为背景、方法或边界文献。"
+        ],
+        "strengths": [
+          "包含 VR 或虚拟环境范式，可帮助论证实验场景的可控性与生态效度边界。"
+        ],
+        "weaknesses": [
+          "当前研究不是众包 VR，不要直接套用其外部效度。",
+          "Not central to current lab EEG design.",
+          "The first of its kind, the proposed approach enables researchers to access participants in shared immersive virtual scenarios across barriers of geography, culture, age, social identity, and so on, and yield representative and generalizable behavior data for PED research.",
+          "However, most of the prior VR experiments were conducted within laboratory settings, which have presented several major limitations.",
+          "Such biases can affect the sample representativeness and thus compromise the external validity of the findings."
+        ],
+        "writingAngles": [
+          "作为数据质量、样本控制和 VR 实验规范的参考。",
+          "Future work if expanding to remote/multi-participant VR.",
+          "方法上是 crowdsourced VR 实验路线，关注远程数据收集、质量控制和可重复性。",
+          "Process model and CrowdVR platform.",
+          "methodological guide for conducting CVR experiments.",
+          "The process model integrates the principles and actionable recommendations for all stages of the CVR experimental workflow, including experimental planning, crowdsourced participant recruitment, remote training and experiment, and crowdsourced data collection.",
+          "Then, a CVR digital platform named Crowdsourced Virtual-reality Research (CrowdVR) is developed and evaluated following the design science research methodology.",
+          "适合写入：Methods: VR"
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：Advanced Engineering Informatics 65 (2025) 103236 Available online 12 March 2025 1474-0346/© 2025 Elsevier Ltd.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [],
         "mechanisms": [],
@@ -1966,7 +2654,7 @@
       ],
       "articleRole": "导向标识与空间导航证据",
       "evidenceType": "综述",
-      "qualityTier": "Grade B，Medium；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade B，Medium；中等相关：可用于方法类比、背景论证或边界讨论，但通常不是主结论的直接证据。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该综述讨论建筑与 occupant digital twin 在应急疏散中的框架和技术，用于 future work。",
       "researchQuestion": "研究问题是：数字孪生如何整合建筑、人员行为、风险和导航策略用于应急疏散。",
       "researchPosition": "知识库定位：导向标识与空间导航证据。 该综述讨论建筑与 occupant digital twin 在应急疏散中的框架和技术，用于 future work。 对本项目的核心价值：用于讨论未来将实验数据接入 digital twin 或动态标识系统。",
@@ -2041,6 +2729,46 @@
         "建模与未来应用",
         "文献综述与理论框架"
       ],
+      "readingNote": {
+        "tldr": "该综述讨论建筑与 occupant digital twin 在应急疏散中的框架和技术，用于 future work。",
+        "problem": "研究问题是：数字孪生如何整合建筑、人员行为、风险和导航策略用于应急疏散。",
+        "motivation": "该文被纳入知识库，是因为它能补足 导向标识与空间导航证据 这一证据层。 它关联的主题包括 Digital twin、evacuation review。 对当前研究的核心启发是：可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+        "methodSummary": "方法上综述 digital twin 技术、应用和趋势。",
+        "resultSummary": "occupant behavior 数据是 digital twin 应急决策的重要输入。 Metro Rescue 的行为和 EEG 特征可作为未来动态疏散系统的数据层。 Digital twin evacuation frameworks integrate building, occupants, sensing, updating, simulation, and decision-making loops.",
+        "transferableConcepts": [
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "行为指标需回到原文 Methods/Results 核对。",
+          "可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "与中等密度最高假设关系较弱，主要作为背景、方法或边界文献。"
+        ],
+        "strengths": [
+          "主要作为背景文献使用，写作时应避免把类比证据写成直接实验结果。"
+        ],
+        "weaknesses": [
+          "不要把框架综述写成已完成的系统实现。",
+          "不要 present Metro Rescue as a full digital twin unless real-time loop exists.",
+          "While evacuation experiments more accurately reflect the complexity and diversity of evacuation, they are time-consuming, potentially dangerous, and have other limitations.",
+          "However, tradi - tional methods face significant limitations.",
+          "These limitations have led researchers to explore more advanced * Corresponding author at: Department of Civil Engineering, Tsinghua University, China."
+        ],
+        "writingAngles": [
+          "用于讨论未来将实验数据接入 digital twin 或动态标识系统。",
+          "Future-work framing: Metro Rescue data can calibrate occupant digital twins.",
+          "方法上综述 digital twin 技术、应用和趋势。",
+          "Review/framework; building and occupant digital twins.",
+          "The current research has made significant progresses in areas such as basic virtual modeling, one-way data mapping, and preliminary bidirectional interaction.",
+          "However, emergencies can lead to chaos, blockages, and even stampedes, experiments and virtual simulation.",
+          "Virtual simulation uses computer technology to simulate and analyze the evacuation process based on specific theories and as - sumptions.",
+          "适合写入：Future work: simulation"
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：However, enhancing evacuation efficiency necessitates detailed studies of building characteristics and human behaviors.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [],
         "mechanisms": [],
@@ -2076,7 +2804,7 @@
       ],
       "articleRole": "导向标识与空间导航证据",
       "evidenceType": "综述",
-      "qualityTier": "Grade B，Medium；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade B，Medium；中等相关：可用于方法类比、背景论证或边界讨论，但通常不是主结论的直接证据。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该条与 digital twin 综述主题相同，作为数字孪生和 occupant behavior coupling 的补充来源。",
       "researchQuestion": "研究问题是：如何在应急疏散中把建筑状态、人员状态和导航策略耦合到数字孪生框架。",
       "researchPosition": "知识库定位：导向标识与空间导航证据。 该条与 digital twin 综述主题相同，作为数字孪生和 occupant behavior coupling 的补充来源。 对本项目的核心价值：用于 future work，不进入当前主结果链条。",
@@ -2151,6 +2879,46 @@
         "建模与未来应用",
         "文献综述与理论框架"
       ],
+      "readingNote": {
+        "tldr": "该条与 digital twin 综述主题相同，作为数字孪生和 occupant behavior coupling 的补充来源。",
+        "problem": "研究问题是：如何在应急疏散中把建筑状态、人员状态和导航策略耦合到数字孪生框架。",
+        "motivation": "该文被纳入知识库，是因为它能补足 导向标识与空间导航证据 这一证据层。 它关联的主题包括 Digital twin、evacuation review。 对当前研究的核心启发是：可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+        "methodSummary": "方法上是综述与框架梳理。",
+        "resultSummary": "动态环境和人员状态需要持续更新。 静态路径优化不足以解释真实疏散。 Duplicate/near-duplicate digital twin review; same use as S017.",
+        "transferableConcepts": [
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "行为指标需回到原文 Methods/Results 核对。",
+          "可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "与中等密度最高假设关系较弱，主要作为背景、方法或边界文献。"
+        ],
+        "strengths": [
+          "主要作为背景文献使用，写作时应避免把类比证据写成直接实验结果。"
+        ],
+        "weaknesses": [
+          "与 S017 可能重复，正式写作时应去重引用。",
+          "不要 count as independent evidence if duplicate.",
+          "While evacuation experiments more accurately reflect the complexity and diversity of evacuation, they are time-consuming, potentially dangerous, and have other limitations.",
+          "However, tradi - tional methods face significant limitations.",
+          "These limitations have led researchers to explore more advanced * Corresponding author at: Department of Civil Engineering, Tsinghua University, China."
+        ],
+        "writingAngles": [
+          "用于 future work，不进入当前主结果链条。",
+          "Keep one duplicate in bibliography; mark duplicate to avoid double counting.",
+          "方法上是综述与框架梳理。",
+          "Review/framework duplicate.",
+          "The current research has made significant progresses in areas such as basic virtual modeling, one-way data mapping, and preliminary bidirectional interaction.",
+          "However, emergencies can lead to chaos, blockages, and even stampedes, experiments and virtual simulation.",
+          "Virtual simulation uses computer technology to simulate and analyze the evacuation process based on specific theories and as - sumptions.",
+          "适合写入：Future work: simulation"
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：However, enhancing evacuation efficiency necessitates detailed studies of building characteristics and human behaviors.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [],
         "mechanisms": [],
@@ -2186,7 +2954,7 @@
       ],
       "articleRole": "导向标识与空间导航证据",
       "evidenceType": "方法或背景研究",
-      "qualityTier": "Grade B，Medium；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade B，Medium；中等相关：可用于方法类比、背景论证或边界讨论，但通常不是主结论的直接证据。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文提出 rooted forest 方向设置方法，目标是自动化动态出口标识的方向配置。",
       "researchQuestion": "研究问题是：如何根据网络结构和疏散目标自动设置动态导向标识方向。",
       "researchPosition": "知识库定位：导向标识与空间导航证据。 该文提出 rooted forest 方向设置方法，目标是自动化动态出口标识的方向配置。 对本项目的核心价值：用于 future work 或 dynamic signage discussion。",
@@ -2258,6 +3026,47 @@
         "导向标识与寻路理论",
         "建模与未来应用"
       ],
+      "readingNote": {
+        "tldr": "该文提出 rooted forest 方向设置方法，目标是自动化动态出口标识的方向配置。",
+        "problem": "研究问题是：如何根据网络结构和疏散目标自动设置动态导向标识方向。",
+        "motivation": "该文被纳入知识库，是因为它能补足 导向标识与空间导航证据 这一证据层。 它关联的主题包括 Dynamic exit signs、optimization。 对当前研究的核心启发是：可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+        "methodSummary": "方法上是图/网络优化算法，用于 dynamic exit sign direction setting。",
+        "resultSummary": "动态标识需要以全局路径结构为基础。 这说明静态标识密度只是导向系统设计的一部分。 Dynamic exit signs can be optimized using directed rooted forest methods for rapid feasible direction setting. Static signs can fail under dynamic hazards; dynamic/intelligent signs are a future extension, not the current project claim.",
+        "transferableConcepts": [
+          "标识可见性、标识方向、标识位置、标识连续性或信息密度",
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "标识发现、标识确认、按标识行动",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "可用于把低/中/高密度转化为标识可见性、确认成本和路线决策事件的组内因素。"
+        ],
+        "strengths": [
+          "直接关联导向标识、寻路或室内导航，可用于定义行为指标和任务机制。",
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "算法优化文献不能证明被试认知负荷。",
+          "Not a human-subject behavioral result.",
+          "Literature review As extensive research has revealed the limitation of fixed directional instructions during an emergency evacuation, the dynamic exit signs are regarded as a crucial part of an intelligent evacuation guidance system.",
+          "Extensive controlled experiments and field observations have been conducted to calibrate model parameters and devise new rules to address inherent limitations such as jumping, overlapping, and rebounding [43].",
+          "The criteria of validity in this setting method and the resulting constraints are described herein below."
+        ],
+        "writingAngles": [
+          "用于 future work 或 dynamic signage discussion。",
+          "Future dynamic-sign extension; method background.",
+          "方法上是图/网络优化算法，用于 dynamic exit sign direction setting。",
+          "Optimization method for automated dynamic exit signs.",
+          "method: A step toward automated dynamic exit signs Botao Zhang a , Jacqueline TY.",
+          "Through testing, the method demonstrates a significant reduction in the number of simulation executions and maintains a fast convergence rate when the problem size multiplies.",
+          "Among those studies, one of the most practical and efficient measures is to make better use of exit signs, which can shorten evacuees ’ decision-making time and increase their moving speed [2,3].",
+          "适合写入：Methods: Signature manipulation"
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：Directed rooted forest based direction setting method: A step toward automated dynamic exit signs Botao Zhang a , Jacqueline TY.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -2302,7 +3111,7 @@
       ],
       "articleRole": "神经生理与认知负荷证据",
       "evidenceType": "实验研究",
-      "qualityTier": "Grade A，High；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade A，High；核心相关：可优先支撑本研究的背景、方法或变量定义。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文在虚拟环境中操控 attention shift intervention，和地铁场景中的提示方式、音频/视觉切换高度相关。",
       "researchQuestion": "研究问题是：注意转移干预是否会改变疏散行为和信息搜索过程。",
       "researchPosition": "知识库定位：神经生理与认知负荷证据。 该文在虚拟环境中操控 attention shift intervention，和地铁场景中的提示方式、音频/视觉切换高度相关。 对本项目的核心价值：用于定义 audio overlap、attention cue 和 marker event window。",
@@ -2384,6 +3193,51 @@
         "EEG/认知负荷指标依据",
         "VR 实验范式与生态效度"
       ],
+      "readingNote": {
+        "tldr": "该文在虚拟环境中操控 attention shift intervention，和地铁场景中的提示方式、音频/视觉切换高度相关。",
+        "problem": "研究问题是：注意转移干预是否会改变疏散行为和信息搜索过程。",
+        "motivation": "该文被纳入知识库，是因为它能补足 神经生理与认知负荷证据 这一证据层。 它关联的主题包括 Attention shift、metro VR、alarm modality。 对当前研究的核心启发是：可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+        "methodSummary": "方法上使用 VR metro 或类似虚拟疏散场景，比较不同提示/干预方式下的行为。",
+        "resultSummary": "注意引导会改变信息搜索、启动和路线决策。 音频或提示可能与标识阅读时间窗重叠，成为重要协变量。 Visual attention-shift interventions in VR metro evacuation can outperform auditory cues for keeping attention and reducing pre-evacuation re-engagement. Audio should be treated as a modality/attention factor that may change later visual signage processing, not merely noise.",
+        "transferableConcepts": [
+          "信息模态、注意转移、提示时窗",
+          "VR 场景、任务顺序、熟悉度和沉浸程度",
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "视觉搜索、注视次数、确认成本",
+          "可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "可用于把低/中/高密度转化为标识可见性、确认成本和路线决策事件的组内因素。"
+        ],
+        "strengths": [
+          "与 Metro Rescue 的研究对象或方法高度接近，可优先用于 Introduction、Methods 或 Discussion。",
+          "包含 VR 或虚拟环境范式，可帮助论证实验场景的可控性与生态效度边界。",
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "如果当前实验没有同样干预，不应说复现其效果。",
+          "不要 claim your audio has same effect unless modality/content match.",
+          "Audio confounds visual decision epochs: Add audio_overlap_2s flag and sensitivity exclusion.",
+          "To address these limitations, various alternative research methods have been employed, including case studies, questionnaires and interviews, and animal experiments ( Bj ø rnsen et al., 2023 ; Hatori et al., 2023 ; Liu and Lo, 2011 ; Zhao et al., 2009 ).",
+          "In light of the significant engagement with handheld devices during critical emergency situations and the potential limitations of auditory alarms, the following hypothesis was formulated to test the effectiveness of visual attention shift interventions on evacuation responsiveness: Hypothesis 1 .",
+          "This approach is essential for maintaining the internal validity of the study, ensuring that Fig."
+        ],
+        "writingAngles": [
+          "用于定义 audio overlap、attention cue 和 marker event window。",
+          "Core support for treating Audio as attention/modality factor, not mere nuisance.",
+          "Model sign perception separately from compliance.",
+          "Treat Audio as cognitive/modality factor and test sensitivity windows.",
+          "Audio/modality sensitivity",
+          "方法上使用 VR metro 或类似虚拟疏散场景，比较不同提示/干预方式下的行为。",
+          "VR metro station; auditory broadcasts vs visual text messages on handheld devices.",
+          "Despite their utility, each of these methods presents significant drawbacks."
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：Developments in the Built Environment 21 (2025) 100642 Available online 8 March 2025 2666-1659/© 2025 The Authors.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -2484,7 +3338,7 @@
       ],
       "articleRole": "VR 实验范式与生态效度证据",
       "evidenceType": "建模研究",
-      "qualityTier": "Grade A，High；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade A，High；核心相关：可优先支撑本研究的背景、方法或变量定义。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文结合沉浸式 VR 与离散选择模型研究 exit choice，是行为建模的高相关方法文献。",
       "researchQuestion": "研究问题是：建成环境中的出口选择如何用 IVR 行为数据和 discrete choice model 解释。",
       "researchPosition": "知识库定位：VR 实验范式与生态效度证据。 该文结合沉浸式 VR 与离散选择模型研究 exit choice，是行为建模的高相关方法文献。 对本项目的核心价值：用于行为结果建模，尤其是 mixed/discrete choice 的方法依据。",
@@ -2563,6 +3417,49 @@
         "VR 实验范式与生态效度",
         "建模与未来应用"
       ],
+      "readingNote": {
+        "tldr": "该文结合沉浸式 VR 与离散选择模型研究 exit choice，是行为建模的高相关方法文献。",
+        "problem": "研究问题是：建成环境中的出口选择如何用 IVR 行为数据和 discrete choice model 解释。",
+        "motivation": "该文被纳入知识库，是因为它能补足 VR 实验范式与生态效度证据 这一证据层。 它关联的主题包括 Exit choice、discrete choice、IVR。 对当前研究的核心启发是：可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+        "methodSummary": "方法上收集 IVR exit choice 数据，并用离散选择模型估计环境和个体因素影响。",
+        "resultSummary": "出口选择可被空间属性、信息线索和个体因素共同解释。 该思路适合本研究从 trial-level features 建立 route choice 或 compliance model。 Exit choice in IVR is multi-attribute: familiarity, occupancy, distance, and smoke visibility trade off rather than one factor dominating. Decision points should be coded by branch count, angular deviation, visual similarity/openness, and landmark salience.",
+        "transferableConcepts": [
+          "VR 场景、任务顺序、熟悉度和沉浸程度",
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "路线选择、出口选择或 compliance",
+          "路径长度、回退、绕行或距离",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "与中等密度最高假设关系较弱，主要作为背景、方法或边界文献。"
+        ],
+        "strengths": [
+          "与 Metro Rescue 的研究对象或方法高度接近，可优先用于 Introduction、Methods 或 Discussion。",
+          "包含 VR 或虚拟环境范式，可帮助论证实验场景的可控性与生态效度边界。",
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "不要把 exit choice 结果直接等同于 EEG 负荷。",
+          "不要 explain route choice by nearest exit alone.",
+          "While surveys give the researcher a high level of control over the factors under investigation, they have lower ecological validity given that subjects are aware that they are part of an experiment [20 – 22].",
+          "Several applications have been already used VR to investigate evacuation route choices and behaviour in different types of buildings showing the advantages and limitations of this emerging technology in building design and fire safety assessment [38 – 42].",
+          "The Efficient Design is a fractional factorial design used to identify an optimal subset of scenarios among all possible ones with the aim of maximising the amount of elicited infor - mation given a set sample size."
+        ],
+        "writingAngles": [
+          "用于行为结果建模，尤其是 mixed/discrete choice 的方法依据。",
+          "Supports decision-point choice-set modelling and multi-attribute route choice.",
+          "Create decision_points.csv and test interaction with Signature.",
+          "Complexity moderation",
+          "方法上收集 IVR exit choice 数据，并用离散选择模型估计环境和个体因素影响。",
+          "Immersive VR fire evacuation + discrete choice/random utility model.",
+          "methods This section provides a description of the VR experiment designed in this study (Section 3.1), the experimental procedure (Section 3.2), the participants who took part to the experiment (Section 3.3) and the sta - tistical analysis tool used to investigate the participants ’ choices (Sec - tion 3.4).",
+          "VR experiment design During the VR experiment, a participant is placed within a virtual room where he/she has to choose an exit to use to leave the room during a simulated fire emergency."
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：Automation in Construction 141 (2022) 104452 Available online 29 June 2022 0926-5805/© 2022 Elsevier B.V.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -2652,7 +3549,7 @@
       ],
       "articleRole": "VR 实验范式与生态效度证据",
       "evidenceType": "实验研究",
-      "qualityTier": "Grade B，Medium；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade B，Medium；中等相关：可用于方法类比、背景论证或边界讨论，但通常不是主结论的直接证据。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文比较高/低紧急度下有指导的疏散行为，说明 urgency 会调节导向信息使用。",
       "researchQuestion": "研究问题是：紧急度和引导信息如何共同影响疏散行为。",
       "researchPosition": "知识库定位：VR 实验范式与生态效度证据。 该文比较高/低紧急度下有指导的疏散行为，说明 urgency 会调节导向信息使用。 对本项目的核心价值：如果 Metro Rescue 有音频/时间压力，可用于解释 urgency interaction。",
@@ -2717,6 +3614,47 @@
         "AR experimental validity",
         "VR 实验范式与生态效度"
       ],
+      "readingNote": {
+        "tldr": "该文比较高/低紧急度下有指导的疏散行为，说明 urgency 会调节导向信息使用。",
+        "problem": "研究问题是：紧急度和引导信息如何共同影响疏散行为。",
+        "motivation": "该文被纳入知识库，是因为它能补足 VR 实验范式与生态效度证据 这一证据层。 它关联的主题包括 Guidance、urgency、controlled experiment。 对当前研究的核心启发是：可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+        "methodSummary": "方法上实验操控 urgency 与 guidance，观察选择、速度或路径行为。",
+        "resultSummary": "高紧急度可能改变信息加工深度和服从行为。 urgency 需要在分析中作为情境变量或限制说明。 Guidance improves evacuation, but its effect depends on stress/urgency and position relative to the guide/exit.",
+        "transferableConcepts": [
+          "标识可见性、标识方向、标识位置、标识连续性或信息密度",
+          "信息模态、注意转移、提示时窗",
+          "紧急度、风险感知、压力或情绪负荷",
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "行为指标需回到原文 Methods/Results 核对。",
+          "可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "可用于把低/中/高密度转化为标识可见性、确认成本和路线决策事件的组内因素。"
+        ],
+        "strengths": [
+          "主要作为背景文献使用，写作时应避免把类比证据写成直接实验结果。"
+        ],
+        "weaknesses": [
+          "低/高紧急度不等同于低/中/高标识密度。",
+          "Human guide/sign guidance analogy should be stated cautiously.",
+          "To create high-stress conditions, two samples of participants were required to compete by offering financial rewards (Haghani et al., 2020; Haghani et al., 2019), and they found that groups under the high-stress level were more likely to change their initial decision.",
+          "It is suggested that more experimental conditions with different age groups will be considered in future work."
+        ],
+        "writingAngles": [
+          "如果 Metro Rescue 有音频/时间压力，可用于解释 urgency interaction。",
+          "Supports urgency/audio/stress as moderator of signage/guidance effectiveness.",
+          "方法上实验操控 urgency 与 guidance，观察选择、速度或路径行为。",
+          "Controlled evacuation experiments under high/low urgency and guidance positions.",
+          "适合写入：Methods: VR",
+          "适合写入：AR experimental validity",
+          "适合写入：VR 实验范式与生态效度"
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：Safety Science 154 (2022) 105865 Available online 27 June 2022 0925-7535/© 2022 Elsevier Ltd.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [],
         "mechanisms": [],
@@ -2752,7 +3690,7 @@
       ],
       "articleRole": "导向标识与空间导航证据",
       "evidenceType": "建模研究",
-      "qualityTier": "Grade B，Medium；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade B，Medium；中等相关：可用于方法类比、背景论证或边界讨论，但通常不是主结论的直接证据。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文是火灾蔓延驱动的动态智能疏散模型，属于环境风险和动态路径规划背景。",
       "researchQuestion": "研究问题是：火灾蔓延如何实时影响多层建筑中的疏散路径和智能决策。",
       "researchPosition": "知识库定位：导向标识与空间导航证据。 该文是火灾蔓延驱动的动态智能疏散模型，属于环境风险和动态路径规划背景。 对本项目的核心价值：用于讨论后续可把 EEG/行为状态与动态疏散模型连接。",
@@ -2826,6 +3764,46 @@
         "VR 实验范式与生态效度",
         "建模与未来应用"
       ],
+      "readingNote": {
+        "tldr": "该文是火灾蔓延驱动的动态智能疏散模型，属于环境风险和动态路径规划背景。",
+        "problem": "研究问题是：火灾蔓延如何实时影响多层建筑中的疏散路径和智能决策。",
+        "motivation": "该文被纳入知识库，是因为它能补足 导向标识与空间导航证据 这一证据层。 它关联的主题包括 Dynamic evacuation、fire propagation。 对当前研究的核心启发是：可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+        "methodSummary": "方法上结合火灾传播、动态疏散模型和多层建筑路径调整。",
+        "resultSummary": "真实疏散路径应随环境风险动态变化。 它可为 future work 中动态场景和实时标识提供背景。 Dynamic fire/smoke conditions require path re-planning and active guidance; static information may fail. Static signs can fail under dynamic hazards; dynamic/intelligent signs are a future extension, not the current project claim.",
+        "transferableConcepts": [
+          "标识可见性、标识方向、标识位置、标识连续性或信息密度",
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "行为指标需回到原文 Methods/Results 核对。",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "可用于把低/中/高密度转化为标识可见性、确认成本和路线决策事件的组内因素。"
+        ],
+        "strengths": [
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "当前实验若是固定 VR 场景，不应声称做了 fire-propagation dynamic model。",
+          "Simulation/framework, not direct human EEG behavior.",
+          "However, empirical formulas usually have many restrictions, limitations, and low prediction accuracy [69].",
+          "Machine learning (ML) allows for constructing statistical models by providing sufficient sample data and employing a series of algorithms to carry out pre - dictions.",
+          "The basic process is: 1) generate a series of different learners; 2) use a certain integration method to combine learners to improve the prediction ability and generalization ability of the model."
+        ],
+        "writingAngles": [
+          "用于讨论后续可把 EEG/行为状态与动态疏散模型连接。",
+          "Future work/limitation: current static signs do not adapt to hazards.",
+          "Future work or limitation.",
+          "方法上结合火灾传播、动态疏散模型和多层建筑路径调整。",
+          "Fire-propagation-driven dynamic intelligent evacuation model in multifloor buildings.",
+          "method, evacuation time prediction model based on the stacking integration strategy and framework design of active instructions.",
+          "In terms of active instructions, many studies focus on providing evacuees with static or dynamic direction signals on signage.",
+          "Liu, Liu [40] introduced the research significance of intelligent evacuation indication system, concluding the set conditions for intelligent evacua - tion indication system by analyzing and summarizing the safe evacua - tion principles."
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：Advanced Engineering Informatics 57 (2023) 102097 Available online 24 July 2023 1474-0346/© 2023 Elsevier Ltd.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -2877,7 +3855,7 @@
       ],
       "articleRole": "导向标识与空间导航证据",
       "evidenceType": "指南",
-      "qualityTier": "Grade A，High；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade A，High；核心相关：可优先支撑本研究的背景、方法或变量定义。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该指南/综述型资料提供 wayfinding 与 signage 设计原则，是操作化标识清晰度、连续性和决策点布置的基础。",
       "researchQuestion": "研究问题是：步行者需要什么样的导向信息才能有效完成空间导航。",
       "researchPosition": "知识库定位：导向标识与空间导航证据。 该指南/综述型资料提供 wayfinding 与 signage 设计原则，是操作化标识清晰度、连续性和决策点布置的基础。 对本项目的核心价值：用于设计 rationale 和 stimulus description。",
@@ -2949,6 +3927,48 @@
         "导向标识与寻路理论",
         "VR 实验范式与生态效度"
       ],
+      "readingNote": {
+        "tldr": "该指南/综述型资料提供 wayfinding 与 signage 设计原则，是操作化标识清晰度、连续性和决策点布置的基础。",
+        "problem": "研究问题是：步行者需要什么样的导向信息才能有效完成空间导航。",
+        "motivation": "该文被纳入知识库，是因为它能补足 导向标识与空间导航证据 这一证据层。 它关联的主题包括 Wayfinding guideline、signage principles。 对当前研究的核心启发是：可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+        "methodSummary": "方法上是导向设计原则、实践准则和空间信息组织总结。",
+        "resultSummary": "导向系统应在关键决策点提供连续、可理解、与环境一致的信息。 该文适合定义标识密度不只是数量，而是信息结构。 Wayfinding signage should be consistent, conspicuous, clear, continuous, and accessible. Signature conditions require empirical manipulation checks of direction quality, clarity, sufficiency, overload, reliability, and behavioral errors.",
+        "transferableConcepts": [
+          "标识可见性、标识方向、标识位置、标识连续性或信息密度",
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "寻路完成时间、错误、路径效率",
+          "标识发现、标识确认、按标识行动",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "可用于把低/中/高密度转化为标识可见性、确认成本和路线决策事件的组内因素。"
+        ],
+        "strengths": [
+          "与 Metro Rescue 的研究对象或方法高度接近，可优先用于 Introduction、Methods 或 Discussion。",
+          "直接关联导向标识、寻路或室内导航，可用于定义行为指标和任务机制。",
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "指南不能替代实验统计结果。",
+          "Guideline, not experiment; use for design criteria, not statistical evidence.",
+          "Signature manipulation is not auditable: Build signature_manipulation_table with sign/face-level variables and manipulation-check survey.",
+          "When ma nufacturing a new set of wayfinding signs for the first time, it may be necessary to produce a sample sign first (prior to manufacturing a full suite of signs across a large area)."
+        ],
+        "writingAngles": [
+          "用于设计 rationale 和 stimulus description。",
+          "Use as normative basis for Signature manipulation table dimensions.",
+          "方法上是导向设计原则、实践准则和空间信息组织总结。",
+          "Transport guideline for pedestrian wayfinding and signage.",
+          "method set out in AS 1743 Road Signs – Specification s should be used to develop and test their suitability.",
+          "Signs installed on walking tracks that have been graded using the classification system should incorporate a symbol that indicates the difficulty rating assigned to that track.",
+          "5.3 Identification information Each sign should be ea sily identifiable as part of the wayfinding system.",
+          "适合写入：Methods: Signature manipulation"
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：Guideline W ayfinding and signage for people walking December 2020",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -3019,7 +4039,7 @@
       ],
       "articleRole": "神经生理与认知负荷证据",
       "evidenceType": "实验研究",
-      "qualityTier": "Grade A，High；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade A，High；核心相关：可优先支撑本研究的背景、方法或变量定义。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文用眼动研究应急室内寻路，证明视觉注意与路线选择有关，是注意中介机制的重要证据。",
       "researchQuestion": "研究问题是：人在应急寻路时如何感知环境线索，视觉注意如何关联路线选择。",
       "researchPosition": "知识库定位：神经生理与认知负荷证据。 该文用眼动研究应急室内寻路，证明视觉注意与路线选择有关，是注意中介机制的重要证据。 对本项目的核心价值：支持用 head yaw、停留和回看行为作为视觉搜索代理指标，并区分 perception 与 choice。",
@@ -3101,6 +4121,54 @@
         "导向标识与寻路理论",
         "建模与未来应用"
       ],
+      "readingNote": {
+        "tldr": "该文用眼动研究应急室内寻路，证明视觉注意与路线选择有关，是注意中介机制的重要证据。",
+        "problem": "研究问题是：人在应急寻路时如何感知环境线索，视觉注意如何关联路线选择。",
+        "motivation": "该文被纳入知识库，是因为它能补足 神经生理与认知负荷证据 这一证据层。 它关联的主题包括 Eye-tracking、emergency wayfinding。 对当前研究的核心启发是：可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+        "methodSummary": "方法上结合室内应急寻路任务与眼动指标，考察 exit/sign cue、熟悉度和路线选择。",
+        "resultSummary": "视觉注意与 wayfinding choice 呈正相关。 熟悉路线可能改变注视频率、扫视速度和对出口/标识的发现概率。 Visual attention is linked to route choice; familiarity, neighbor behavior, and exit visibility affect gaze and decisions. Seeing or entering readable range of a sign is not equivalent to understanding or complying with it.",
+        "transferableConcepts": [
+          "信息模态、注意转移、提示时窗",
+          "VR 场景、任务顺序、熟悉度和沉浸程度",
+          "眼动注视、扫视、视觉搜索指标",
+          "路线选择、出口选择或 compliance",
+          "寻路完成时间、错误、路径效率",
+          "路径长度、回退、绕行或距离",
+          "视觉搜索、注视次数、确认成本",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "可用于把低/中/高密度转化为标识可见性、确认成本和路线决策事件的组内因素。"
+        ],
+        "strengths": [
+          "与 Metro Rescue 的研究对象或方法高度接近，可优先用于 Introduction、Methods 或 Discussion。",
+          "包含 VR 或虚拟环境范式，可帮助论证实验场景的可控性与生态效度边界。",
+          "直接关联导向标识、寻路或室内导航，可用于定义行为指标和任务机制。",
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "眼动证据不能直接等同于 EEG 认知负荷。",
+          "Eye tracking ≠ EEG; use as visual attention evidence.",
+          "Behavior load treated as neural load: Use behavior as auxiliary evidence; EEG remains primary.",
+          "A paired - sample t - test demonstrated a significant difference ( t = − 9 .",
+          "Admittedly , the present study does have a few limitations that should be acknowledged and addressed in future research .",
+          "Conse - quently , we can examine the main effect of each experimental variable independently using all samples ."
+        ],
+        "writingAngles": [
+          "支持用 head yaw、停留和回看行为作为视觉搜索代理指标，并区分 perception 与 choice。",
+          "Core support for attention-allocation mechanism and head-yaw/gaze proxies.",
+          "Model sign perception separately from compliance.",
+          "Event-specific uncertainty",
+          "方法上结合室内应急寻路任务与眼动指标，考察 exit/sign cue、熟悉度和路线选择。",
+          "VR fire wayfinding + eye tracking; intersection route choice.",
+          "analyzed participants ' behaviors during an unannounced evacuation experiment using eye - tracking and indicated that a flashing light near an evacuation sign increased participants ' fixations on the sign , which , however , did not increase participants ’ compliance with the sign [ 40 ].",
+          "employed eye movement data to test the effectiveness of exit signs and suggested that signs are more like to be detected when they are red and placed at a low sightline [ 51 ]."
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：People typically rely on environ - mental cues to determine their location and navigate their way .",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -3210,7 +4278,7 @@
       ],
       "articleRole": "VR 实验范式与生态效度证据",
       "evidenceType": "实验研究",
-      "qualityTier": "Grade B，Medium；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade B，Medium；中等相关：可用于方法类比、背景论证或边界讨论，但通常不是主结论的直接证据。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文关注 VR 建筑应急中的 pre-evacuation efficiency，适合解释开始行动前的信息搜索和迟疑。",
       "researchQuestion": "研究问题是：虚拟现实中的人机交互和信息呈现如何影响预疏散效率。",
       "researchPosition": "知识库定位：VR 实验范式与生态效度证据。 该文关注 VR 建筑应急中的 pre-evacuation efficiency，适合解释开始行动前的信息搜索和迟疑。 对本项目的核心价值：用于定义 initiation time、information seeking latency 等行为指标。",
@@ -3284,6 +4352,48 @@
         "AR experimental validity",
         "VR 实验范式与生态效度"
       ],
+      "readingNote": {
+        "tldr": "该文关注 VR 建筑应急中的 pre-evacuation efficiency，适合解释开始行动前的信息搜索和迟疑。",
+        "problem": "研究问题是：虚拟现实中的人机交互和信息呈现如何影响预疏散效率。",
+        "motivation": "该文被纳入知识库，是因为它能补足 VR 实验范式与生态效度证据 这一证据层。 它关联的主题包括 Pre-evacuation、VR、alarm。 对当前研究的核心启发是：可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+        "methodSummary": "方法上使用建筑应急 VR 任务，观察报警、信息呈现和启动行为。",
+        "resultSummary": "预疏散阶段不是空白时间，而包含信息判断、确认和行动准备。 这适合把 map_start 到 first movement 或 first sign search 作为分析窗口。 High engagement in pre-emergency activities reduces immediate alarm compliance in VR. Audio should be treated as a modality/attention factor that may change later visual signage processing, not merely noise.",
+        "transferableConcepts": [
+          "信息模态、注意转移、提示时窗",
+          "VR 场景、任务顺序、熟悉度和沉浸程度",
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "行为指标需回到原文 Methods/Results 核对。",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "与中等密度最高假设关系较弱，主要作为背景、方法或边界文献。"
+        ],
+        "strengths": [
+          "包含 VR 或虚拟环境范式，可帮助论证实验场景的可控性与生态效度边界。",
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "不要把 pre-evacuation 效应直接写成密度效应。",
+          "Not specific to signage content.",
+          "2020), as ethical and safety issues (e.g., putting participants in danger), enormous time and financial costs, the balance of ecological validity and experimental control continued to be challenging (Meng and Zhang 2014; Duarte et al.",
+          "The sample size of each group was determined based on previous studies (Duarte et al.",
+          "2.4 Narrative The sense of the presence of human subjects is a fundamen- tal factor that determines the usefulness of virtual environ- ments and the ecological validity of VE-based studies (Zou et al."
+        ],
+        "writingAngles": [
+          "用于定义 initiation time、information seeking latency 等行为指标。",
+          "Supports initial response latency and attention engagement effects.",
+          "方法上使用建筑应急 VR 任务，观察报警、信息呈现和启动行为。",
+          "VR pre-evacuation study with low/high engagement conditions; worker participants.",
+          "However, previous stud- ies suggested that it is unrealistic to expect that occupants will immediately start evacuation upon hearing such a signal (Liu and Lo 2011; Proulx and Laroche 2003), as Proulx and Laroche measured the efficacy of the T-3 alarm, and",
+          "适合写入：Methods: VR",
+          "适合写入：AR experimental validity",
+          "适合写入：VR 实验范式与生态效度"
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：Two conditions with different engagement levels (i.e., low and high) were set up, and sixty company workers were distributed across condi- tions randomly.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -3328,7 +4438,7 @@
       ],
       "articleRole": "神经生理与认知负荷证据",
       "evidenceType": "实验研究",
-      "qualityTier": "Grade A，High；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade A，High；核心相关：可优先支撑本研究的背景、方法或变量定义。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文用 EEG 分类 wayfinding uncertainty，是本项目最直接的 EEG-导航不确定性核心文献。",
       "researchQuestion": "研究问题是：人在室内导航中的不确定状态是否能通过 EEG 频谱/空间特征识别。",
       "researchPosition": "知识库定位：神经生理与认知负荷证据。 该文用 EEG 分类 wayfinding uncertainty，是本项目最直接的 EEG-导航不确定性核心文献。 对本项目的核心价值：直接支撑本研究围绕 decision_point、sign_readable 和中等密度不确定性的 EEG 分析。",
@@ -3417,6 +4527,56 @@
         "导向标识与寻路理论",
         "VR 实验范式与生态效度"
       ],
+      "readingNote": {
+        "tldr": "该文用 EEG 分类 wayfinding uncertainty，是本项目最直接的 EEG-导航不确定性核心文献。",
+        "problem": "研究问题是：人在室内导航中的不确定状态是否能通过 EEG 频谱/空间特征识别。",
+        "motivation": "该文被纳入知识库，是因为它能补足 神经生理与认知负荷证据 这一证据层。 它关联的主题包括 EEG、wayfinding uncertainty、VR。 对当前研究的核心启发是：可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+        "methodSummary": "方法上采集 VR/室内寻路任务中的 EEG，使用特征提取和分类模型区分高/低不确定状态。",
+        "resultSummary": "wayfinding uncertainty 具有可检测的神经生理相关物。 EEG 可作为建筑设计变量和导向线索研究中的客观指标。 EEG spectral features can help identify wayfinding uncertainty states in VR navigation. Metro Rescue should be framed as a signage-information and uncertainty-resolution study, not a simple “which sign set is best” comparison.",
+        "transferableConcepts": [
+          "标识可见性、标识方向、标识位置、标识连续性或信息密度",
+          "VR 场景、任务顺序、熟悉度和沉浸程度",
+          "EEG 频谱特征、事件窗特征或分类特征",
+          "theta power",
+          "alpha power / alpha suppression",
+          "寻路完成时间、错误、路径效率",
+          "可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "可用于解释中等密度可能因信息不充分但又需要判断而提高 uncertainty/cognitive load。",
+          "可用于把低/中/高密度转化为标识可见性、确认成本和路线决策事件的组内因素。"
+        ],
+        "strengths": [
+          "与 Metro Rescue 的研究对象或方法高度接近，可优先用于 Introduction、Methods 或 Discussion。",
+          "包含 VR 或虚拟环境范式，可帮助论证实验场景的可控性与生态效度边界。",
+          "包含神经/生理测量，可用于说明认知负荷指标的理论或方法来源。",
+          "直接关联导向标识、寻路或室内导航，可用于定义行为指标和任务机制。",
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "它支持 EEG 可识别 uncertainty，不证明本研究一定出现中密度最高。",
+          "不要 claim it proves your S2 effect; it proves EEG can index uncertainty states.",
+          "EEG polluted by movement/head turns: Control MovementSpeed and HeadYawRate; exclude noisy epochs; report QC.",
+          "Behavior load treated as neural load: Use behavior as auxiliary evidence; EEG remains primary.",
+          "Given the complexity of such facilities and the limitations of human cognition, it is unlikely that it will ever be possible to completely eliminate experi- ences of uncertainty and the resulting inefficient behaviors in human navigation.",
+          "While the use of VR must be considered a limitation in terms of generalizing to real-world environments, prior research has shown that there is a strong overlap in neural properties in VR and real- world experiments [58]."
+        ],
+        "writingAngles": [
+          "直接支撑本研究围绕 decision_point、sign_readable 和中等密度不确定性的 EEG 分析。",
+          "Most direct EEG support for Signature2-as-uncertainty mechanism.",
+          "Core mechanism for Signature2.",
+          "Middle-peak EEG load",
+          "Event-specific uncertainty",
+          "方法上采集 VR/室内寻路任务中的 EEG，使用特征提取和分类模型区分高/低不确定状态。",
+          "VR hospital wayfinding; uncertainty labels from controller input/observer annotation; EEG theta/alpha/beta; Random Forest ROC-AUC ~0.70.",
+          "We analyzed the EEG data from the remaining 30 participants (9 reporting as female and 21 as male; M 𝑎𝑔𝑒 = 26.5, SD = 6.2, Range 20–41)."
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：Advanced Engineering Informatics 54 (2022) 101718 Available online 18 September 2022 1474-0346/© 2022 Elsevier Ltd.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -3566,7 +4726,7 @@
       ],
       "articleRole": "导向标识与空间导航证据",
       "evidenceType": "方法或背景研究",
-      "qualityTier": "Grade A，High；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade A，High；核心相关：可优先支撑本研究的背景、方法或变量定义。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该理论框架和 meta-analysis 讨论压力下的 indoor emergency wayfinding decision，是解释决策、压力和环境线索的理论核心。",
       "researchQuestion": "研究问题是：压力情境中个体如何整合环境线索、风险感知和路线策略做出寻路决策。",
       "researchPosition": "知识库定位：导向标识与空间导航证据。 该理论框架和 meta-analysis 讨论压力下的 indoor emergency wayfinding decision，是解释决策、压力和环境线索的理论核心。 对本项目的核心价值：用于 Introduction 和 hypothesis development。",
@@ -3647,6 +4807,51 @@
         "建模与未来应用",
         "文献综述与理论框架"
       ],
+      "readingNote": {
+        "tldr": "该理论框架和 meta-analysis 讨论压力下的 indoor emergency wayfinding decision，是解释决策、压力和环境线索的理论核心。",
+        "problem": "研究问题是：压力情境中个体如何整合环境线索、风险感知和路线策略做出寻路决策。",
+        "motivation": "该文被纳入知识库，是因为它能补足 导向标识与空间导航证据 这一证据层。 它关联的主题包括 Theory、stress、wayfinding decision。 对当前研究的核心启发是：可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+        "methodSummary": "方法上整合理论框架与元分析，梳理 emergency wayfinding 的认知和行为机制。",
+        "resultSummary": "压力、环境复杂性、信息可得性和个体差异共同影响 wayfinding decision。 它为 mixed-effects model 中的组内/组间因素提供理论背景。 Indoor emergency wayfinding decisions involve cue perception, cognitive processing, stress, and strategies; signage and social majority strongly influence route choice, while conflicting information moderates effects. Metro Rescue should be framed as a signage-information and uncertainty-resolution study, not a simple “which sign set is best” comparison.",
+        "transferableConcepts": [
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "路线选择、出口选择或 compliance",
+          "寻路完成时间、错误、路径效率",
+          "标识发现、标识确认、按标识行动",
+          "路径长度、回退、绕行或距离",
+          "可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "可用于把低/中/高密度转化为标识可见性、确认成本和路线决策事件的组内因素。"
+        ],
+        "strengths": [
+          "与 Metro Rescue 的研究对象或方法高度接近，可优先用于 Introduction、Methods 或 Discussion。",
+          "直接关联导向标识、寻路或室内导航，可用于定义行为指标和任务机制。",
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "元分析结论不能替代本研究具体密度条件的统计检验。",
+          "Meta-analysis aggregates varied paradigms; use for framework, not exact effect prediction.",
+          "However, the role of acute stress may vary across different envi - ronments ( Broadbent, 1971 ), which limits the external validity of the above findings on acute stress caused by building emergencies.",
+          "In the present study, the quality appraisal was conducted to summarize and assess the methodological characteristics of prior studies that may affect the results of the meta -analyses and validity of the proposed framework.",
+          "3 ) to present a further explanation of the connotation of core constructs in the theo - retical framework, and provide qualitative and systematic evidence of its theoretical underpinnings and overall validity."
+        ],
+        "writingAngles": [
+          "用于 Introduction 和 hypothesis development。",
+          "Core theory chapter source for stress/cognition/wayfinding decision.",
+          "Core mechanism for Signature2.",
+          "方法上整合理论框架与元分析，梳理 emergency wayfinding 的认知和行为机制。",
+          "Theoretical framework + meta-analysis.",
+          "3) processes irrelevant to the research scope of the reported study were designed as controlled variables in the reported study.",
+          "适合写入：Methods: Signature manipulation",
+          "适合写入：signage variables"
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：0925-7535/© 2023 Elsevier Ltd.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -3736,7 +4941,7 @@
       ],
       "articleRole": "神经生理与认知负荷证据",
       "evidenceType": "实验研究",
-      "qualityTier": "Grade B，Medium；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade B，Medium；中等相关：可用于方法类比、背景论证或边界讨论，但通常不是主结论的直接证据。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文用 IVR、眼动和 EEG 研究 hazard recognition 中自下而上和自上而下注意的交互。",
       "researchQuestion": "研究问题是：危险识别中刺激显著性和任务目标如何共同驱动注意与脑电反应。",
       "researchPosition": "知识库定位：神经生理与认知负荷证据。 该文用 IVR、眼动和 EEG 研究 hazard recognition 中自下而上和自上而下注意的交互。 对本项目的核心价值：用于把 sign salience、search behavior 和 EEG window 联系起来。",
@@ -3818,6 +5023,52 @@
         "EEG/认知负荷指标依据",
         "VR 实验范式与生态效度"
       ],
+      "readingNote": {
+        "tldr": "该文用 IVR、眼动和 EEG 研究 hazard recognition 中自下而上和自上而下注意的交互。",
+        "problem": "研究问题是：危险识别中刺激显著性和任务目标如何共同驱动注意与脑电反应。",
+        "motivation": "该文被纳入知识库，是因为它能补足 神经生理与认知负荷证据 这一证据层。 它关联的主题包括 Attention、IVR、ET、EEG。 对当前研究的核心启发是：可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+        "methodSummary": "方法上结合沉浸式 VR、eye-tracking 与 EEG，分析 hazard recognition 的注意机制。",
+        "resultSummary": "视觉显著性和目标驱动注意会共同塑造 EEG/眼动反应。 这与标识显著性、搜索策略和认知负荷分析高度相关。 Bottom-up stimuli and top-down training jointly shape hazard recognition attention, measurable by IVR + eye-tracking + EEG/ERP. EEG can potentially index wayfinding uncertainty states, supporting event-locked EEG analysis around signs and decision points.",
+        "transferableConcepts": [
+          "标识可见性、标识方向、标识位置、标识连续性或信息密度",
+          "信息模态、注意转移、提示时窗",
+          "VR 场景、任务顺序、熟悉度和沉浸程度",
+          "EEG 频谱特征、事件窗特征或分类特征",
+          "眼动注视、扫视、视觉搜索指标",
+          "视觉搜索、注视次数、确认成本",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "可用于把低/中/高密度转化为标识可见性、确认成本和路线决策事件的组内因素。"
+        ],
+        "strengths": [
+          "包含 VR 或虚拟环境范式，可帮助论证实验场景的可控性与生态效度边界。",
+          "包含神经/生理测量，可用于说明认知负荷指标的理论或方法来源。",
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "hazard recognition 不是 subway wayfinding，结论需作为机制类比。",
+          "Construction hazard recognition, not evacuation signage.",
+          "EEG polluted by movement/head turns: Control MovementSpeed and HeadYawRate; exclude noisy epochs; report QC.",
+          "Demographics of participants The determination of the minimum sample size was achieved through a priori power analysis using G*Power version 3.1.9.7 (Faul et al., 2009).",
+          "As a result, the requisite sample size for this investigation was calculated to be 21, resulting in 0.8 power.",
+          "Each configuration has reached the minimum sample size of 21 to achieve 0.8 power."
+        ],
+        "writingAngles": [
+          "用于把 sign salience、search behavior 和 EEG window 联系起来。",
+          "Supports interpreting signage as bottom-up cue and task goal/trial order as top-down attention.",
+          "方法上结合沉浸式 VR、eye-tracking 与 EEG，分析 hazard recognition 的注意机制。",
+          "IVR construction hazard recognition; augmented stimuli/toolbox meeting; ET + EEG.",
+          "Methodology The experiment employed a within-subject comparison design, where participants were exposed to multiple conditions, and their re- sponses were compared across these stages.",
+          "During the exper- iment, eye movement, EEG, and real-time probe answers were collected.",
+          "Experimental design The experiment was structured into two configurations, as shown in Fig.",
+          "适合写入：Theory"
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：Investigating the interplay of bottom-up and top-down attention in hazard recognition: Insights from immersive virtual reality, eye-tracking and electroencephalography ☆ Zhe Zhang a , Brian H.W.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -3874,7 +5125,7 @@
       ],
       "articleRole": "VR 实验范式与生态效度证据",
       "evidenceType": "建模研究",
-      "qualityTier": "Grade B，Medium；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade B，Medium；中等相关：可用于方法类比、背景论证或边界讨论，但通常不是主结论的直接证据。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文用机器学习解释预疏散决策，适合作为行为特征解释和模型可解释性的参考。",
       "researchQuestion": "研究问题是：预疏散决策能否用可解释机器学习从个体和情境变量中预测。",
       "researchPosition": "知识库定位：VR 实验范式与生态效度证据。 该文用机器学习解释预疏散决策，适合作为行为特征解释和模型可解释性的参考。 对本项目的核心价值：用于后续对 reaction/decision variables 做 SHAP 或 permutation importance。",
@@ -3938,6 +5189,46 @@
         "VR 实验范式与生态效度",
         "建模与未来应用"
       ],
+      "readingNote": {
+        "tldr": "该文用机器学习解释预疏散决策，适合作为行为特征解释和模型可解释性的参考。",
+        "problem": "研究问题是：预疏散决策能否用可解释机器学习从个体和情境变量中预测。",
+        "motivation": "该文被纳入知识库，是因为它能补足 VR 实验范式与生态效度证据 这一证据层。 它关联的主题包括 Interpretable ML、pre-evacuation。 对当前研究的核心启发是：可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+        "methodSummary": "方法上构建机器学习模型并解释变量贡献。",
+        "resultSummary": "pre-evacuation decision 可由多变量共同预测。 可解释模型有助于从 trial features 识别重要行为因素。 Interpretable ML can reveal nonlinear pre-evacuation decision effects and interactions, especially social/environmental variables. Unity behavior logs can support discrete-choice, interpretable ML, and ABM beyond hypothesis testing.",
+        "transferableConcepts": [
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "行为指标需回到原文 Methods/Results 核对。",
+          "可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "可用于支持“认知负荷可能呈非线性”这一理论前提。"
+        ],
+        "strengths": [
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "机器学习预测不等同于因果效应。",
+          "Keep ML exploratory unless pre-registered.",
+          "The fi rst approach is computed by permuting the out-of-bag (OOB) samples, in order to measure the prediction strength of each vari- able [24].",
+          "For each decision tree in the RF model, the OOB sample data are passed down the tree to generate a predictive accuracy.",
+          "The RF model mainly depends on two hyperparameters, i.e., the number of decision trees to grow (denoted by ntree here) and the number of variables randomly sampled as candidates at each split of the decision tree (denoted by mtry here)."
+        ],
+        "writingAngles": [
+          "用于后续对 reaction/decision variables 做 SHAP 或 permutation importance。",
+          "Exploratory analysis model for nonlinearity/interactions in Metro Rescue.",
+          "方法上构建机器学习模型并解释变量贡献。",
+          "Random Forest + interpretation on 569 occupants in unannounced cinema drills.",
+          "Speci- fi cally, model-speci fi c tools are designed for speci fi c types of machine- learning models, while model-agnostic methods can be applied to any machine-learning models of choice [45].",
+          "Variable importance Variable importance measures the signi fi cance of each variable with respect to its in fl uence on predicting the response variable.",
+          "These data were previously used by Lovreglio et al.",
+          "适合写入：Methods: VR"
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：This behaviour has been widely investigated by scholars with a macroscopic approach fi tting random distributions to represent the pre-evacuation time, i.e.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -3981,7 +5272,7 @@
       ],
       "articleRole": "VR 实验范式与生态效度证据",
       "evidenceType": "实验研究",
-      "qualityTier": "Grade C，Low；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade C，Low；外围相关：只适合作为补充背景或未来工作。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文研究 optical see-through AR fire safety training，是培训和 AR 安全教育背景文献。",
       "researchQuestion": "研究问题是：AR 安全培训能否改善建筑使用者对火灾安全信息的理解和行动准备。",
       "researchPosition": "知识库定位：VR 实验范式与生态效度证据。 该文研究 optical see-through AR fire safety training，是培训和 AR 安全教育背景文献。 对本项目的核心价值：用于写作中讨论训练或应用延伸。",
@@ -4044,6 +5335,45 @@
         "AR experimental validity",
         "VR 实验范式与生态效度"
       ],
+      "readingNote": {
+        "tldr": "该文研究 optical see-through AR fire safety training，是培训和 AR 安全教育背景文献。",
+        "problem": "研究问题是：AR 安全培训能否改善建筑使用者对火灾安全信息的理解和行动准备。",
+        "motivation": "该文被纳入知识库，是因为它能补足 VR 实验范式与生态效度证据 这一证据层。 它关联的主题包括 AR training、fire safety。 对当前研究的核心启发是：可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+        "methodSummary": "方法上使用 AR 训练任务或系统评估。",
+        "resultSummary": "AR 可作为安全培训工具，但其交互和信息呈现不同于 VR 实验。 它适合放在 future application，而非当前主分析。 AR fire training can improve motivation/self-efficacy relative to video, with similar knowledge performance.",
+        "transferableConcepts": [
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "行为指标需回到原文 Methods/Results 核对。",
+          "可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "与中等密度最高假设关系较弱，主要作为背景、方法或边界文献。"
+        ],
+        "strengths": [
+          "主要作为背景文献使用，写作时应避免把类比证据写成直接实验结果。"
+        ],
+        "weaknesses": [
+          "不要用于证明当前 VR 标识密度效应。",
+          "Peripheral to EEG/signage.",
+          "Traditional training methods, such as lectures using video presentations, have limitations that can hinder learning perfor - mance.",
+          "However, there are several limitations to the use of traditional fire drills.",
+          "However, one of their main limitations is pedagogical, as it is difficult to ensure they can provide effective training to all the trainees involved [2]."
+        ],
+        "writingAngles": [
+          "用于写作中讨论训练或应用延伸。",
+          "XR training discussion/future application.",
+          "方法上使用 AR 训练任务或系统评估。",
+          "Controlled AR vs video fire-safety training experiment.",
+          "适合写入：Methods: VR",
+          "适合写入：AR experimental validity",
+          "适合写入：VR 实验范式与生态效度"
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：Automation in Construction 162 (2024) 105371 Available online 15 March 2024 0926-5805/© 2024 The Authors.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [],
         "mechanisms": [],
@@ -4080,7 +5410,7 @@
       ],
       "articleRole": "VR 实验范式与生态效度证据",
       "evidenceType": "实验研究",
-      "qualityTier": "Grade C，Low；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade C，Low；外围相关：只适合作为补充背景或未来工作。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文延续 crowdsourced VR pedestrian dynamics，重点更偏验证和方法质量。",
       "researchQuestion": "研究问题是：众包 VR 数据在 pedestrian/evacuation dynamics 中如何验证可靠性。",
       "researchPosition": "知识库定位：VR 实验范式与生态效度证据。 该文延续 crowdsourced VR pedestrian dynamics，重点更偏验证和方法质量。 对本项目的核心价值：用于 QC 和 data exclusion 的写作依据。",
@@ -4153,6 +5483,48 @@
         "AR experimental validity",
         "VR 实验范式与生态效度"
       ],
+      "readingNote": {
+        "tldr": "该文延续 crowdsourced VR pedestrian dynamics，重点更偏验证和方法质量。",
+        "problem": "研究问题是：众包 VR 数据在 pedestrian/evacuation dynamics 中如何验证可靠性。",
+        "motivation": "该文被纳入知识库，是因为它能补足 VR 实验范式与生态效度证据 这一证据层。 它关联的主题包括 Crowdsourced VR、validation、PED。 对当前研究的核心启发是：可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+        "methodSummary": "方法上比较众包 VR 数据、实验控制和验证指标。",
+        "resultSummary": "VR 数据质量需要依赖清晰的 QC、设备记录和行为合理性检查。 这提醒本项目需要在 XDF 报告中列出同步、缺失和异常行为。 Crowdsourced VR can reproduce bottleneck and exit-choice phenomena; useful for social interaction studies. VR is acceptable for controlled emergency/wayfinding experiments but needs caveats about realism, immersion, sickness, and social interaction.",
+        "transferableConcepts": [
+          "VR 场景、任务顺序、熟悉度和沉浸程度",
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "路线选择、出口选择或 compliance",
+          "可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "与中等密度最高假设关系较弱，主要作为背景、方法或边界文献。"
+        ],
+        "strengths": [
+          "包含 VR 或虚拟环境范式，可帮助论证实验场景的可控性与生态效度边界。",
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "不是本研究设计的直接范式。",
+          "Not central to single-user EEG task.",
+          "To address these limitations, Part I proposed a crowdsourced virtual reality (CVR) experimental approach.",
+          "Lastly, this paper discusses the advantages of the CVR experimental approach evidenced in the two experiments, including the diversification of samples, relief of motion sickness issues, and facilitation of interactive and collaborative VR experiments.",
+          "In addition, reaching out to and recruiting a diverse sample of participants with varying ages, locations, education levels, and social identities in a laboratory VR experiment may require extensive time and resources, leading to substantial costs that may be untenable to many research groups."
+        ],
+        "writingAngles": [
+          "用于 QC 和 data exclusion 的写作依据。",
+          "Future multi-person VR method.",
+          "方法上比较众包 VR 数据、实验控制和验证指标。",
+          "CVR validation; bottleneck and exit choice experiments.",
+          "Numerous real- world cases have shown that social interaction significantly impacts individual, group, and crowd-level decision-making and behaviors, leading to increased complexity in movement processes [1 – 3] .",
+          "The emergence of virtual reality (VR) provides an effective pathway to investigate pedestrians ’ movement dynamics and behavior by simu - lating various environments and scenarios [7,8] .",
+          "In addition, reaching out to and recruiting a diverse sample of participants with varying ages, locations, education levels, and social identities in a laboratory VR experiment may require extensive time and resources, leading to substantial costs that may be untenable to many research groups.",
+          "适合写入：Methods: VR"
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：Full length article Crowdsourced virtual reality experimental approach in pedestrian and evacuation dynamics research: Part II.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -4196,7 +5568,7 @@
       ],
       "articleRole": "导向标识与空间导航证据",
       "evidenceType": "方法或背景研究",
-      "qualityTier": "Grade B，Medium；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade B，Medium；中等相关：可用于方法类比、背景论证或边界讨论，但通常不是主结论的直接证据。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文提出 tunnel fire 中的智能动态出口标识框架，是动态导向系统的工程背景。",
       "researchQuestion": "研究问题是：隧道火灾中动态出口标识如何根据环境风险和疏散需求调整。",
       "researchPosition": "知识库定位：导向标识与空间导航证据。 该文提出 tunnel fire 中的智能动态出口标识框架，是动态导向系统的工程背景。 对本项目的核心价值：用于 future work：基于认知负荷和行为反馈调整标识策略。",
@@ -4269,6 +5641,48 @@
         "建模与未来应用",
         "文献综述与理论框架"
       ],
+      "readingNote": {
+        "tldr": "该文提出 tunnel fire 中的智能动态出口标识框架，是动态导向系统的工程背景。",
+        "problem": "研究问题是：隧道火灾中动态出口标识如何根据环境风险和疏散需求调整。",
+        "motivation": "该文被纳入知识库，是因为它能补足 导向标识与空间导航证据 这一证据层。 它关联的主题包括 Intelligent dynamic exit signs、tunnel fire。 对当前研究的核心启发是：可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+        "methodSummary": "方法上建立安全疏散框架并做 tunnel fire demonstration。",
+        "resultSummary": "动态标识系统可根据风险环境调整指示。 它说明本研究静态密度条件可作为未来动态系统的感知/行为基础。 Intelligent dynamic exit sign systems can use fire sensor networks and dynamic patterns, but need fallback/reversion mechanisms. Static signs can fail under dynamic hazards; dynamic/intelligent signs are a future extension, not the current project claim.",
+        "transferableConcepts": [
+          "标识可见性、标识方向、标识位置、标识连续性或信息密度",
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "标识发现、标识确认、按标识行动",
+          "可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "可用于把低/中/高密度转化为标识可见性、确认成本和路线决策事件的组内因素。"
+        ],
+        "strengths": [
+          "直接关联导向标识、寻路或室内导航，可用于定义行为指标和任务机制。",
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "隧道火灾和地铁站 VR 场景不同，不能混用结果。",
+          "Hardware/system study, not human EEG.",
+          "These studies, while valuable, highlight a significant limitation in current research: the absence of real fire is considered when changing the signs ’ guiding direction.",
+          "A protocol will be implemented in future work where adjacent sensors intensify monitoring and dynamically adjust paths to ensure effective guidance even when individual sensors fail.",
+          "Ther - mocouples are used instead of smoke sensors in this study due to the hardware limitation of procuring the scale-down smoke detectors."
+        ],
+        "writingAngles": [
+          "用于 future work：基于认知负荷和行为反馈调整标识策略。",
+          "Future dynamic signage + ethics/failure-mode discussion.",
+          "Future work or limitation.",
+          "方法上建立安全疏散框架并做 tunnel fire demonstration。",
+          "IDES framework and lab-scale tunnel demonstration.",
+          "Design rules and control logic flow Specific design criteria must be adhered to ensure the effectiveness of the IDES.",
+          "The following design rules are established: (1) Sensors must, at a minimum, detect smoke; optimally, they should combine capabilities to monitor real-time temperature and smoke levels.",
+          "(2) At least one sensor should be positioned between two adjacent dynamic exit signs along the evacuation routes."
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：The system ’ s operation framework and design rules ensure effective implementation.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -4322,7 +5736,7 @@
       ],
       "articleRole": "导向标识与空间导航证据",
       "evidenceType": "实验研究",
-      "qualityTier": "Grade A，High；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade A，High；核心相关：可优先支撑本研究的背景、方法或变量定义。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文在 VR 地铁环境中结合眼动研究标识暴露下的乘客寻路，是本项目场景最相近的核心文献之一。",
       "researchQuestion": "研究问题是：地铁乘客在 VR 中遇到标识时如何分配注意、建立空间知识并完成寻路。",
       "researchPosition": "知识库定位：导向标识与空间导航证据。 该文在 VR 地铁环境中结合眼动研究标识暴露下的乘客寻路，是本项目场景最相近的核心文献之一。 对本项目的核心价值：支撑 Metro 场景、start-area sign、压力/音频和 trial order 控制。",
@@ -4407,6 +5821,54 @@
         "导向标识与寻路理论",
         "VR 实验范式与生态效度"
       ],
+      "readingNote": {
+        "tldr": "该文在 VR 地铁环境中结合眼动研究标识暴露下的乘客寻路，是本项目场景最相近的核心文献之一。",
+        "problem": "研究问题是：地铁乘客在 VR 中遇到标识时如何分配注意、建立空间知识并完成寻路。",
+        "motivation": "该文被纳入知识库，是因为它能补足 导向标识与空间导航证据 这一证据层。 它关联的主题包括 Subway signage、VR、eye-tracking、pressure。 对当前研究的核心启发是：可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+        "methodSummary": "方法上使用 VR subway scene、眼动记录和不同寻路/压力条件下的行为指标。",
+        "resultSummary": "压力会削弱空间知识掌握。 首次接触场景的参与者更依赖标识，起点区域标识尤其重要。 In VR subway wayfinding, pressure reduces spatial knowledge; first-time participants rely more on signage; start-area signs are important. VR subway/metro studies support the ecological relevance of Metro Rescue and show pressure/signage/spatial knowledge matter.",
+        "transferableConcepts": [
+          "标识可见性、标识方向、标识位置、标识连续性或信息密度",
+          "VR 场景、任务顺序、熟悉度和沉浸程度",
+          "眼动注视、扫视、视觉搜索指标",
+          "寻路完成时间、错误、路径效率",
+          "标识发现、标识确认、按标识行动",
+          "视觉搜索、注视次数、确认成本",
+          "可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "可用于把低/中/高密度转化为标识可见性、确认成本和路线决策事件的组内因素。"
+        ],
+        "strengths": [
+          "与 Metro Rescue 的研究对象或方法高度接近，可优先用于 Introduction、Methods 或 Discussion。",
+          "包含 VR 或虚拟环境范式，可帮助论证实验场景的可控性与生态效度边界。",
+          "直接关联导向标识、寻路或室内导航，可用于定义行为指标和任务机制。",
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "如果当前实验没有压力操控，只能把 pressure 作为类比或协变量讨论。",
+          "If your task lacks pressure manipulation, treat pressure findings as analogous via Audio/urgency, not identical.",
+          "Map drives effect: Model Metro and Signature*Metro; plot by map.",
+          "TrialOrder/familiarity drives effect: Include TrialOrder and first-time exposure; within-subject plots.",
+          "If the normality requirements were not satisfied, the Wilcoxon signed-rank test was used to analyze two correlated samples, such as the change in wayfinding distance between two wayfinding tasks.",
+          "However, given the limited sample size, some results need to be interpreted with caution."
+        ],
+        "writingAngles": [
+          "支撑 Metro 场景、start-area sign、压力/音频和 trial order 控制。",
+          "Core support for Metro setting, pressure, signage reliance, and start-sign variables.",
+          "Model sign perception separately from compliance.",
+          "Control TrialOrder and measure SOD/strategy.",
+          "方法上使用 VR subway scene、眼动记录和不同寻路/压力条件下的行为指标。",
+          "VR subway station + eye tracking; 48 participants; normal vs pressure conditions.",
+          "Such as Chen (Chen et al., 2020) explored the effect of different color safety signs on subway fire escape perfor - mance.",
+          "To this end, a virtual reality environment of a subway station was developed."
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：Safety Science 162 (2023) 106096 Available online 14 February 2023 0925-7535/© 2023 Elsevier Ltd.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -4510,7 +5972,7 @@
       ],
       "articleRole": "导向标识与空间导航证据",
       "evidenceType": "方法或背景研究",
-      "qualityTier": "Grade B，Medium；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade B，Medium；中等相关：可用于方法类比、背景论证或边界讨论，但通常不是主结论的直接证据。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文讨论机场导向体验的 halo effect，即寻路体验会影响对系统可靠性和应急准备的感知。",
       "researchQuestion": "研究问题是：日常导向体验是否会影响人对紧急情况下导向系统的信任和准备度。",
       "researchPosition": "知识库定位：导向标识与空间导航证据。 该文讨论机场导向体验的 halo effect，即寻路体验会影响对系统可靠性和应急准备的感知。 对本项目的核心价值：用于问卷、主观评分或 limitation 中的 trust/familiarity 讨论。",
@@ -4586,6 +6048,48 @@
         "导向标识与寻路理论",
         "VR 实验范式与生态效度"
       ],
+      "readingNote": {
+        "tldr": "该文讨论机场导向体验的 halo effect，即寻路体验会影响对系统可靠性和应急准备的感知。",
+        "problem": "研究问题是：日常导向体验是否会影响人对紧急情况下导向系统的信任和准备度。",
+        "motivation": "该文被纳入知识库，是因为它能补足 导向标识与空间导航证据 这一证据层。 它关联的主题包括 Reliability、signage trust、emergency preparedness。 对当前研究的核心启发是：可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+        "methodSummary": "方法上围绕 airport terminal wayfinding experience 与 perceived reliability 进行调查或实验。",
+        "resultSummary": "导向系统可靠性感知会影响应急准备和信任。 主观信任可解释为什么同样的标识暴露不必然带来相同行为。 Routine wayfinding signage quality shapes perceived reliability, which can transfer to emergency exit signage compliance via halo effect. Signature conditions require empirical manipulation checks of direction quality, clarity, sufficiency, overload, reliability, and behavioral errors.",
+        "transferableConcepts": [
+          "标识可见性、标识方向、标识位置、标识连续性或信息密度",
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "寻路完成时间、错误、路径效率",
+          "标识发现、标识确认、按标识行动",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "可用于把低/中/高密度转化为标识可见性、确认成本和路线决策事件的组内因素。"
+        ],
+        "strengths": [
+          "直接关联导向标识、寻路或室内导航，可用于定义行为指标和任务机制。",
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "机场终端不等于地铁火灾逃生。",
+          "Questionnaire intention, not observed evacuation behavior.",
+          "To ensure the comprehensiveness and validity of the survey ques - tionnaire, it was reviewed and revised by a panel of experts engaged in safety engineering and traffic engineering research.",
+          "Reliability and validity test Reliability is a measure of the stability and consistency of the results derived from a measurement model.",
+          "Validity pertains to the precision with which a measurement model captures the essence of the research construct, encompassing both convergent validity and discriminant validity."
+        ],
+        "writingAngles": [
+          "用于问卷、主观评分或 limitation 中的 trust/familiarity 讨论。",
+          "Add post-trial perceived signage reliability/confidence questionnaire.",
+          "Create sign_compliance_events.csv.",
+          "方法上围绕 airport terminal wayfinding experience 与 perceived reliability 进行调查或实验。",
+          "Airport terminal survey; visibility/legibility/consistency/correctness -> reliability -> compliance intention.",
+          "In response, designers and airport managers have worked to upgrade signage systems, drawing on passenger feedback to optimize the functionality of these signs ( Harding, 2011; Schultz et al., 2007; Wenzel, 2005 ).",
+          "适合写入：Methods: Signature manipulation",
+          "适合写入：signage variables"
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：To validate the hypotheses in our research model, we designed a targeted questionnaire and collected 397 valid responses from airport terminals in four major cities in China.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -4658,7 +6162,7 @@
       ],
       "articleRole": "导向标识与空间导航证据",
       "evidenceType": "实验研究",
-      "qualityTier": "Grade B，Medium；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade B，Medium；中等相关：可用于方法类比、背景论证或边界讨论，但通常不是主结论的直接证据。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文研究 color zones / landmarks 对空间导航和性别差异的影响，是颜色与区域地标的背景证据。",
       "researchQuestion": "研究问题是：区域颜色地标是否改善空间导航，是否受性别或方向感影响。",
       "researchPosition": "知识库定位：导向标识与空间导航证据。 该文研究 color zones / landmarks 对空间导航和性别差异的影响，是颜色与区域地标的背景证据。 对本项目的核心价值：用于解释标识图形、颜色和空间分区对 wayfinding 的潜在作用。",
@@ -4728,6 +6232,49 @@
         "导向标识与寻路理论",
         "VR 实验范式与生态效度"
       ],
+      "readingNote": {
+        "tldr": "该文研究 color zones / landmarks 对空间导航和性别差异的影响，是颜色与区域地标的背景证据。",
+        "problem": "研究问题是：区域颜色地标是否改善空间导航，是否受性别或方向感影响。",
+        "motivation": "该文被纳入知识库，是因为它能补足 导向标识与空间导航证据 这一证据层。 它关联的主题包括 Landmarks、color zones、sense of direction。 对当前研究的核心启发是：可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+        "methodSummary": "方法上操控颜色区域或地标并观察导航表现。",
+        "resultSummary": "颜色区域和地标可影响空间记忆与导航策略。 个体差异可能调节标识/地标的使用方式。 Regional landmarks/color zones affect spatial navigation and interact with sense of direction. Sense of direction, route/survey strategy, landmark use, risk preference, VR/gaming experience can moderate wayfinding behavior.",
+        "transferableConcepts": [
+          "VR 场景、任务顺序、熟悉度和沉浸程度",
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "寻路完成时间、错误、路径效率",
+          "可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "与中等密度最高假设关系较弱，主要作为背景、方法或边界文献。"
+        ],
+        "strengths": [
+          "包含 VR 或虚拟环境范式，可帮助论证实验场景的可控性与生态效度边界。",
+          "直接关联导向标识、寻路或室内导航，可用于定义行为指标和任务机制。",
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "不能直接推断标识密度的 EEG 效应。",
+          "Not emergency evacuation.",
+          "The introduction of regional landmarks as a distinct theoretical construct addresses a critical limitation in current spatial cognition theory.",
+          "The final sample comprised 84 participants (43 female), with comparable male-to-female ratios across conditions (experimental: 20:22; control: 21:21).",
+          "As our study was conducted in a combination of indoor-outdoor virtual environment, we based our sample size on Nazareth et al."
+        ],
+        "writingAngles": [
+          "用于解释标识图形、颜色和空间分区对 wayfinding 的潜在作用。",
+          "Use for subject covariates and Metro map visual landmarks/color zones.",
+          "Control TrialOrder and measure SOD/strategy.",
+          "方法上操控颜色区域或地标并观察导航表现。",
+          "VR wayfinding with/without regional landmarks; individual differences.",
+          "As our study was conducted in a combination of indoor-outdoor virtual environment, we based our sample size on Nazareth et al.",
+          "’ s (2019) meta-analysis, which reported a large sex difference ( d = 0.55) in navigation performance across indoor-outdoor virtual environments.",
+          "These data were collected as part of a larger project addressing different research ques - tions, and we report here that scores on all three working memory tasks did not significantly differ between experimental conditions ( p s > 0.27)."
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：The influence of regional landmarks (color zones) on sex differences in spatial navigation: The moderating role of sense of direction Kali N.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -4780,7 +6327,7 @@
       ],
       "articleRole": "导向标识与空间导航证据",
       "evidenceType": "实验研究",
-      "qualityTier": "Grade B，Medium；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade B，Medium；中等相关：可用于方法类比、背景论证或边界讨论，但通常不是主结论的直接证据。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文讨论 wayfinding strategy 与 landmark type 在 VR 中对导航表现的影响。",
       "researchQuestion": "研究问题是：不同寻路策略和地标类型如何影响 VR 导航表现和压力。",
       "researchPosition": "知识库定位：导向标识与空间导航证据。 该文讨论 wayfinding strategy 与 landmark type 在 VR 中对导航表现的影响。 对本项目的核心价值：用于组间差异、策略问卷和随机效应解释。",
@@ -4852,6 +6399,49 @@
         "VR 实验范式与生态效度",
         "建模与未来应用"
       ],
+      "readingNote": {
+        "tldr": "该文讨论 wayfinding strategy 与 landmark type 在 VR 中对导航表现的影响。",
+        "problem": "研究问题是：不同寻路策略和地标类型如何影响 VR 导航表现和压力。",
+        "motivation": "该文被纳入知识库，是因为它能补足 导向标识与空间导航证据 这一证据层。 它关联的主题包括 Wayfinding strategy、landmarks、stress。 对当前研究的核心启发是：可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+        "methodSummary": "方法上在 VR 环境中比较 landmark type、strategy 与 performance。",
+        "resultSummary": "地标类型与个人策略会共同影响导航表现。 这支持在分析中考虑个体方向感或策略差异。 Wayfinding strategy and landmark type interact; stress partly mediates performance differences. Sense of direction, route/survey strategy, landmark use, risk preference, VR/gaming experience can moderate wayfinding behavior.",
+        "transferableConcepts": [
+          "VR 场景、任务顺序、熟悉度和沉浸程度",
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "寻路完成时间、错误、路径效率",
+          "路径长度、回退、绕行或距离",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "可用于把低/中/高密度转化为标识可见性、确认成本和路线决策事件的组内因素。"
+        ],
+        "strengths": [
+          "包含 VR 或虚拟环境范式，可帮助论证实验场景的可控性与生态效度边界。",
+          "直接关联导向标识、寻路或室内导航，可用于定义行为指标和任务机制。",
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "地标不是应急标识，需区分。",
+          "不要 overstate to emergency signage without caveat.",
+          "Given the range of effect sizes and the relatively small sample size per group, a medium effect size f = 0.25 was adopted for the present study.",
+          "The sample size was then determined by a priori power analysis using G*Power 3.1 ( Faul et al., 2007 ), focusing on the interaction between 2 wayfinding strategy (a between-subject variable: survey vs.",
+          "The analysis determined that a sample size of 46 participants was required."
+        ],
+        "writingAngles": [
+          "用于组间差异、策略问卷和随机效应解释。",
+          "Support individual differences: route/survey strategy and perceived stress.",
+          "Control TrialOrder and measure SOD/strategy.",
+          "方法上在 VR 环境中比较 landmark type、strategy 与 performance。",
+          "VR wayfinding; survey vs route strategy; global vs local landmarks; stress measures.",
+          "The sample size was then determined by a priori power analysis using G*Power 3.1 ( Faul et al., 2007 ), focusing on the interaction between 2 wayfinding strategy (a between-subject variable: survey vs.",
+          "No significant differences in gender ( χ 2 = 0.00, p = 1.00) or age ( t (44) = 0.18, p = .860) were found between the two groups.",
+          "All participants had no prior experience about spatial wayfinding tasks before the experiment, gave their written informed consent approved by the Ethics Committee in School of Social Development and Public Policy, Fudan University (FDU-SSDP - P-IRB-2020-2-002, Oct."
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：From this perspective, properly matching wayfinding strategies and landmark types might reduce negative emotional arousal and facilitate successful wayfinding.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -4903,7 +6493,7 @@
       ],
       "articleRole": "VR 实验范式与生态效度证据",
       "evidenceType": "方法或背景研究",
-      "qualityTier": "Grade C，Low；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade C，Low；外围相关：只适合作为补充背景或未来工作。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文研究火灾疏散中的自组织行为和移动模式，是 crowd dynamics 背景。",
       "researchQuestion": "研究问题是：火灾疏散时行人如何形成自组织移动模式。",
       "researchPosition": "知识库定位：VR 实验范式与生态效度证据。 该文研究火灾疏散中的自组织行为和移动模式，是 crowd dynamics 背景。 对本项目的核心价值：用于讨论 movement pattern、backtracking 和 crowd behavior 背景。",
@@ -4971,6 +6561,48 @@
         "AR experimental validity",
         "VR 实验范式与生态效度"
       ],
+      "readingNote": {
+        "tldr": "该文研究火灾疏散中的自组织行为和移动模式，是 crowd dynamics 背景。",
+        "problem": "研究问题是：火灾疏散时行人如何形成自组织移动模式。",
+        "motivation": "该文被纳入知识库，是因为它能补足 VR 实验范式与生态效度证据 这一证据层。 它关联的主题包括 Self-organized behavior、virtual fire evacuation。 对当前研究的核心启发是：可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+        "methodSummary": "方法上观察或模拟虚拟火灾疏散中的运动模式。",
+        "resultSummary": "个体移动会受到空间结构和群体互动影响。 该背景可解释路径拥挤或回头行为，但不是标识密度主证据。 Virtual fire experiments can reproduce self-organized evacuation patterns like detour, wall-following, queuing. VR is acceptable for controlled emergency/wayfinding experiments but needs caveats about realism, immersion, sickness, and social interaction.",
+        "transferableConcepts": [
+          "VR 场景、任务顺序、熟悉度和沉浸程度",
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "行为指标需回到原文 Methods/Results 核对。",
+          "可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "与中等密度最高假设关系较弱，主要作为背景、方法或边界文献。"
+        ],
+        "strengths": [
+          "包含 VR 或虚拟环境范式，可帮助论证实验场景的可控性与生态效度边界。",
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "如果实验没有群体互动，不要过度引用。",
+          "Not signage/EEG.",
+          "Section 6 summarises the conclusions and discusses future work.",
+          "Analysis of reliability and validity Cronbach Alpha coefficient and Kaiser-Meyer-Olkin (KMO) values were widely used by researchers to evaluate the reliability and validity of the questionnaire (Wang et al., 2020).",
+          "Therefore, in this study, we calculated the Cronbach Alpha coefficient and KMO values to evaluate the reliability and validity of two questionnaires."
+        ],
+        "writingAngles": [
+          "用于讨论 movement pattern、backtracking 和 crowd behavior 背景。",
+          "Peripheral future multi-person/behavioral-pattern work.",
+          "方法上观察或模拟虚拟火灾疏散中的运动模式。",
+          "Minecraft virtual/physical comparison and surveys.",
+          "The concept of self- organised behaviours entails that these behaviours do not stem from external planning, dictated prescriptions, or structured frameworks, as exemplified by elements like traffic signs, legal ordinances, or societal * Corresponding author.",
+          "Over the last few decades, VR experiments, given their flexible configurability and high participant safety, have been widely applied to develop evacuation skills and investigate pedestrian behaviours in fire conditions (Feng et al., 2018; Fu et al., 2021).",
+          "Chittaro and Ranon (2009) designed a series of VR games for training participants to safely evacuate a building during fire emergencies by learning and practice.",
+          "适合写入：Methods: VR"
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：Safety Science 170 (2024) 106373 Available online 8 November 2023 0925-7535/© 2023 Elsevier Ltd.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -5015,7 +6647,7 @@
       ],
       "articleRole": "导向标识与空间导航证据",
       "evidenceType": "实验研究",
-      "qualityTier": "Grade A，High；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade A，High；核心相关：可优先支撑本研究的背景、方法或变量定义。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文研究虚拟地铁中初始信息模态如何影响后续文本标识使用，是音频/视觉提示与标识交互的核心文献。",
       "researchQuestion": "研究问题是：初始疏散信息的模态是否改变人们随后搜索和使用文本标识的方式。",
       "researchPosition": "知识库定位：导向标识与空间导航证据。 该文研究虚拟地铁中初始信息模态如何影响后续文本标识使用，是音频/视觉提示与标识交互的核心文献。 对本项目的核心价值：用于定义 audio overlap、reconfirmation、fixation/search latency 等指标。",
@@ -5103,6 +6735,55 @@
         "导向标识与寻路理论",
         "VR 实验范式与生态效度"
       ],
+      "readingNote": {
+        "tldr": "该文研究虚拟地铁中初始信息模态如何影响后续文本标识使用，是音频/视觉提示与标识交互的核心文献。",
+        "problem": "研究问题是：初始疏散信息的模态是否改变人们随后搜索和使用文本标识的方式。",
+        "motivation": "该文被纳入知识库，是因为它能补足 导向标识与空间导航证据 这一证据层。 它关联的主题包括 Information modality、metro signage、VR。 对当前研究的核心启发是：可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+        "methodSummary": "方法上使用 virtual metro scene，比较不同信息模态下的信息搜索、注视或寻路行为。",
+        "resultSummary": "文本条件可能延迟信息搜索启动，但一旦开始搜索可更快找到标识。 模态一致性可能降低重复确认和注视负担。 Initial evacuation information modality changes later interaction with text-based metro signage; modality consistency reduces re-confirmation and fixation duration. Metro Rescue should be framed as a signage-information and uncertainty-resolution study, not a simple “which sign set is best” comparison.",
+        "transferableConcepts": [
+          "标识可见性、标识方向、标识位置、标识连续性或信息密度",
+          "信息模态、注意转移、提示时窗",
+          "VR 场景、任务顺序、熟悉度和沉浸程度",
+          "眼动注视、扫视、视觉搜索指标",
+          "寻路完成时间、错误、路径效率",
+          "标识发现、标识确认、按标识行动",
+          "视觉搜索、注视次数、确认成本",
+          "可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "可用于把低/中/高密度转化为标识可见性、确认成本和路线决策事件的组内因素。"
+        ],
+        "strengths": [
+          "与 Metro Rescue 的研究对象或方法高度接近，可优先用于 Introduction、Methods 或 Discussion。",
+          "包含 VR 或虚拟环境范式，可帮助论证实验场景的可控性与生态效度边界。",
+          "直接关联导向标识、寻路或室内导航，可用于定义行为指标和任务机制。",
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "与 S040 可能是重复条目，正式引用时只保留一处。",
+          "Duplicate with S040; cite once.",
+          "Audio confounds visual decision epochs: Add audio_overlap_2s flag and sensitivity exclusion.",
+          "This combination of controllability and ecological rele - vance has positioned VR as a valuable tool for examining behavioral mechanisms that cannot be ethically or practically tested in real emergencies.",
+          "This step was essential for maintaining the internal validity of the research and ensuring reliable interpretation of the core behavioral measures.",
+          "The final sample consisted of 32 males and 28 females, with age ranging from 19 to 38 years (M = 24.6, SD = 3.8)."
+        ],
+        "writingAngles": [
+          "用于定义 audio overlap、reconfirmation、fixation/search latency 等指标。",
+          "Core support for Audio/modality switching cost and re-confirmation behavior.",
+          "Treat Audio as cognitive/modality factor and test sensitivity windows.",
+          "Operationalize as behavioral load.",
+          "Behavioral confirmation cost",
+          "Audio/modality sensitivity",
+          "方法上使用 virtual metro scene，比较不同信息模态下的信息搜索、注视或寻路行为。",
+          "VR metro; audio broadcast vs text message initial instructions; text-based signage; eye tracking/behavior; 60 participants."
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：However, limited research has examined how the modality of initial evacuation instructions influences evacuees ’ subsequent interaction with text-based signage.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -5246,7 +6927,7 @@
       ],
       "articleRole": "导向标识与空间导航证据",
       "evidenceType": "实验研究",
-      "qualityTier": "Grade A，High；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade A，High；核心相关：可优先支撑本研究的背景、方法或变量定义。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文同样围绕虚拟地铁文本标识和信息模态，可作为 S039 的重复/补充记录。",
       "researchQuestion": "研究问题是：信息模态与文本标识如何共同影响地铁环境中的寻路行为。",
       "researchPosition": "知识库定位：导向标识与空间导航证据。 该文同样围绕虚拟地铁文本标识和信息模态，可作为 S039 的重复/补充记录。 对本项目的核心价值：用于检查本研究 Audio 条件和 sign_readable EEG 窗口是否重叠。",
@@ -5321,6 +7002,52 @@
         "导向标识与寻路理论",
         "VR 实验范式与生态效度"
       ],
+      "readingNote": {
+        "tldr": "该文同样围绕虚拟地铁文本标识和信息模态，可作为 S039 的重复/补充记录。",
+        "problem": "研究问题是：信息模态与文本标识如何共同影响地铁环境中的寻路行为。",
+        "motivation": "该文被纳入知识库，是因为它能补足 导向标识与空间导航证据 这一证据层。 它关联的主题包括 Information modality、metro signage、VR。 对当前研究的核心启发是：可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+        "methodSummary": "方法上是 virtual metro wayfinding 与 text-based signage 的模态比较。",
+        "resultSummary": "信息模态会影响信息搜索节奏和标识确认成本。 音频线索可能干扰或帮助视觉标识加工。 Duplicate/near-duplicate of S039. Same modality-consistency finding.",
+        "transferableConcepts": [
+          "标识可见性、标识方向、标识位置、标识连续性或信息密度",
+          "信息模态、注意转移、提示时窗",
+          "VR 场景、任务顺序、熟悉度和沉浸程度",
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "寻路完成时间、错误、路径效率",
+          "标识发现、标识确认、按标识行动",
+          "可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "可用于把低/中/高密度转化为标识可见性、确认成本和路线决策事件的组内因素。"
+        ],
+        "strengths": [
+          "与 Metro Rescue 的研究对象或方法高度接近，可优先用于 Introduction、Methods 或 Discussion。",
+          "包含 VR 或虚拟环境范式，可帮助论证实验场景的可控性与生态效度边界。",
+          "直接关联导向标识、寻路或室内导航，可用于定义行为指标和任务机制。"
+        ],
+        "weaknesses": [
+          "与 S039 去重后引用，不重复堆叠证据。",
+          "不要 double count.",
+          "This combination of controllability and ecological rele - vance has positioned VR as a valuable tool for examining behavioral mechanisms that cannot be ethically or practically tested in real emergencies.",
+          "This step was essential for maintaining the internal validity of the research and ensuring reliable interpretation of the core behavioral measures.",
+          "The final sample consisted of 32 males and 28 females, with age ranging from 19 to 38 years (M = 24.6, SD = 3.8)."
+        ],
+        "writingAngles": [
+          "用于检查本研究 Audio 条件和 sign_readable EEG 窗口是否重叠。",
+          "Mark duplicate; do not treat as independent replication.",
+          "方法上是 virtual metro wayfinding 与 text-based signage 的模态比较。",
+          "Same as S039.",
+          "Methodology Virtual reality has been widely adopted as a research tool in the study of evacuation behavior, particularly for examining relative behavioral differences across experimental scenarios.",
+          "Prior work has shown that VR enables researchers to systematically manipulate conditions while observing changes in information-seeking, attention allocation, and wayfinding performance ( Dai et al., 2024; Kim et al., 2025; Kinateder et al., 2014; Lin et al., 2020; Lovreglio et al., 2022; Yu et al., 2023 ).",
+          "Results show that participants in the text-based condition took longer to initiate information-seeking but found signage more quickly once seeking began, indicating distinct behavioral patterns shaped by information modality.",
+          "适合写入：Methods: Signature manipulation"
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：However, limited research has examined how the modality of initial evacuation instructions influences evacuees ’ subsequent interaction with text-based signage.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [],
         "mechanisms": [],
@@ -5358,7 +7085,7 @@
       ],
       "articleRole": "导向标识与空间导航证据",
       "evidenceType": "建模研究",
-      "qualityTier": "Grade A，High；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade A，High；核心相关：可优先支撑本研究的背景、方法或变量定义。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文把建筑导向标识效果拆为 perception 与 compliance，并使用眼动和可解释模型，是本研究 sign_readable 解释边界的关键文献。",
       "researchQuestion": "研究问题是：考虑部分环境影响时，如何评估建筑导向标识是否被看见以及是否被遵从。",
       "researchPosition": "知识库定位：导向标识与空间导航证据。 该文把建筑导向标识效果拆为 perception 与 compliance，并使用眼动和可解释模型，是本研究 sign_readable 解释边界的关键文献。 对本项目的核心价值：用于建立 sign_compliance_events.csv 和 perception-compliance mediation 框架。",
@@ -5449,6 +7176,53 @@
         "VR 实验范式与生态效度",
         "建模与未来应用"
       ],
+      "readingNote": {
+        "tldr": "该文把建筑导向标识效果拆为 perception 与 compliance，并使用眼动和可解释模型，是本研究 sign_readable 解释边界的关键文献。",
+        "problem": "研究问题是：考虑部分环境影响时，如何评估建筑导向标识是否被看见以及是否被遵从。",
+        "motivation": "该文被纳入知识库，是因为它能补足 导向标识与空间导航证据 这一证据层。 它关联的主题包括 Guidance signs、perception-compliance、eye tracking、SHAP。 对当前研究的核心启发是：可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+        "methodSummary": "方法上结合眼动、行为选择和 SHAP/机器学习解释，分析 guidance sign effectiveness。",
+        "resultSummary": "看见标识不等于遵从标识。 标识效果需要区分 perception、attention、comprehension 和 route choice。 Guidance sign effectiveness should be split into perception and compliance; seeing a sign does not guarantee following it. Metro Rescue should be framed as a signage-information and uncertainty-resolution study, not a simple “which sign set is best” comparison.",
+        "transferableConcepts": [
+          "标识可见性、标识方向、标识位置、标识连续性或信息密度",
+          "眼动注视、扫视、视觉搜索指标",
+          "路线选择、出口选择或 compliance",
+          "标识发现、标识确认、按标识行动",
+          "路径长度、回退、绕行或距离",
+          "视觉搜索、注视次数、确认成本",
+          "可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "可用于把低/中/高密度转化为标识可见性、确认成本和路线决策事件的组内因素。"
+        ],
+        "strengths": [
+          "与 Metro Rescue 的研究对象或方法高度接近，可优先用于 Introduction、Methods 或 Discussion。",
+          "直接关联导向标识、寻路或室内导航，可用于定义行为指标和任务机制。",
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "不能把 sign_readable 当作理解或正确选择。",
+          "不要 treat sign_readable as comprehension/compliance.",
+          "Signature manipulation is not auditable: Build signature_manipulation_table with sign/face-level variables and manipulation-check survey.",
+          "sign_readable overinterpreted: Use perception-compliance model and sign_compliance_events table.",
+          "However, each of these studies itself focuses on a major influencing factor to explore the extent to which that influ - encing factor contributes to the model, which may affect the ability to generalize the study.",
+          "z ʹ ∈ { 0 , 1 } is the indicator vector, for a certain sample, if feature j is not in the decision path, then the value of z ʹ is 0, corresponding to ∅ j = 0, which indicates that the feature j has no contribution to the final predicted value."
+        ],
+        "writingAngles": [
+          "用于建立 sign_compliance_events.csv 和 perception-compliance mediation 框架。",
+          "Core for sign_visible/sign_readable vs compliance split and sign_compliance_events table.",
+          "Model sign perception separately from compliance.",
+          "Operationalize as behavioral load.",
+          "Create sign_compliance_events.csv.",
+          "Event-specific uncertainty",
+          "Behavioral confirmation cost",
+          "Compliance mediation"
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：Guidance signs are the main source of information during emergency evacuation, directly affecting the route choice of evacuees.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -5638,7 +7412,7 @@
       ],
       "articleRole": "VR 实验范式与生态效度证据",
       "evidenceType": "实验研究",
-      "qualityTier": "Grade B，Medium；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade B，Medium；中等相关：可用于方法类比、背景论证或边界讨论，但通常不是主结论的直接证据。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文研究火灾疏散中的风险决策，考虑烟雾、风险偏好和邻居行为。",
       "researchQuestion": "研究问题是：人在火灾中为什么会做出风险路线选择。",
       "researchPosition": "知识库定位：VR 实验范式与生态效度证据。 该文研究火灾疏散中的风险决策，考虑烟雾、风险偏好和邻居行为。 对本项目的核心价值：用于解释组间差异和风险偏好问卷的重要性。",
@@ -5717,6 +7491,49 @@
         "VR 实验范式与生态效度",
         "建模与未来应用"
       ],
+      "readingNote": {
+        "tldr": "该文研究火灾疏散中的风险决策，考虑烟雾、风险偏好和邻居行为。",
+        "problem": "研究问题是：人在火灾中为什么会做出风险路线选择。",
+        "motivation": "该文被纳入知识库，是因为它能补足 VR 实验范式与生态效度证据 这一证据层。 它关联的主题包括 Risky route choice、smoke、social influence。 对当前研究的核心启发是：可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+        "methodSummary": "方法上操控烟雾水平、个体风险偏好和邻居行为，观察 route choice。",
+        "resultSummary": "风险偏好和社会线索可能覆盖理性路径选择。 环境风险与个体倾向会调节疏散决策。 Risky route choice under smoke is influenced by smoke level, risk preference, and neighbor behavior. Exit/route choice is not determined by nearest exit alone; familiarity, visibility, smoke, occupancy, signs, and social cues trade off.",
+        "transferableConcepts": [
+          "VR 场景、任务顺序、熟悉度和沉浸程度",
+          "紧急度、风险感知、压力或情绪负荷",
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "路线选择、出口选择或 compliance",
+          "路径长度、回退、绕行或距离",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "与中等密度最高假设关系较弱，主要作为背景、方法或边界文献。"
+        ],
+        "strengths": [
+          "包含 VR 或虚拟环境范式，可帮助论证实验场景的可控性与生态效度边界。",
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "烟雾和邻居行为若未在当前实验中操控，只能作为混杂或未来变量。",
+          "Your current no-smoke task should not cite it as direct signature evidence.",
+          "Besides, high cost is also a limitation for researchers to develop a real-world experimental environment (Haghani and Sarvi, 2018).",
+          "Immersive VR offers a similar degree of ecological validity as classical laboratory studies by providing virtual emergency environments with high quality and immersive experience (Kinateder et al., 2014a).",
+          "Their findings suggested that the VR experiment had external validity and can be an effective tool for pedestrian or evacuation research."
+        ],
+        "writingAngles": [
+          "用于解释组间差异和风险偏好问卷的重要性。",
+          "Future hazard/smoke and risk-preference covariate; supports non-rational route choice.",
+          "Create sign_compliance_events.csv.",
+          "Future work or limitation.",
+          "方法上操控烟雾水平、个体风险偏好和邻居行为，观察 route choice。",
+          "Immersive VR fire evacuation; smoky shortcut choice; risk questionnaire; neighbor behavior.",
+          "To address these constraints, immersive virtual reality (VR) technology becomes a promising approach.",
+          "Immersive VR offers a similar degree of ecological validity as classical laboratory studies by providing virtual emergency environments with high quality and immersive experience (Kinateder et al., 2014a)."
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：Safety Science 140 (2021) 105245 Available online 10 April 2021 0925-7535/© 2021 Published by Elsevier Ltd.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -5790,7 +7607,7 @@
       ],
       "articleRole": "神经生理与认知负荷证据",
       "evidenceType": "实验研究",
-      "qualityTier": "Grade A，High；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade A，High；核心相关：可优先支撑本研究的背景、方法或变量定义。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文用 VR 和眼动解释为什么人们不用 emergency exit doors，核心是可见性、熟悉度和注意中介。",
       "researchQuestion": "研究问题是：人们不使用应急出口是因为没有注意到、因为不熟悉，还是因为看到后仍不选择。",
       "researchPosition": "知识库定位：神经生理与认知负荷证据。 该文用 VR 和眼动解释为什么人们不用 emergency exit doors，核心是可见性、熟悉度和注意中介。 对本项目的核心价值：用于支持 attention/perception 是 route choice 的中介，而不是简单 stimulus-response。",
@@ -5876,6 +7693,54 @@
         "EEG/认知负荷指标依据",
         "VR 实验范式与生态效度"
       ],
+      "readingNote": {
+        "tldr": "该文用 VR 和眼动解释为什么人们不用 emergency exit doors，核心是可见性、熟悉度和注意中介。",
+        "problem": "研究问题是：人们不使用应急出口是因为没有注意到、因为不熟悉，还是因为看到后仍不选择。",
+        "motivation": "该文被纳入知识库，是因为它能补足 神经生理与认知负荷证据 这一证据层。 它关联的主题包括 Exit door use、visual attention、familiarity。 对当前研究的核心启发是：可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+        "methodSummary": "方法上结合 VR 火灾疏散与 eye-tracking，比较注意、熟悉度和 exit choice。",
+        "resultSummary": "对寻路线索的注意与出口选择有关。 一旦产生注视，熟悉度对选择的影响可能减弱。 Emergency exits are underused partly because users fail to notice them; familiarity affects attention, not necessarily choice after fixation. Seeing or entering readable range of a sign is not equivalent to understanding or complying with it.",
+        "transferableConcepts": [
+          "标识可见性、标识方向、标识位置、标识连续性或信息密度",
+          "信息模态、注意转移、提示时窗",
+          "VR 场景、任务顺序、熟悉度和沉浸程度",
+          "眼动注视、扫视、视觉搜索指标",
+          "路线选择、出口选择或 compliance",
+          "标识发现、标识确认、按标识行动",
+          "视觉搜索、注视次数、确认成本",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "与中等密度最高假设关系较弱，主要作为背景、方法或边界文献。"
+        ],
+        "strengths": [
+          "与 Metro Rescue 的研究对象或方法高度接近，可优先用于 Introduction、Methods 或 Discussion。",
+          "包含 VR 或虚拟环境范式，可帮助论证实验场景的可控性与生态效度边界。",
+          "直接关联导向标识、寻路或室内导航，可用于定义行为指标和任务机制。",
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "门颜色/类型的 null effect 是特定场景结果，不能泛化到所有标识设计。",
+          "Door color/type null effects are context-specific.",
+          "sign_readable overinterpreted: Use perception-compliance model and sign_compliance_events table.",
+          "TrialOrder/familiarity drives effect: Include TrialOrder and first-time exposure; within-subject plots.",
+          "Limits and prospect There are still some limitations in our study that can be tackled in future research.",
+          "First, the ecological validity of VR experiments needs to be further examined."
+        ],
+        "writingAngles": [
+          "用于支持 attention/perception 是 route choice 的中介，而不是简单 stimulus-response。",
+          "Core support for attention as mediator of exit choice and familiar route bias.",
+          "Model sign perception separately from compliance.",
+          "Create sign_compliance_events.csv.",
+          "Control TrialOrder and measure SOD/strategy.",
+          "Compliance mediation",
+          "方法上结合 VR 火灾疏散与 eye-tracking，比较注意、熟悉度和 exit choice。",
+          "VR + eye tracking; exit door use; familiarity, door color/type, stairwell sign."
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：Advanced Engineering Informatics 60 (2024) 102396 Available online 14 February 2024 1474-0346/© 2024 Elsevier Ltd.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -5998,7 +7863,7 @@
       ],
       "articleRole": "VR 实验范式与生态效度证据",
       "evidenceType": "实验研究",
-      "qualityTier": "Grade D，Low；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade D，Low；低相关：一般不进入正文主证据链。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文主题是人类与算法数据请求者下的客户响应，和本项目关联很弱。",
       "researchQuestion": "研究问题是：数据请求主体是人还是算法会怎样影响客户数据提供行为。",
       "researchPosition": "知识库定位：VR 实验范式与生态效度证据。 该文主题是人类与算法数据请求者下的客户响应，和本项目关联很弱。 对本项目的核心价值：除非讨论系统数据管理，否则不建议引用。",
@@ -6059,6 +7924,46 @@
         "AR experimental validity",
         "VR 实验范式与生态效度"
       ],
+      "readingNote": {
+        "tldr": "该文主题是人类与算法数据请求者下的客户响应，和本项目关联很弱。",
+        "problem": "研究问题是：数据请求主体是人还是算法会怎样影响客户数据提供行为。",
+        "motivation": "该文被纳入知识库，是因为它能补足 VR 实验范式与生态效度证据 这一证据层。 它关联的主题包括 Data curation、B2B、algorithmic agents。 对当前研究的核心启发是：可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+        "methodSummary": "方法上偏管理/营销或信息系统实验。",
+        "resultSummary": "可作为数据治理或 AI 辅助伦理的远端背景。 不适合进入本研究核心文献链。 B2B algorithmic data requester/data curation paper; off-topic for Metro Rescue.",
+        "transferableConcepts": [
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "行为指标需回到原文 Methods/Results 核对。",
+          "可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "与中等密度最高假设关系较弱，主要作为背景、方法或边界文献。"
+        ],
+        "strengths": [
+          "主要作为背景文献使用，写作时应避免把类比证据写成直接实验结果。"
+        ],
+        "weaknesses": [
+          "与 EEG、VR 疏散、标识密度无直接关系。",
+          "Exclude from thesis main bibliography.",
+          "However, more than half of companies currently fail to elicit such positive customer responses, resulting in missing or outdated customer data and consequently, subopti - mal customer value creation (e.g., Validity 2024 , Sales - force 2025 ).",
+          "Some studies also investigated factors related to the data requesters’ competencies and limitations (e.g., Castelo et al.",
+          "It was based on a customer agreement with data requests via email communication from a real company, enabling high ecological validity and generalizability."
+        ],
+        "writingAngles": [
+          "除非讨论系统数据管理，否则不建议引用。",
+          "Do not use unless project pivots to AI agents/data requests.",
+          "方法上偏管理/营销或信息系统实验。",
+          "Field/online experiments in information systems.",
+          "适合写入：Rationale: virtual metro",
+          "适合写入：subway context",
+          "适合写入：Methods: VR",
+          "适合写入：AR experimental validity"
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：Information Systems Research Published online in Articles in Advance 18 Nov 2025 .",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [],
         "mechanisms": [],
@@ -6094,7 +7999,7 @@
       ],
       "articleRole": "神经生理与认知负荷证据",
       "evidenceType": "方法或背景研究",
-      "qualityTier": "Grade C，Low；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade C，Low；外围相关：只适合作为补充背景或未来工作。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文从奔牛节人群运动观察 pedestrian dynamics 的极端拥挤区域，属于运动动力学背景。",
       "researchQuestion": "研究问题是：高密度逃离/奔跑人群中基本图是否出现不可达区域或异常运动模式。",
       "researchPosition": "知识库定位：神经生理与认知负荷证据。 该文从奔牛节人群运动观察 pedestrian dynamics 的极端拥挤区域，属于运动动力学背景。 对本项目的核心价值：用于讨论高密度场景可能改变移动行为，但不是地铁标识认知负荷直接证据。",
@@ -6160,6 +8065,47 @@
         "导向标识与寻路理论",
         "建模与未来应用"
       ],
+      "readingNote": {
+        "tldr": "该文从奔牛节人群运动观察 pedestrian dynamics 的极端拥挤区域，属于运动动力学背景。",
+        "problem": "研究问题是：高密度逃离/奔跑人群中基本图是否出现不可达区域或异常运动模式。",
+        "motivation": "该文被纳入知识库，是因为它能补足 神经生理与认知负荷证据 这一证据层。 它关联的主题包括 Pedestrian dynamics、fleeing behavior。 对当前研究的核心启发是：可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+        "methodSummary": "方法上分析真实高密度人群运动数据。",
+        "resultSummary": "极端人群密度下 movement dynamics 可能呈现非线性或不可达区域。 可作为高密度 movement constraint 的背景。 High-speed fleeing crowd dynamics can depart from ordinary speed-density diagrams.",
+        "transferableConcepts": [
+          "空间复杂度、分支数、决策点复杂度",
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "行为指标需回到原文 Methods/Results 核对。",
+          "可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "与中等密度最高假设关系较弱，主要作为背景、方法或边界文献。"
+        ],
+        "strengths": [
+          "主要作为背景文献使用，写作时应避免把类比证据写成直接实验结果。"
+        ],
+        "weaknesses": [
+          "奔牛节不是 VR 地铁疏散。",
+          "Not indoor signage/EEG.",
+          "With all these ingredients, we propose a generalization of the pedestrian fundamental diagram for a scenario in which people with different desired speeds coexist.",
+          "Although our sample size is small, we estimate a falling probability by counting the ratio between the number of falls and the number of runners between the first and last of the 12-pack bulls.",
+          "Regardless of the particular shape of the curves for the various desired speeds, the combination of them will lead to a generalized speed–density space similar to the one sketched in Fig."
+        ],
+        "writingAngles": [
+          "用于讨论高密度场景可能改变移动行为，但不是地铁标识认知负荷直接证据。",
+          "Peripheral if discussing fleeing movement dynamics or density-speed assumptions.",
+          "方法上分析真实高密度人群运动数据。",
+          "Running of the bulls field data; pedestrian dynamics.",
+          "These six points were taken as six virtual humans when calculating the densities of neighbor runners, but were not considered in any other calculation performed in this work.",
+          "适合写入：Methods: Signature manipulation",
+          "适合写入：signage variables",
+          "适合写入：Theory"
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：APPLIED PHYSICAL SCIENCES Pedestrian dynamics at the running of the bulls evidence an inaccessible region in the fundamental diagram Daniel R.",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [],
         "mechanisms": [],
@@ -6195,7 +8141,7 @@
       ],
       "articleRole": "导向标识与空间导航证据",
       "evidenceType": "建模研究",
-      "qualityTier": "Grade A，High；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade A，High；核心相关：可优先支撑本研究的背景、方法或变量定义。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文用街景全景图建模路口决策复杂度，和 decision point complexity 及 passing branches 概念相关。",
       "researchQuestion": "研究问题是：道路交叉口的分支结构如何影响决策复杂度和路径选择难度。",
       "researchPosition": "知识库定位：导向标识与空间导航证据。 该文用街景全景图建模路口决策复杂度，和 decision point complexity 及 passing branches 概念相关。 对本项目的核心价值：用于构建 route complexity / branch count 控制变量。",
@@ -6273,6 +8219,51 @@
         "导向标识与寻路理论",
         "建模与未来应用"
       ],
+      "readingNote": {
+        "tldr": "该文用街景全景图建模路口决策复杂度，和 decision point complexity 及 passing branches 概念相关。",
+        "problem": "研究问题是：道路交叉口的分支结构如何影响决策复杂度和路径选择难度。",
+        "motivation": "该文被纳入知识库，是因为它能补足 导向标识与空间导航证据 这一证据层。 它关联的主题包括 Decision-point complexity、wayfinding。 对当前研究的核心启发是：可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+        "methodSummary": "方法上从街景/道路结构中提取 passing branches 等复杂度指标。",
+        "resultSummary": "决策点复杂度可由可选分支和空间结构量化。 这可支持 Metro Rescue 中把 decision_point_enter 附近分支数作为认知负荷协变量。 Decision-making complexity at intersections should be computed for specific entry-exit branch pairs using visual, structural, and semantic features. Metro Rescue should be framed as a signage-information and uncertainty-resolution study, not a simple “which sign set is best” comparison.",
+        "transferableConcepts": [
+          "空间复杂度、分支数、决策点复杂度",
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "寻路完成时间、错误、路径效率",
+          "可作为中等密度认知负荷可能呈非线性变化的类比证据，但不能替代本研究的 XDF 结果。",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "可用于支持“认知负荷可能呈非线性”这一理论前提。",
+          "可用于把低/中/高密度转化为标识可见性、确认成本和路线决策事件的组内因素。"
+        ],
+        "strengths": [
+          "与 Metro Rescue 的研究对象或方法高度接近，可优先用于 Introduction、Methods 或 Discussion。",
+          "直接关联导向标识、寻路或室内导航，可用于定义行为指标和任务机制。",
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "室外路网和室内地铁空间不同，需作为方法类比。",
+          "Road intersections ≠ metro interiors; justify adaptation conceptually.",
+          "Map drives effect: Model Metro and Signature*Metro; plot by map.",
+          "Two coders indepen- dently assessed responses for 16 randomly selected participants (19% of the sample).",
+          "A median split was used to divide the sample into poor and good sense of direction groups using the self-report measure (Median for men ¼ 3, Median for women ¼ 2.5).",
+          "One limitation of these fi ndings is that self-reports of sense of direction were utilized rather than performance-based measures such as angular estimates of locations."
+        ],
+        "writingAngles": [
+          "用于构建 route complexity / branch count 控制变量。",
+          "Adapt to Metro decision_points.csv: branch_count, angular deviation, visual similarity, openness, landmark salience.",
+          "Core mechanism for Signature2.",
+          "Create decision_points.csv and test interaction with Signature.",
+          "Complexity moderation",
+          "方法上从街景/道路结构中提取 passing branches 等复杂度指标。",
+          "Street-view panorama + road network + POI model; fine-grained branch-pair complexity.",
+          "适合写入：Analysis: decision-point and route-choice modeling"
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：How good are these directions?",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {
@@ -6385,7 +8376,7 @@
       ],
       "articleRole": "导向标识与空间导航证据",
       "evidenceType": "方法或背景研究",
-      "qualityTier": "Grade A，High；该等级用于知识库筛选，不等于正式文献质量评价，引用前仍需核对原文。",
+      "qualityTier": "Grade A，High；核心相关：可优先支撑本研究的背景、方法或变量定义。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。",
       "oneSentenceSummary": "该文研究方向指令质量与寻路效率，适合用作方向质量和 manipulation check 的依据。",
       "researchQuestion": "研究问题是：什么样的方向描述被认为质量更高，并如何影响寻路效率。",
       "researchPosition": "知识库定位：导向标识与空间导航证据。 该文研究方向指令质量与寻路效率，适合用作方向质量和 manipulation check 的依据。 对本项目的核心价值：用于定义 sign information quality、clarity rating 和 route instruction quality。",
@@ -6465,6 +8456,51 @@
         "signage variables",
         "导向标识与寻路理论"
       ],
+      "readingNote": {
+        "tldr": "该文研究方向指令质量与寻路效率，适合用作方向质量和 manipulation check 的依据。",
+        "problem": "研究问题是：什么样的方向描述被认为质量更高，并如何影响寻路效率。",
+        "motivation": "该文被纳入知识库，是因为它能补足 导向标识与空间导航证据 这一证据层。 它关联的主题包括 Manipulation check、direction quality、wayfinding。 对当前研究的核心启发是：可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+        "methodSummary": "方法上比较不同方向指令质量与 wayfinding performance。",
+        "resultSummary": "指令质量会影响导航效率和错误成本。 标识文字/箭头是否清晰可作为密度条件之外的 manipulation check。 Direction quality can be measured by subjective effectiveness ratings and behavioral wayfinding errors; route directions often outperform survey directions. Metro Rescue should be framed as a signage-information and uncertainty-resolution study, not a simple “which sign set is best” comparison.",
+        "transferableConcepts": [
+          "标识可见性、标识方向、标识位置、标识连续性或信息密度",
+          "如该文不含神经生理指标，则仅作为行为或方法背景。",
+          "寻路完成时间、错误、路径效率",
+          "路径长度、回退、绕行或距离",
+          "可支持把标识密度/信息可读性作为影响导向决策与认知负荷的理论变量。",
+          "可用于支持“认知负荷可能呈非线性”这一理论前提。",
+          "可用于把低/中/高密度转化为标识可见性、确认成本和路线决策事件的组内因素。"
+        ],
+        "strengths": [
+          "与 Metro Rescue 的研究对象或方法高度接近，可优先用于 Introduction、Methods 或 Discussion。",
+          "直接关联导向标识、寻路或室内导航，可用于定义行为指标和任务机制。",
+          "已经与知识库中的论点或机制相连，写作时更容易追溯证据链。"
+        ],
+        "weaknesses": [
+          "方向文字质量不等于标识数量密度。",
+          "Directions in text/descriptions, not signage scenes; adapt carefully.",
+          "Signature manipulation is not auditable: Build signature_manipulation_table with sign/face-level variables and manipulation-check survey.",
+          "Two coders indepen- dently assessed responses for 16 randomly selected participants (19% of the sample).",
+          "A median split was used to divide the sample into poor and good sense of direction groups using the self-report measure (Median for men ¼ 3, Median for women ¼ 2.5).",
+          "One limitation of these fi ndings is that self-reports of sense of direction were utilized rather than performance-based measures such as angular estimates of locations."
+        ],
+        "writingAngles": [
+          "用于定义 sign information quality、clarity rating 和 route instruction quality。",
+          "Core for Signature manipulation check: perceived clarity/sufficiency/overload + errors.",
+          "Core mechanism for Signature2.",
+          "Operationalize as behavioral load.",
+          "Behavioral confirmation cost",
+          "方法上比较不同方向指令质量与 wayfinding performance。",
+          "Indoor wayfinding studies; route vs survey directions; sense of direction; ratings/errors.",
+          "适合写入：Methods: Signature manipulation"
+        ],
+        "followUpQuestions": [
+          "核对 PDF 首页标题是否应改为：How good are these directions?",
+          "正式引用前核对作者、年份、期刊、DOI 和页码。",
+          "确认当前卡片中的结果句是否来自 Results/Discussion，而不是 Introduction 的文献转述。",
+          "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。"
+        ]
+      },
       "linkedEvidence": {
         "claims": [
           {

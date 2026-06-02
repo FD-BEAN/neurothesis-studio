@@ -129,24 +129,24 @@ const jobViewFilters: Array<{ id: JobViewFilter; label: string }> = [
 
 const writingTaskModes = [
   {
-    id: "evidence-map",
-    label: "证据矩阵",
-    description: "把论点拆成文献证据、项目假设和待验证结果。",
-  },
-  {
     id: "section-draft",
-    label: "章节草稿",
-    description: "生成可进入论文的连续段落，并保留引用边界。",
+    label: "写论文章节",
+    description: "直接生成目标章节的连续正文，证据链放在正文之后核验。",
   },
   {
     id: "methods-analysis",
-    label: "方法与分析",
-    description: "围绕实验设计、XDF、EEG 指标和统计模型写作。",
+    label: "写方法与分析",
+    description: "生成 Methods / Analysis Plan 的正文、模型说明和变量口径。",
+  },
+  {
+    id: "evidence-map",
+    label: "证据到段落",
+    description: "先组织证据，再输出可进入论文的段落和引用边界。",
   },
   {
     id: "review-revision",
     label: "审稿式修改",
-    description: "检查逻辑、证据、措辞和过度声称风险。",
+    description: "把已有段落按证据边界重写，并给出修改理由。",
   },
 ] as const;
 
@@ -164,9 +164,9 @@ const writingTargetSections = [
 type WritingTargetSectionId = (typeof writingTargetSections)[number]["id"];
 
 const writingOutputModes = [
-  { id: "structured", label: "结构化提纲 + 写作要点" },
-  { id: "manuscript", label: "中英双语论文段落" },
-  { id: "audit", label: "证据审计与修改建议" },
+  { id: "manuscript", label: "完整论文正文" },
+  { id: "structured", label: "章节结构 + 正文草稿" },
+  { id: "audit", label: "审稿式改写与证据审计" },
 ] as const;
 
 type WritingOutputModeId = (typeof writingOutputModes)[number]["id"];
@@ -186,12 +186,12 @@ const writingWorkflowPresets: Array<{
   prompt: string;
 }> = [
   {
-    label: "Introduction 证据链",
-    mode: "evidence-map",
+    label: "Introduction 正文",
+    mode: "section-draft",
     section: "introduction",
-    output: "structured",
+    output: "manuscript",
     prompt:
-      "请围绕本研究的 Introduction 建立证据链：从 VR/室内疏散导航、导向标识信息设计、EEG 认知负荷测量，到本研究的密度条件假设。请按“论点-文献依据-可写句子-不能声称”组织，并标出最适合引用的文献代码或文献标题。",
+      "请直接起草 Introduction / Related Work 的英文论文正文，形成 4-6 个连续段落：从 VR/室内疏散导航、导向标识信息设计、EEG 认知负荷测量，到本研究的 density condition 假设。正文后再给出中文证据说明、可引用文献和不能声称的边界。",
   },
   {
     label: "Methods 正文",
@@ -395,9 +395,9 @@ function Workspace({
   const [uploadMessage, setUploadMessage] = useState("");
   const [xdfUploadState, setXdfUploadState] = useState<UploadState>("idle");
   const [xdfUploadMessage, setXdfUploadMessage] = useState("");
-  const [writingMode, setWritingMode] = useState<WritingTaskModeId>("evidence-map");
+  const [writingMode, setWritingMode] = useState<WritingTaskModeId>("section-draft");
   const [writingSection, setWritingSection] = useState<WritingTargetSectionId>("introduction");
-  const [writingOutputMode, setWritingOutputMode] = useState<WritingOutputModeId>("structured");
+  const [writingOutputMode, setWritingOutputMode] = useState<WritingOutputModeId>("manuscript");
   const [researchNote, setResearchNote] = useState(writingWorkflowPresets[0].prompt);
   const [aiState, setAiState] = useState<AiState>({ status: "idle", output: "" });
   const [analysisJobs, setAnalysisJobs] = useState<ResearchAnalysisJob[]>([]);
@@ -1175,16 +1175,16 @@ function Workspace({
           <div className="section-head">
             <div>
               <p className="eyebrow">文献与写作助手</p>
-              <h2>证据驱动写作工作台</h2>
+              <h2>论文写作工作台</h2>
             </div>
             <button className="primary-button" onClick={runAiAssistant} disabled={aiState.status === "loading"}>
-              {aiState.status === "loading" ? "生成中..." : "生成写作结果"}
+              {aiState.status === "loading" ? "生成中..." : "生成论文章节"}
             </button>
           </div>
 
           <div className="ai-grid">
             <section className="work-panel assistant-task-panel">
-              <h3>写作任务</h3>
+              <h3>写作目标</h3>
               <div className="writing-mode-grid">
                 {writingTaskModes.map((mode) => (
                   <button
@@ -1251,11 +1251,11 @@ function Workspace({
               </label>
             </section>
             <section className="work-panel ai-output">
-              <h3>写作结果</h3>
+              <h3>论文草稿</h3>
               <p className="muted">
                 当前任务：{selectedWritingMode.label} · {selectedWritingSection.label} · {selectedWritingOutput.label}
               </p>
-              <pre>{aiState.output || "生成后，这里会显示可审阅、可追溯的写作结果。"}</pre>
+              <pre>{aiState.output || "生成后，这里会显示可直接审阅和继续修改的论文正文。"}</pre>
             </section>
           </div>
         </section>
@@ -1456,7 +1456,7 @@ function SubjectBatchPanel({
         </span>
       </div>
       <p className="muted">
-        正式数据按 90 名被试 × 3 个密度条件组织。文件编号 001/002/003 归为第 1 名被试，004/005/006 归为第 2 名被试，以此类推；Signature1/2/3 分别对应低/中/高密度。报告会输出被试内密度表和主 planned contrast：中密度 - 低/高密度平均。
+        正式数据按 90 名被试 × 3 个密度条件组织。实验文件 sub001/sub002/sub003 归为 P01，sub004/sub005/sub006 归为 P02，以此类推；Signature1/2/3 分别对应低/中/高密度。报告会输出被试内密度表和主 planned contrast：中密度 - 低/高密度平均。
       </p>
       <div className="design-strip" aria-label="分析设计">
         <span>90 被试</span>
@@ -1470,7 +1470,7 @@ function SubjectBatchPanel({
           被试编号
           <input
             value={subjectId}
-            placeholder="例如 sub-P001"
+            placeholder="例如 P01"
             onChange={(event) => onSubjectIdChange(event.target.value)}
           />
         </label>
@@ -1753,7 +1753,6 @@ function ArticleKnowledgeStructure({
                 type="button"
                 onClick={() => onArticleChange(article.id)}
               >
-                <span>{article.id}</span>
                 <strong>{article.title}</strong>
                 {article.libraryMeta ? <small>{article.libraryMeta}</small> : null}
               </button>
@@ -1821,6 +1820,18 @@ function ArticleKnowledgeStructure({
 }
 
 type LocalArticleKnowledgeCard = (typeof literatureArticleKnowledgeBase)["articles"][number];
+type LocalArticleReadingNote = {
+  tldr?: string;
+  problem?: string;
+  motivation?: string;
+  methodSummary?: string;
+  resultSummary?: string;
+  transferableConcepts?: string[];
+  strengths?: string[];
+  weaknesses?: string[];
+  writingAngles?: string[];
+  followUpQuestions?: string[];
+};
 
 function buildArticleKnowledgeViews(entries: LiteratureKnowledgeEntry[]): ArticleKnowledgeView[] {
   const entryBySourceId = new Map<string, LiteratureKnowledgeEntry>();
@@ -1853,6 +1864,7 @@ function buildArticleKnowledgeViews(entries: LiteratureKnowledgeEntry[]): Articl
     const sourceFile = article.matchedPdfFilename || article.filename || entry?.document.filename || "";
     const libraryMeta = entry?.document ? formatDocumentListMeta(entry.document) : sourceFile ? `文件：${sourceFile}` : "";
     const evidenceSnippets = article.evidenceSnippets ?? {};
+    const readingNote = (article as LocalArticleKnowledgeCard & { readingNote?: LocalArticleReadingNote }).readingNote;
 
     return {
       id: article.id,
@@ -1879,9 +1891,26 @@ function buildArticleKnowledgeViews(entries: LiteratureKnowledgeEntry[]): Articl
         {
           id: "question",
           title: "研究问题与定位",
-          body: article.researchQuestion,
+          body: readingNote?.problem || article.researchQuestion,
           rows: [],
-          points: compactStrings([article.oneSentenceSummary, article.researchPosition]),
+          points: compactStrings([readingNote?.tldr || article.oneSentenceSummary, readingNote?.motivation || article.researchPosition]),
+          linkedItems: [],
+        },
+        {
+          id: "paper-note",
+          title: "单篇读论文笔记",
+          rows: compactRows([
+            { label: "一句话贡献", value: readingNote?.tldr || article.oneSentenceSummary },
+            { label: "研究动机", value: readingNote?.motivation },
+            { label: "方法概括", value: readingNote?.methodSummary || article.studyDesign },
+            { label: "结果概括", value: readingNote?.resultSummary || joinArticleValues(article.keyFindings) },
+            { label: "可迁移概念/指标", value: joinArticleValues(readingNote?.transferableConcepts ?? []) },
+          ]),
+          points: compactStrings([
+            ...(readingNote?.strengths ?? []),
+            ...(readingNote?.weaknesses ?? []).map((item) => `边界：${item}`),
+            ...(readingNote?.followUpQuestions ?? []).map((item) => `需核验：${item}`),
+          ]),
           linkedItems: [],
         },
         {

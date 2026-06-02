@@ -368,7 +368,7 @@ AI 不应该：
 2026-06-01 写作助手升级原则：
 
 - 写作助手不再只是一个通用 prompt 输入框，而是按“写作任务类型 / 目标章节 / 输出形式 / 具体要求”组织。
-- 可选任务类型包括：证据矩阵、章节草稿、方法与分析、审稿式修改。
+- 可选任务类型包括：写论文章节、写方法与分析、证据到段落、审稿式修改。
 - 输出必须默认区分四层内容：文献证据、项目假设、真实实验结果、缺失信息。
 - 默认写作协议来自科研写作工作流思想：流程优先于即兴、证据优先于声称、核验优先于自信。
 - Introduction 和 Discussion 可以使用文献知识库建立机制和边界；Results 只能使用已完成 XDF/cohort 报告或用户明确提供的真实统计结果。
@@ -389,7 +389,7 @@ AI 不应该：
 
 XDF 命名与分析规则：
 
-- `lib/xdfNaming.ts` 是前端和 API 共用的 XDF 命名推断规则。001/002/003 自动归为 `sub-001`，004/005/006 自动归为 `sub-002`，007/008/009 自动归为 `sub-003`。
+- `lib/xdfNaming.ts` 是前端和 API 共用的 XDF 命名推断规则。实验文件 `sub001/sub002/sub003` 自动归为被试组 `P01`，`sub004/sub005/sub006` 归为 `P02`，`sub007/sub008/sub009` 归为 `P03`。不要把文件序号 `sub003` 写成被试编号，避免和 1-270 个实验文件混淆。
 - Signature 映射固定为：Signature1 = low density，Signature2 = medium density，Signature3 = high density；如果文件名没有 Signature，则三连号中的第 1/2/3 个文件作为低/中/高密度 fallback。
 - Python worker 使用相同规则写入 HTML report：单个被试报告只给方向性 contrast；显著性需要全样本 `medium - mean(low, high)` 汇总或带 subject metadata 的 mixed-effects model。
 
@@ -462,6 +462,17 @@ XDF 命名与分析规则：
 - 已有 47 篇 PDF 由本地 Codex 脚本整理进 `lib/literature_article_kb.json`，不是通过网站 API 生成。
 - 每篇文献统一按同一套 schema 展示：文献身份、研究问题与定位、方法与数据、主要发现、对本研究的用途、边界与不能声称、关联证据单元和引用线索。
 - 新增论文的知识卡也必须映射到同一套单篇 schema，不能做成与既有文献不同的“新增区”或临时摘要区。
+
+## 2026-06-02 写作、XDF 命名与单篇文献笔记升级
+
+- “文献与写作助手”中的写作区应定位为“论文写作工作台”：默认直接生成论文正文，而不是先给建议或证据矩阵。正文输出的第一部分必须是可进入草稿的英文 manuscript text，中文说明、证据链、不能声称和待补数据放在正文之后。
+- 参考科研写作 workflow 的原则：章节写作要有目标章节、正文草稿、证据追踪和质量门控；不把“协助写作”停留在提示词建议层，而是产出 Introduction、Methods、Analysis Plan、Results template 或 Discussion 的具体段落。
+- XDF 被试组显示统一为 `P01` 到 `P90`。`sub001` 到 `sub270` 是实验文件序号，不是 participant ID；每 3 个文件组成一名被试的低/中/高密度 run。
+- 文献知识库继续以单篇论文卡为核心，不做全局知识图谱。每篇文章都按同一结构展示：文献身份、研究问题与定位、单篇读论文笔记、方法与数据、主要发现、对本研究的用途、边界、关联证据和引用线索。
+- `lib/literature_article_kb.json` 当前版本为 `literature-article-kb-v4-paper-notes`。它由本地脚本 `scripts/build_literature_article_kb.mjs` 重建，不调用网页 API，也不使用 OpenAI key。
+- 单篇读论文笔记字段包括：TL;DR、problem、motivation、methodSummary、resultSummary、transferableConcepts、strengths、weaknesses、writingAngles、followUpQuestions。后续新增论文也应尽量映射到这套结构。
+- Grade A/B/C/D 是 Metro Rescue 项目内的“相关性/可用度”标记，不是正式文献质量评价。Grade B 表示中等相关：可用于方法类比、背景论证或边界讨论，但通常不是主结论的直接证据。
+- 写作助手上下文现在同时读取全局 claims/mechanisms/analysis rules 和逐篇论文 reading notes。真正写 Results 或显著性结论时仍只能使用已完成 XDF/cohort 报告或用户明确提供的真实统计结果。
 
 XDF 分析口径扩展：
 

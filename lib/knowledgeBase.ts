@@ -1,8 +1,22 @@
 import seedKnowledgeBase from "@/lib/metro_rescue_seed_kb.json";
+import literatureArticleKnowledgeBase from "@/lib/literature_article_kb.json";
 import { parseImportedPdfMetadata, type LiteratureKnowledgeCard } from "@/lib/literature";
 
 type SeedKnowledgeBase = typeof seedKnowledgeBase;
 type SeedSource = SeedKnowledgeBase["sources"][number];
+type CuratedArticleKnowledgeCard = (typeof literatureArticleKnowledgeBase)["articles"][number];
+type CuratedPaperReadingNote = {
+  tldr?: string;
+  problem?: string;
+  motivation?: string;
+  methodSummary?: string;
+  resultSummary?: string;
+  transferableConcepts?: string[];
+  strengths?: string[];
+  weaknesses?: string[];
+  writingAngles?: string[];
+  followUpQuestions?: string[];
+};
 
 export type SeedKnowledgeReviewItem = {
   id: string;
@@ -64,11 +78,11 @@ const projectAnalysisDesignReviewItems: SeedKnowledgeReviewItem[] = [
   {
     id: "DESIGN-001",
     title: "被试与文件编号映射",
-    body: "正式 XDF 数据按三连号归并被试：001/002/003 属于第 1 名被试，004/005/006 属于第 2 名被试，007/008/009 属于第 3 名被试，以此类推。文件中的 sub-007 这类编号代表实验文件序号，不应直接解释为第 7 名被试。",
+    body: "正式 XDF 数据按三连号归并被试：实验文件 sub001/sub002/sub003 属于 P01，sub004/sub005/sub006 属于 P02，sub007/sub008/sub009 属于 P03，以此类推。文件中的 sub007 这类编号代表实验文件序号，不应直接解释为第 7 名被试。",
     tags: ["XDF", "subject", "coding-rule"],
     meta: [
       { label: "组内单位", value: "同一被试的 3 个密度条件 run" },
-      { label: "页面与 worker 规则", value: "按三连号自动生成 sub-001, sub-002, sub-003..." },
+      { label: "页面与 worker 规则", value: "按三连号自动生成 P01, P02, P03..." },
     ],
     boundary: "如果未来文件名改为真正的被试编号，需要同步更新命名规则，避免把 run 序号和 participant ID 混用。",
   },
@@ -121,11 +135,15 @@ const projectAnalysisDesignReviewItems: SeedKnowledgeReviewItem[] = [
 
 export function buildResearchKnowledgeContext(prompt: string, userCards: LiteratureKnowledgeCard[]) {
   const seedContext = buildSeedContext(prompt);
+  const articleContext = buildCuratedArticleContext(prompt);
   const userContext = buildUserLiteratureContext(userCards, prompt);
 
   return [
-    "=== Metro Rescue literature knowledge base: curated source cards and synthesis ===",
+    "=== Metro Rescue literature knowledge base: synthesis, claims, mechanisms, and analysis rules ===",
     seedContext,
+    "",
+    "=== Metro Rescue literature knowledge base: per-paper reading notes ===",
+    articleContext,
     "",
     "=== Metro Rescue literature knowledge base: uploaded source cards using the same evidence rules ===",
     userContext,
@@ -136,7 +154,7 @@ export function buildResearchKnowledgeContext(prompt: string, userCards: Literat
 
 export function getSeedKnowledgeStats() {
   return {
-    sources: seedKnowledgeBase.sources.length,
+    sources: literatureArticleKnowledgeBase.articleCount || seedKnowledgeBase.sources.length,
     claims: seedKnowledgeBase.claims.length,
     mechanisms: seedKnowledgeBase.mechanisms.length,
     hypotheses: seedKnowledgeBase.hypotheses.length,
@@ -417,6 +435,76 @@ function buildSeedContext(prompt: string) {
       ? ["Quote anchors requiring page verification", ...quoteAnchors.map((anchor) => `- ${anchor.Source_ID} ${anchor.Page_Target}: ${anchor.Short_Original_Anchor}. Use: ${anchor.Use}. Task: ${anchor.Task}`)].join("\n")
       : "Quote anchors requiring page verification\n- No quote anchors selected for this query.",
   ].join("\n\n");
+}
+
+function buildCuratedArticleContext(prompt: string) {
+  const articles = rankItems(literatureArticleKnowledgeBase.articles, prompt, (article) =>
+    [
+      article.id,
+      article.title,
+      article.extractedTitleCandidate ?? "",
+      article.articleRole,
+      article.evidenceType,
+      article.qualityTier,
+      article.oneSentenceSummary,
+      article.researchQuestion,
+      article.researchPosition,
+      article.studyDesign,
+      article.participantsAndSample,
+      article.taskAndMaterials,
+      article.variablesAndMeasures.join(" "),
+      article.eegOrPhysioMeasures.join(" "),
+      article.behavioralMeasures.join(" "),
+      article.keyFindings.join(" "),
+      article.metroRescueUse.join(" "),
+      article.densityHypothesisRelevance.join(" "),
+      article.methodTransfer.join(" "),
+      article.limitations.join(" "),
+      article.doNotClaim.join(" "),
+      article.boundaries.join(" "),
+      article.quoteAnchorsToVerify.join(" "),
+      article.writingUse.join(" "),
+      article.keywords.join(" "),
+      article.themeTags.join(" "),
+    ].join(" "),
+  ).slice(0, 16);
+
+  if (!articles.length) {
+    return "No curated per-paper reading notes are available yet.";
+  }
+
+  return [
+    `Curated per-paper KB: ${literatureArticleKnowledgeBase.articleCount} article reading notes. Use these cards as structured reading memory; verify page numbers, author-year details, DOI, and exact wording in the PDFs before final submission.`,
+    ...articles.map(({ item }) => formatCuratedArticleForWriting(item)),
+  ].join("\n\n");
+}
+
+function formatCuratedArticleForWriting(article: CuratedArticleKnowledgeCard) {
+  const readingNote = (article as CuratedArticleKnowledgeCard & { readingNote?: CuratedPaperReadingNote }).readingNote;
+
+  return [
+    `[${article.id}] ${article.title}`,
+    article.extractedTitleCandidate ? `PDF title candidate: ${article.extractedTitleCandidate}` : "",
+    `Role/type/grade: ${article.articleRole}; ${article.evidenceType}; ${article.qualityTier}`,
+    `TL;DR: ${readingNote?.tldr || article.oneSentenceSummary}`,
+    `Problem: ${readingNote?.problem || article.researchQuestion}`,
+    `Motivation: ${readingNote?.motivation || article.researchPosition}`,
+    `Method/data: ${readingNote?.methodSummary || article.studyDesign}`,
+    `Measures: ${joinKnowledgeValues([...article.variablesAndMeasures, ...article.eegOrPhysioMeasures, ...article.behavioralMeasures])}`,
+    `Findings: ${readingNote?.resultSummary || joinKnowledgeValues(article.keyFindings)}`,
+    `Use for Metro Rescue thesis: ${joinKnowledgeValues(readingNote?.writingAngles ?? [...article.metroRescueUse, ...article.methodTransfer])}`,
+    `Density hypothesis relevance: ${joinKnowledgeValues(article.densityHypothesisRelevance)}`,
+    `Transferable concepts: ${joinKnowledgeValues(readingNote?.transferableConcepts ?? article.keywords)}`,
+    `Do not claim / limitations: ${joinKnowledgeValues(readingNote?.weaknesses ?? [...article.doNotClaim, ...article.limitations, ...article.boundaries])}`,
+    `Quote anchors requiring verification: ${joinKnowledgeValues(article.quoteAnchorsToVerify)}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+function joinKnowledgeValues(values: string[] | undefined) {
+  const joined = (values ?? []).filter(Boolean).join("；");
+  return joined || "未生成";
 }
 
 function buildUserLiteratureContext(cards: LiteratureKnowledgeCard[], prompt: string) {
