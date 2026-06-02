@@ -1253,6 +1253,38 @@ textarea {
   font-size: 0.84rem;
 }
 
+.cohort-metadata-panel {
+  margin-top: 16px;
+  display: grid;
+  gap: 14px;
+}
+
+.metadata-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.compact-file-button {
+  min-width: 120px;
+  min-height: 44px;
+}
+
+.metadata-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.cohort-metadata-panel textarea {
+  min-height: 150px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.9rem;
+}
+
 .seed-review-panel {
   display: grid;
   gap: 16px;
@@ -2017,6 +2049,7 @@ textarea {
   .manager-toolbar,
   .batch-controls,
   .batch-layout,
+  .metadata-grid,
   .ai-grid,
   .writing-mode-grid,
   .writing-control-grid,

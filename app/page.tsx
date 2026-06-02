@@ -439,6 +439,8 @@ function Workspace({
   const [jobsLastLoadedAt, setJobsLastLoadedAt] = useState<string | null>(null);
   const [selectedBatchIds, setSelectedBatchIds] = useState<string[]>([]);
   const [batchSubjectId, setBatchSubjectId] = useState("");
+  const [subjectMetadataCsv, setSubjectMetadataCsv] = useState("participant_id,group\nP01,A\nP02,B");
+  const [groupVariable, setGroupVariable] = useState("group");
   const selectedWritingMode = writingTaskModes.find((mode) => mode.id === writingMode) ?? writingTaskModes[0];
   const selectedWritingSection =
     writingTargetSections.find((section) => section.id === writingSection) ?? writingTargetSections[0];
@@ -505,6 +507,10 @@ function Workspace({
   );
   const xdfJobStats = useMemo(() => getXdfJobStats(analysisJobs), [analysisJobs]);
   const completedSubjectBatchCount = useMemo(() => countCompletedSubjectBatchJobs(analysisJobs), [analysisJobs]);
+  const runnableSubjectGroupCount = useMemo(
+    () => inferredSubjectGroups.filter((group) => isRunnableSubjectGroup(group, analysisJobs)).length,
+    [inferredSubjectGroups, analysisJobs],
+  );
   const selectedKnowledgeCard = selectedDocument ? knowledgeCardByDocumentId.get(selectedDocument.id) ?? null : null;
   const selectedSeedMatch = selectedDocument ? seedMatchByDocumentId.get(selectedDocument.id) ?? null : null;
   const selectedDisplayName = selectedDocument ? getDocumentDisplayName(selectedDocument, selectedKnowledgeCard, selectedSeedMatch) : "";
@@ -747,6 +753,22 @@ function Workspace({
     setJobLoading(true);
     setJobMessage("");
 
+    const payload = await createSubjectBatchJob(
+      uniqueDocumentIds,
+      subjectId.trim() || inferSubjectIdFromFilename(selectedBatchDocuments[0]?.filename ?? ""),
+    );
+    if (payload.error && !payload.job) {
+      setJobMessage(payload.error ?? "被试批量 XDF 分析任务创建失败。");
+      setJobLoading(false);
+      return;
+    }
+
+    setJobMessage(payload.warning ?? `已提交 ${uniqueDocumentIds.length} 个 XDF 的被试路径确认支持条件批量分析任务。`);
+    await loadAnalysisJobs();
+    setJobLoading(false);
+  }
+
+  async function createSubjectBatchJob(uniqueDocumentIds: string[], subjectId: string) {
     const response = await fetch("/api/analysis/jobs", {
       method: "POST",
       headers: {
@@ -755,19 +777,43 @@ function Workspace({
       },
       body: JSON.stringify({
         documentIds: uniqueDocumentIds,
-        subjectId: subjectId.trim() || inferSubjectIdFromFilename(selectedBatchDocuments[0]?.filename ?? ""),
+        subjectId,
         analysisType: "subject_batch",
       }),
     });
 
-    const payload = (await response.json()) as { job?: ResearchAnalysisJob; error?: string; warning?: string };
-    if (!response.ok && !payload.job) {
-      setJobMessage(payload.error ?? "被试批量 XDF 分析任务创建失败。");
-      setJobLoading(false);
+    return (await response.json()) as { job?: ResearchAnalysisJob; error?: string; warning?: string };
+  }
+
+  async function runAllCompleteSubjectBatches() {
+    const runnableGroups = inferredSubjectGroups.filter((group) => isRunnableSubjectGroup(group, analysisJobs));
+    if (!runnableGroups.length) {
+      setJobMessage("没有可批量提交的完整被试组。请确认每名被试已有低/中/高 3 个 XDF，且没有正在运行或已完成的同被试批量任务。");
       return;
     }
 
-    setJobMessage(payload.warning ?? `已提交 ${uniqueDocumentIds.length} 个 XDF 的被试路径确认支持条件批量分析任务。`);
+    setJobLoading(true);
+    setJobMessage(`准备提交 ${runnableGroups.length} 个被试的组内分析任务。`);
+
+    let submitted = 0;
+    let lastWarning = "";
+    for (const group of runnableGroups) {
+      const payload = await createSubjectBatchJob(
+        group.documents.map((document) => document.id),
+        group.subjectId,
+      );
+      if (payload.error && !payload.job) {
+        setJobMessage(`已提交 ${submitted}/${runnableGroups.length} 个被试；${group.subjectId} 提交失败：${payload.error}`);
+        setJobLoading(false);
+        await loadAnalysisJobs();
+        return;
+      }
+      if (payload.warning) lastWarning = payload.warning;
+      submitted += 1;
+      setJobMessage(`已提交 ${submitted}/${runnableGroups.length} 个被试的组内分析任务。`);
+    }
+
+    setJobMessage(lastWarning || `已提交 ${submitted} 个被试的组内分析任务。GitHub Actions 会逐个运行，完成后可再跑全样本/组间汇总。`);
     await loadAnalysisJobs();
     setJobLoading(false);
   }
@@ -794,6 +840,8 @@ function Workspace({
       body: JSON.stringify({
         documentId: xdfDocuments[0].id,
         analysisType: "cohort_density_summary",
+        subjectMetadataCsv,
+        groupVariable,
       }),
     });
 
@@ -807,6 +855,25 @@ function Workspace({
     setJobMessage(payload.warning ?? `已提交全样本路径确认支持统计汇总任务，将汇总 ${completedSubjectBatchCount} 个已完成被试报告。`);
     await loadAnalysisJobs();
     setJobLoading(false);
+  }
+
+  async function handleMetadataFileUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith(".csv")) {
+      setJobMessage("subject metadata 目前请上传 CSV；Excel 可以先另存为 .csv。");
+      event.target.value = "";
+      return;
+    }
+    const text = await file.text();
+    setSubjectMetadataCsv(text.trim());
+    const header = text.split(/\r?\n/)[0] ?? "";
+    const columns = header.split(",").map((column) => column.trim()).filter(Boolean);
+    if (!columns.includes(groupVariable) && columns.includes("group")) {
+      setGroupVariable("group");
+    }
+    setJobMessage(`已读取 metadata CSV：${file.name}。请确认分组列名后再提交全样本/组间汇总。`);
+    event.target.value = "";
   }
 
   async function deleteAnalysisJobs(jobIds: string[]) {
@@ -1150,7 +1217,7 @@ function Workspace({
                 disabled={jobLoading || !completedSubjectBatchCount || !xdfDocuments.length}
                 onClick={runCohortDensitySummary}
               >
-                汇总已完成被试
+                汇总组内/组间
               </button>
               <button className="secondary-button" onClick={loadAnalysisJobs}>
                 刷新任务
@@ -1180,6 +1247,7 @@ function Workspace({
             onToggleDocument={toggleBatchDocument}
             onClear={() => setSelectedBatchIds([])}
             onRunSelected={() => runSubjectBatchAnalysis()}
+            onRunAllComplete={runAllCompleteSubjectBatches}
             onRunGroup={(group) => {
               setBatchSubjectId(group.subjectId);
               setSelectedBatchIds(group.documents.map((document) => document.id));
@@ -1188,6 +1256,17 @@ function Workspace({
                 group.subjectId,
               );
             }}
+            runnableGroupCount={runnableSubjectGroupCount}
+          />
+          <CohortMetadataPanel
+            completedSubjectBatchCount={completedSubjectBatchCount}
+            metadataCsv={subjectMetadataCsv}
+            groupVariable={groupVariable}
+            jobLoading={jobLoading}
+            onMetadataChange={setSubjectMetadataCsv}
+            onGroupVariableChange={setGroupVariable}
+            onMetadataFileUpload={handleMetadataFileUpload}
+            onRun={runCohortDensitySummary}
           />
           <AnalysisQueueOverview
             jobs={filteredXdfJobs}
@@ -1456,7 +1535,9 @@ function SubjectBatchPanel({
   onToggleDocument,
   onClear,
   onRunSelected,
+  onRunAllComplete,
   onRunGroup,
+  runnableGroupCount,
 }: {
   documents: ResearchDocument[];
   groups: Array<{ subjectId: string; documents: ResearchDocument[] }>;
@@ -1467,7 +1548,9 @@ function SubjectBatchPanel({
   onToggleDocument: (documentId: string) => void;
   onClear: () => void;
   onRunSelected: () => void;
+  onRunAllComplete: () => void;
   onRunGroup: (group: { subjectId: string; documents: ResearchDocument[] }) => void;
+  runnableGroupCount: number;
 }) {
   const selectedCoverage = summarizeDensityCoverage(documents.filter((document) => selectedIds.includes(document.id)));
 
@@ -1504,6 +1587,9 @@ function SubjectBatchPanel({
         <div className="top-actions">
           <button className="primary-button" disabled={jobLoading || selectedIds.length < 2} onClick={onRunSelected}>
             提交所选 XDF
+          </button>
+          <button className="secondary-button" disabled={jobLoading || runnableGroupCount < 1} onClick={onRunAllComplete}>
+            批量提交完整被试（{runnableGroupCount}）
           </button>
           <button className="secondary-button" disabled={!selectedIds.length} onClick={onClear}>
             清空选择
@@ -1553,6 +1639,69 @@ function SubjectBatchPanel({
             <p className="muted">还没有 XDF 文件。上传后会按文件编号三连组推断被试，并按 Signature 或编号位置推断低/中/高路径确认支持条件。</p>
           )}
         </div>
+      </div>
+    </section>
+  );
+}
+
+function CohortMetadataPanel({
+  completedSubjectBatchCount,
+  metadataCsv,
+  groupVariable,
+  jobLoading,
+  onMetadataChange,
+  onGroupVariableChange,
+  onMetadataFileUpload,
+  onRun,
+}: {
+  completedSubjectBatchCount: number;
+  metadataCsv: string;
+  groupVariable: string;
+  jobLoading: boolean;
+  onMetadataChange: (value: string) => void;
+  onGroupVariableChange: (value: string) => void;
+  onMetadataFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onRun: () => void;
+}) {
+  const metadataRows = countCsvDataRows(metadataCsv);
+
+  return (
+    <section className="work-panel cohort-metadata-panel">
+      <div className="analysis-head">
+        <div>
+          <p className="eyebrow">全样本与组间分析</p>
+          <h3>汇总已完成被试，并用 subject metadata 做组间比较</h3>
+        </div>
+        <span className="status-pill compact">{completedSubjectBatchCount} 个已完成被试报告</span>
+      </div>
+      <p className="muted">
+        不填 metadata 时，报告只做总体组内 planned contrast；填写后，会按分组列比较每名被试的 subject-level contrast。2 个被试 × 3 个实验可以作为趋势检查，正式显著性需要每组更多被试。
+      </p>
+      <div className="metadata-grid">
+        <label>
+          分组列名
+          <input value={groupVariable} placeholder="例如 group" onChange={(event) => onGroupVariableChange(event.target.value)} />
+        </label>
+        <label className="file-button compact-file-button">
+          <input type="file" accept=".csv,text/csv" onChange={onMetadataFileUpload} />
+          读取 CSV
+        </label>
+      </div>
+      <label>
+        Subject metadata CSV
+        <textarea
+          value={metadataCsv}
+          rows={6}
+          spellCheck={false}
+          placeholder={"participant_id,group,sex,vr_experience,order\nP01,A,F,low,1\nP02,B,M,high,2"}
+          onChange={(event) => onMetadataChange(event.target.value)}
+        />
+      </label>
+      <div className="metadata-footer">
+        <span className="muted">已识别 {metadataRows} 行 metadata；被试编号建议使用 P01、P02，也支持 1、2 或 sub001 这类写法。</span>
+        <button className="primary-button" disabled={jobLoading || completedSubjectBatchCount < 1} onClick={onRun}>
+          生成全样本/组间 HTML 报告
+        </button>
       </div>
     </section>
   );
@@ -3093,6 +3242,18 @@ function countCompletedSubjectBatchJobs(jobs: ResearchAnalysisJob[]) {
   }).length;
 }
 
+function isRunnableSubjectGroup(group: { subjectId: string; documents: ResearchDocument[] }, jobs: ResearchAnalysisJob[]) {
+  const coverage = summarizeDensityCoverage(group.documents);
+  if (!coverage.complete || group.documents.length < 3) return false;
+  return !jobs.some((job) => {
+    const result = job.result_json as { batch?: { subjectId?: string }; subjectId?: string } | null | undefined;
+    const jobSubjectId = result?.batch?.subjectId ?? result?.subjectId ?? "";
+    const isSameSubject = jobSubjectId === group.subjectId;
+    const isReusableStatus = job.status === "pending" || job.status === "queued" || job.status === "running" || job.status === "completed";
+    return (job.analysis_type === "subject_batch" || Boolean(result?.batch)) && isSameSubject && isReusableStatus;
+  });
+}
+
 function filterJobForView(job: ResearchAnalysisJob, filter: JobViewFilter) {
   if (filter === "all") return true;
   if (filter === "active") return isActiveJob(job) && !isStaleJob(job);
@@ -3206,4 +3367,12 @@ function summarizeDensityCoverage(documents: ResearchDocument[]) {
 
 function compareXdfConditionOrder(a: string, b: string) {
   return compareXdfConditionNames(a, b);
+}
+
+function countCsvDataRows(csvText: string) {
+  const lines = csvText
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  return Math.max(0, lines.length - 1);
 }

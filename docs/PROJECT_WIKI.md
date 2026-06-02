@@ -548,3 +548,12 @@ XDF 分析口径扩展：
 - 全样本汇总报告新增 planned contrast forest plot，显示每个指标的 `medium - mean(low, high)`、95% CI、n 和 p 值。
 - 细节柱状图继续保留，用于追踪具体指标来源；正式写作时优先看剖面图、指标矩阵和全样本 forest plot。
 - 分析层面的被试编号统一为 `P01` 到 `P90`。原始 `sub-001` 到 `sub-270` 仍按三连号推断每名被试的低/中/高支持 run。
+
+## 2026-06-02 Batch within-subject and metadata group analysis
+
+- 页面支持一次提交多个完整被试的组内三条件 XDF 批量分析。完整被试定义为同一 `Pxx` 下能识别低/中/高三个路径确认支持条件，且当前没有正在运行或已完成的同被试批量任务。
+- 全样本汇总支持可选 subject metadata CSV。最小字段为 `participant_id,group`；推荐字段包括 `participant_id,group,sex,age,vr_experience,order,counterbalance,instruction_type`。
+- metadata 中的被试编号会尽量统一为 `P01` 格式，允许 `P01`、`1`、`sub001` 等写法，但正式数据整理仍建议统一使用 `P01` 到 `P90`。
+- 不提供 metadata 时，cohort report 只做总体组内 planned contrast；提供 metadata 时，worker 会按指定分组列比较 subject-level contrast，并生成组间均值矩阵和组间描述/检验表。
+- 每组少于 2 名被试时，组间报告只输出 descriptive only；2 个被试 × 3 个实验适合做 pilot 趋势检查，不能写成显著性结论。
+- 完整论文的组间模型应继续以 `SupportLevel × Group` 为核心，当前线上 report 的组间表是基于每名被试 planned contrast 的快速汇总版本。

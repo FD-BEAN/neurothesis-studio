@@ -7,6 +7,8 @@ type CreateJobBody = {
   documentIds?: string[];
   subjectId?: string;
   analysisType?: string;
+  subjectMetadataCsv?: string;
+  groupVariable?: string;
 };
 
 type DeleteJobsBody = {
@@ -56,7 +58,7 @@ export async function POST(request: Request) {
   if ("response" in auth) return auth.response;
 
   const { supabase, userId } = auth;
-  const { documentId, documentIds, subjectId, analysisType } = (await request.json()) as CreateJobBody;
+  const { documentId, documentIds, subjectId, analysisType, subjectMetadataCsv, groupVariable } = (await request.json()) as CreateJobBody;
   const requestedDocumentIds = uniqueStrings(documentIds?.length ? documentIds : documentId ? [documentId] : []);
   const isCohortSummary = analysisType === "cohort_density_summary";
   const isSubjectBatch = !isCohortSummary && (analysisType === "subject_batch" || requestedDocumentIds.length > 1);
@@ -116,6 +118,8 @@ export async function POST(request: Request) {
     ? {
         kind: "cohort_density_summary",
         design: DENSITY_ANALYSIS_DESIGN,
+        subjectMetadataCsv: subjectMetadataCsv?.trim() ? subjectMetadataCsv.trim() : "",
+        groupVariable: groupVariable?.trim() || "group",
       }
     : null;
 

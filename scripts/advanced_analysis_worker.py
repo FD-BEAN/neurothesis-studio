@@ -10,7 +10,9 @@ QC and feature summaries, and writes a JSON report to research_analysis_jobs.
 from __future__ import annotations
 
 import argparse
+import csv
 import html as html_lib
+import io
 import json
 import math
 import os
@@ -901,6 +903,10 @@ def extract_batch_payload(job: dict[str, Any]) -> dict[str, Any]:
 
 
 def run_cohort_density_job(client: SupabaseRest, job: dict[str, Any]) -> dict[str, Any]:
+    cohort_payload = extract_cohort_payload(job)
+    group_variable = str(cohort_payload.get("groupVariable") or "group").strip() or "group"
+    metadata_rows = parse_subject_metadata_csv(str(cohort_payload.get("subjectMetadataCsv") or ""))
+    metadata_by_subject = build_metadata_by_subject(metadata_rows)
     rows = client.select_many(
         "research_analysis_jobs",
         f"user_id=eq.{job['user_id']}&analysis_type=eq.subject_batch&status=eq.completed&select=id,result_json,created_at,completed_at&limit=1000",
@@ -908,7 +914,67 @@ def run_cohort_density_job(client: SupabaseRest, job: dict[str, Any]) -> dict[st
     subject_rows = extract_subject_contrast_rows(rows)
     if not subject_rows:
         raise RuntimeError("还没有可汇总的已完成被试批量报告；请先为若干被试运行低/中/高路径确认支持 XDF 批量分析。")
-    return analyze_cohort_density(subject_rows)
+    return analyze_cohort_density(subject_rows, metadata_by_subject, group_variable)
+
+
+def extract_cohort_payload(job: dict[str, Any]) -> dict[str, Any]:
+    payload = job.get("result_json") or {}
+    if isinstance(payload, str):
+        try:
+            payload = json.loads(payload)
+        except json.JSONDecodeError:
+            payload = {}
+    cohort = payload.get("cohort") if isinstance(payload, dict) else None
+    return cohort if isinstance(cohort, dict) else {}
+
+
+def parse_subject_metadata_csv(text: str) -> list[dict[str, str]]:
+    if not text.strip():
+        return []
+    stream = io.StringIO(text.strip())
+    try:
+        reader = csv.DictReader(stream)
+        return [
+            {str(key).strip(): str(value or "").strip() for key, value in row.items() if key is not None}
+            for row in reader
+            if any(str(value or "").strip() for value in row.values())
+        ]
+    except csv.Error:
+        return []
+
+
+def build_metadata_by_subject(rows: list[dict[str, str]]) -> dict[str, dict[str, str]]:
+    aliases = ("participant_id", "participant", "subject_id", "subject", "id", "被试编号", "被试", "participantId", "subjectId")
+    metadata: dict[str, dict[str, str]] = {}
+    for row in rows:
+        raw_subject = ""
+        for alias in aliases:
+            if row.get(alias):
+                raw_subject = row[alias]
+                break
+        subject_id = normalize_participant_id(raw_subject)
+        if subject_id:
+            metadata[subject_id] = row
+    return metadata
+
+
+def normalize_participant_id(value: Any) -> str:
+    import re
+
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    p_match = re.search(r"^p[-_\s]?0*(\d{1,3})$", text, re.IGNORECASE)
+    if p_match:
+        return f"P{int(p_match.group(1)):02d}"
+    sub_match = re.search(r"^sub[-_\s]?0*(\d{1,4})$", text, re.IGNORECASE)
+    if sub_match:
+        value_int = int(sub_match.group(1))
+        return f"P{math.ceil(value_int / 3):02d}"
+    digits = re.search(r"^0*(\d{1,3})$", text)
+    if digits:
+        return f"P{int(digits.group(1)):02d}"
+    return text
 
 
 def extract_subject_contrast_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -947,7 +1013,13 @@ def extract_subject_contrast_rows(rows: list[dict[str, Any]]) -> list[dict[str, 
     return extracted
 
 
-def analyze_cohort_density(subject_rows: list[dict[str, Any]]) -> dict[str, Any]:
+def analyze_cohort_density(
+    subject_rows: list[dict[str, Any]],
+    metadata_by_subject: dict[str, dict[str, str]] | None = None,
+    group_variable: str = "group",
+) -> dict[str, Any]:
+    metadata_by_subject = metadata_by_subject or {}
+    subject_rows = attach_metadata_to_subject_rows(subject_rows, metadata_by_subject, group_variable)
     by_metric: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in subject_rows:
         by_metric[row["metric"]].append(row)
@@ -1002,6 +1074,7 @@ def analyze_cohort_density(subject_rows: list[dict[str, Any]]) -> dict[str, Any]
     subject_table_rows = [
         [
             str(row["subject"]),
+            str(row.get("group") or "-"),
             str(row["metricLabel"]),
             fmt(row["estimate"]),
             str(row["direction"]),
@@ -1010,6 +1083,10 @@ def analyze_cohort_density(subject_rows: list[dict[str, Any]]) -> dict[str, Any]
         for row in sorted(subject_rows, key=lambda item: (str(item["subject"]), metric_priority(str(item["metric"]))))[:600]
     ]
     unique_subjects = sorted({str(row["subject"]) for row in subject_rows})
+    metadata_subjects = sorted(set(metadata_by_subject))
+    matched_metadata_subjects = sorted({str(row["subject"]) for row in subject_rows if row.get("metadataMatched")})
+    group_levels = sorted({str(row.get("group")) for row in subject_rows if row.get("group")})
+    between_rows, between_chart = build_between_subject_group_results(subject_rows, group_variable)
     primary_eeg_result = primary_eeg_result or fallback_eeg_result
     behavior_text = format_primary_result("H1 行动迟滞", primary_behavior_result)
     eeg_text = format_primary_result("H3 EEG 信息加工负荷", primary_eeg_result)
@@ -1017,17 +1094,21 @@ def analyze_cohort_density(subject_rows: list[dict[str, Any]]) -> dict[str, Any]
     notes = [
         "该报告只汇总已经完成的被试批量 XDF HTML/JSON 结果；未完成、失败或路径确认支持条件缺失的被试不会进入统计。",
         "主检验是每名被试的 medium - mean(low, high) contrast 是否显著大于 0；这是组内设计最直接的检验。",
-        "如果存在组间变量，需要上传 subject metadata 后再检验 Support Level × Group 交互；当前汇总不自动推断组别。",
+        "组间分析使用 subject metadata 中的分组列，只比较已经完成三条件被试报告且能匹配 metadata 的被试。",
         "结论写作应优先报告预先指定的主指标，再把行为和其他 EEG 指标作为一致性证据或探索性结果。",
     ]
+    if metadata_by_subject and not matched_metadata_subjects:
+        notes.append("metadata 已提供，但没有被试编号与已完成批量报告匹配；请检查 participant_id 是否使用 P01、P02 这类分析层编号。")
+    if group_levels and any(sum(1 for row in subject_rows if row.get("metric") == "route_decision_hesitation_index" and row.get("group") == group) < 2 for group in group_levels):
+        notes.append("部分组在主指标上少于 2 名被试；报告会保留描述性均值，暂不把组间差异写成显著性结论。")
 
     return {
         "title": "全样本路径确认支持统计汇总",
         "kind": "Cohort Route-confirmation Support Summary",
         "subjectId": "cohort-density-summary",
-        "summary": f"从 {len(unique_subjects)} 名被试的已完成批量报告中汇总低/中/高路径确认支持 planned contrast。{behavior_text}；{eeg_text}。",
+        "summary": f"从 {len(unique_subjects)} 名被试的已完成批量报告中汇总低/中/高路径确认支持 planned contrast。{behavior_text}；{eeg_text}。{format_between_subject_summary(group_variable, group_levels, between_rows)}",
         "modelOverview": build_model_overview("cohort"),
-        "narrativeSections": build_cohort_narrative(unique_subjects, primary_behavior_result, primary_eeg_result, summary_rows),
+        "narrativeSections": build_cohort_narrative(unique_subjects, primary_behavior_result, primary_eeg_result, summary_rows, group_variable, group_levels, between_rows),
         "design": {
             "expected_subjects": 90,
             "runs_per_subject": 3,
@@ -1040,6 +1121,8 @@ def analyze_cohort_density(subject_rows: list[dict[str, Any]]) -> dict[str, Any]
         "metrics": [
             {"label": "已纳入被试", "value": f"{len(unique_subjects)}/90"},
             {"label": "contrast 行", "value": str(len(subject_rows))},
+            {"label": "metadata 匹配", "value": f"{len(matched_metadata_subjects)}/{len(metadata_subjects)}" if metadata_subjects else "未提供"},
+            {"label": "组间变量", "value": group_variable if group_levels else "未启用", "text": " / ".join(group_levels) if group_levels else ""},
             {"label": "H1 行动迟滞", "value": primary_behavior_result["conclusion"] if primary_behavior_result else "未形成", "text": behavior_text},
             {"label": "H3 EEG 负荷", "value": primary_eeg_result["conclusion"] if primary_eeg_result else "未形成", "text": eeg_text},
         ],
@@ -1053,6 +1136,7 @@ def analyze_cohort_density(subject_rows: list[dict[str, Any]]) -> dict[str, Any]
                 "wide": True,
                 "caption": "零线右侧表示中等路径确认支持高于低/高支持平均；置信区间跨过零时，方向性结果仍需谨慎解释。",
             },
+            between_chart,
             {
                 "type": "bar",
                 "title": "各指标主 contrast 均值",
@@ -1085,8 +1169,13 @@ def analyze_cohort_density(subject_rows: list[dict[str, Any]]) -> dict[str, Any]
                 "rows": summary_rows,
             },
             {
+                "title": f"组间 metadata 描述与检验（分组列：{group_variable}）",
+                "columns": ["metric", "groups", "test", "statistic", "p", "interpretation"],
+                "rows": between_rows or [["-", "-", "-", "-", "-", "未提供可匹配的 subject metadata；当前报告只做总体组内汇总。"]],
+            },
+            {
                 "title": "被试级 contrast 明细",
-                "columns": ["subject", "metric", "estimate", "direction", "completed_at"],
+                "columns": ["subject", group_variable, "metric", "estimate", "direction", "completed_at"],
                 "rows": subject_table_rows,
             },
             {
@@ -1101,6 +1190,165 @@ def analyze_cohort_density(subject_rows: list[dict[str, Any]]) -> dict[str, Any]
         ],
         "notes": notes,
     }
+
+
+def attach_metadata_to_subject_rows(
+    subject_rows: list[dict[str, Any]],
+    metadata_by_subject: dict[str, dict[str, str]],
+    group_variable: str,
+) -> list[dict[str, Any]]:
+    enriched = []
+    for row in subject_rows:
+        subject = normalize_participant_id(row.get("subject")) or str(row.get("subject") or "")
+        metadata = metadata_by_subject.get(subject, {})
+        next_row = {**row, "subject": subject}
+        if metadata:
+            next_row["metadataMatched"] = True
+            next_row["metadata"] = metadata
+            next_row["group"] = metadata.get(group_variable) or metadata.get(group_variable.strip()) or ""
+        else:
+            next_row["metadataMatched"] = False
+            next_row["group"] = ""
+        enriched.append(next_row)
+    return enriched
+
+
+def build_between_subject_group_results(subject_rows: list[dict[str, Any]], group_variable: str) -> tuple[list[list[str]], dict[str, Any]]:
+    metrics_for_chart = {
+        "route_decision_hesitation_index",
+        "route_confirmation_disfluency_index",
+        "eeg_information_processing_load_index",
+        "decision_choice_accuracy_ratio",
+    }
+    by_metric: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in subject_rows:
+        if row.get("group"):
+            by_metric[str(row["metric"])].append(row)
+
+    table_rows: list[list[str]] = []
+    heatmap_groups: list[str] = []
+    heatmap_rows: list[dict[str, Any]] = []
+    flat_data = []
+
+    for metric, rows in sorted(by_metric.items(), key=lambda item: metric_priority(item[0])):
+        metric_label = str(rows[0].get("metricLabel") or metric)
+        grouped_values: dict[str, list[float]] = defaultdict(list)
+        for row in rows:
+            group = str(row.get("group") or "").strip()
+            estimate = to_float(row.get("estimate"))
+            if group and estimate is not None:
+                grouped_values[group].append(float(estimate))
+        if len(grouped_values) < 2:
+            continue
+
+        group_names = sorted(grouped_values)
+        heatmap_groups = sorted(set(heatmap_groups) | set(group_names))
+        group_summary = "; ".join(
+            f"{name}: n={len(values)}, mean={fmt(float(np.mean(values)) if values else None)}"
+            for name, values in ((name, grouped_values[name]) for name in group_names)
+        )
+        test_label, statistic, p_value, interpretation = compare_groups_for_metric(grouped_values, metric)
+        table_rows.append(
+            [
+                metric_label,
+                group_summary,
+                test_label,
+                statistic,
+                fmt_p(p_value),
+                interpretation,
+            ]
+        )
+
+    if heatmap_groups:
+        for metric, rows in sorted(by_metric.items(), key=lambda item: metric_priority(item[0])):
+            if metric not in metrics_for_chart:
+                continue
+            metric_label = str(rows[0].get("metricLabel") or metric)
+            grouped_values: dict[str, list[float]] = defaultdict(list)
+            for row in rows:
+                group = str(row.get("group") or "").strip()
+                estimate = to_float(row.get("estimate"))
+                if group and estimate is not None:
+                    grouped_values[group].append(float(estimate))
+            if len(grouped_values) < 2:
+                continue
+            values = [float(np.mean(grouped_values[group])) if grouped_values.get(group) else None for group in heatmap_groups]
+            heatmap_rows.append({"label": metric_label, "values": values})
+            for group, value in zip(heatmap_groups, values):
+                if value is not None:
+                    flat_data.append({"label": f"{metric_label} / {group}", "value": safe_chart_value(value)})
+
+    chart = {
+        "type": "heatmap",
+        "title": f"组间 contrast 均值矩阵（{group_variable}）",
+        "columns": heatmap_groups,
+        "rows": heatmap_rows,
+        "data": flat_data,
+        "wide": True,
+        "xLabel": group_variable,
+        "yLabel": "subject-level contrast",
+        "caption": "每个单元格是该组被试的 medium - mean(low, high) 平均值。样本量不足时，该图用于 pilot 趋势检查。",
+    }
+    return table_rows, chart
+
+
+def compare_groups_for_metric(grouped_values: dict[str, list[float]], metric: str) -> tuple[str, str, Any, str]:
+    groups = sorted(grouped_values)
+    usable_groups = [group for group in groups if len(grouped_values[group]) >= 2]
+    if len(usable_groups) < 2:
+        return "descriptive only", "-", None, "每组至少需要 2 名被试才进行组间显著性检验；当前只报告均值趋势。"
+
+    if len(usable_groups) == 2:
+        group_a, group_b = usable_groups
+        values_a = np.asarray(grouped_values[group_a], dtype=float)
+        values_b = np.asarray(grouped_values[group_b], dtype=float)
+        try:
+            from scipy import stats
+
+            test = stats.ttest_ind(values_a, values_b, equal_var=False, nan_policy="omit")
+            statistic = float(test.statistic)
+            p_value = float(test.pvalue)
+        except Exception:
+            statistic, p_value = welch_t_fallback(values_a, values_b)
+        diff = float(np.mean(values_b) - np.mean(values_a))
+        interpretation = (
+            f"{group_b} - {group_a} = {fmt(diff)}；"
+            + ("达到常规显著性阈值。" if p_value is not None and p_value < 0.05 else "未达到常规显著性阈值或样本仍偏少。")
+        )
+        return "Welch two-sample t", fmt(statistic), p_value, interpretation
+
+    try:
+        from scipy import stats
+
+        test = stats.f_oneway(*(np.asarray(grouped_values[group], dtype=float) for group in usable_groups))
+        statistic = float(test.statistic)
+        p_value = float(test.pvalue)
+        interpretation = "检验不同组的 subject-level contrast 是否存在总体差异。"
+        return "one-way ANOVA", fmt(statistic), p_value, interpretation
+    except Exception:
+        return "descriptive only", "-", None, "组数超过 2 且当前运行环境缺少可用 ANOVA；先报告各组均值。"
+
+
+def welch_t_fallback(values_a: np.ndarray, values_b: np.ndarray) -> tuple[float | None, float | None]:
+    if len(values_a) < 2 or len(values_b) < 2:
+        return None, None
+    mean_a = float(np.mean(values_a))
+    mean_b = float(np.mean(values_b))
+    var_a = float(np.var(values_a, ddof=1))
+    var_b = float(np.var(values_b, ddof=1))
+    se = math.sqrt(var_a / len(values_a) + var_b / len(values_b))
+    if se <= 0:
+        return None, None
+    t_value = (mean_a - mean_b) / se
+    p_value = 2.0 * (1.0 - normal_cdf(abs(t_value)))
+    return float(t_value), float(p_value)
+
+
+def format_between_subject_summary(group_variable: str, group_levels: list[str], between_rows: list[list[str]]) -> str:
+    if not group_levels:
+        return "未提供可匹配的 subject metadata，本报告暂不进行组间比较。"
+    tested = sum(1 for row in between_rows if len(row) >= 3 and row[2] != "descriptive only")
+    return f"组间变量为 {group_variable}，当前识别到 {len(group_levels)} 个组：{' / '.join(group_levels)}；{tested} 个指标具备组间检验条件。"
 
 
 def format_primary_result(label: str, result: dict[str, Any] | None) -> str:
@@ -1118,12 +1366,18 @@ def build_cohort_narrative(
     primary_behavior_result: dict[str, Any] | None,
     primary_eeg_result: dict[str, Any] | None,
     summary_rows: list[list[str]],
+    group_variable: str = "group",
+    group_levels: list[str] | None = None,
+    between_rows: list[list[str]] | None = None,
 ) -> list[dict[str, Any]]:
     n_subjects = len(unique_subjects)
+    group_levels = group_levels or []
+    between_rows = between_rows or []
     behavior_paragraph = format_primary_result("H1 行动迟滞", primary_behavior_result)
     eeg_paragraph = format_primary_result("H3 EEG 信息加工负荷", primary_eeg_result)
     supported_metrics = [row for row in summary_rows if len(row) >= 8 and ("符合" in row[7] or "高于" in row[7])]
     unsupported_metrics = [row for row in summary_rows if len(row) >= 8 and ("未呈现" in row[7] or "未高于" in row[7])]
+    between_summary = format_between_subject_summary(group_variable, group_levels, between_rows)
 
     return [
         {
@@ -1132,6 +1386,7 @@ def build_cohort_narrative(
                 f"当前全样本汇总纳入 {n_subjects} 名被试的已完成三条件报告。{behavior_paragraph}。",
                 f"{eeg_paragraph}。",
                 f"当前共有 {len(summary_rows)} 个指标进入 planned contrast 汇总，其中 {len(supported_metrics)} 个指标呈现预期方向，{len(unsupported_metrics)} 个指标未呈现预期方向。写作时应以预先指定主指标为核心，其他指标作为一致性证据或探索性补充。",
+                between_summary,
             ],
         },
         {
@@ -1139,7 +1394,7 @@ def build_cohort_narrative(
             "paragraphs": [
                 "当行动迟滞和 EEG 信息加工负荷两个主指标均为正向且达到显著，可以写作：中等路径确认支持条件下，被试表现出更高的行动迟滞和信息加工负荷。若准确率指标同步改善或下降，需要分别讨论 accuracy–effort trade-off 的方向。",
                 "当主指标未显著或方向不一致，结果部分应写为：当前数据尚未支持中等路径确认支持最高的主假设。讨论部分可进一步检查条件操纵、样本量、个体策略、marker 覆盖和 EEG 噪声。",
-                "组间结论不能从该汇总自动推出。只有在 subject metadata 中提供分组变量后，才能进一步检验 SupportLevel × Group 交互。",
+                "组间结论需要建立在 subject metadata 和足够的每组样本量上。报告中的组间表使用每名被试的 subject-level contrast 做比较；完整论文可进一步用 trial-level mixed-effects model 检验 SupportLevel × Group 交互。",
             ],
         },
     ]
