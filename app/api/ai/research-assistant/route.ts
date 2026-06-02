@@ -7,11 +7,40 @@ import { projectWritingContext } from "@/lib/researchProject";
 
 type RequestBody = {
   prompt?: string;
-  context?: string;
   taskMode?: string;
   targetSection?: string;
   outputMode?: string;
 };
+
+const writingWorkflowProtocol = [
+  "Evidence map first: identify the exact claim, the literature source cards that support it, the project hypothesis it informs, and the missing experimental result if any.",
+  "Section writing second: for manuscript text, write coherent paragraphs instead of bullet-heavy notes; keep variables, measures, sample scope, and model assumptions explicit.",
+  "Quality gate third: every answer must audit unsupported claims, page-number verification needs, missing metadata, and whether the requested section is allowed to state actual results.",
+  "Methods and results must be reproducible: name the XDF streams, Unity marker families, EEG windows/features, density-condition mapping, planned contrasts, and required subject-level metadata when relevant.",
+  "Do not smooth over uncertainty. If the literature only gives an analogy, say it is an analogy; if the analysis has not run on the full cohort, say it is a plan or preliminary output.",
+].join("\n- ");
+
+function buildAnswerStructure(outputMode?: string) {
+  const wantsManuscript = outputMode?.includes("论文段落") || outputMode?.toLowerCase().includes("manuscript");
+
+  if (wantsManuscript) {
+    return [
+      "1. 写作判断：说明本段落能写到什么程度，哪些结果还不能写成定论。",
+      "2. 英文论文段落：用连续、保守、可直接进入草稿的 academic prose；句末用括号标注文献代码、文献标题或报告线索。",
+      "3. 中文说明：解释这些段落背后的证据链、变量口径和统计边界。",
+      "4. 证据依据：列出使用到的文献代码、文献标题、文件名或分析报告标题。",
+      "5. 需要核验：列出页码、DOI、样本数、设备参数、统计量或 metadata 等需要补齐的内容。",
+    ].join("\n");
+  }
+
+  return [
+    "1. 任务理解：只写与当前写作任务直接相关的范围。",
+    "2. 证据矩阵：按“论点 / 文献依据 / 项目假设 / 真实结果或缺口 / 可写位置”组织。",
+    "3. 可用于论文的内容：计划和审计用紧凑结构；正文草稿用连续段落。",
+    "4. 不能声称：列出缺少真实数据、缺少页码核验或证据不足的内容。",
+    "5. 下一步材料：列出需要补充的 metadata、统计输出、原文核验点或图表。",
+  ].join("\n");
+}
 
 export async function POST(request: Request) {
   const authorization = request.headers.get("authorization") ?? "";
@@ -31,7 +60,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid or expired Supabase session." }, { status: 401 });
   }
 
-  const { prompt, context, taskMode, targetSection, outputMode } = (await request.json()) as RequestBody;
+  const { prompt, taskMode, targetSection, outputMode } = (await request.json()) as RequestBody;
 
   if (!prompt?.trim()) {
     return NextResponse.json({ error: "Prompt is required." }, { status: 400 });
@@ -65,7 +94,7 @@ export async function POST(request: Request) {
       },
       {
         role: "user",
-        content: `Project snapshot:\n${projectWritingContext}\n\nWriting task profile:\n- Task mode: ${taskMode || "未指定"}\n- Target section: ${targetSection || "未指定"}\n- Output mode: ${outputMode || "未指定"}\n\nKnowledge base inventory: ${seedStats.sources + userCards.length} literature source cards, ${seedStats.claims} claims, ${seedStats.mechanisms} mechanisms, ${seedStats.hypotheses} hypotheses, ${seedStats.analysisModels} analysis models.\n\nLiterature knowledge base:\n${knowledgeContext}\n\nCompleted analysis context:\n${analysisContext}\n\nCurrent selected-file context:\n${context || "No file context provided."}\n\nRequired answer structure:\n1. 任务理解：只写与当前写作任务直接相关的范围。\n2. 可用于论文的内容：如果是正文草稿，用连续段落；如果是计划或审计，用紧凑结构。\n3. 证据依据：列出使用到的文献代码、文献标题、文件名或分析报告标题。\n4. 不能声称：列出缺少真实数据、缺少页码核验或证据不足的内容。\n5. 需要补充：列出用户下一步应补充的材料、metadata、统计输出或原文核验点。\n6. 英文论文段落：仅在 output mode 要求论文段落时提供，保持保守并在句末用括号标注来源线索。\n\nTask:\n${prompt}`,
+        content: `Project snapshot:\n${projectWritingContext}\n\nWriting task profile:\n- Task mode: ${taskMode || "未指定"}\n- Target section: ${targetSection || "未指定"}\n- Output mode: ${outputMode || "未指定"}\n\nWriting workflow protocol:\n- ${writingWorkflowProtocol}\n\nKnowledge base inventory: ${seedStats.sources + userCards.length} literature source cards, ${seedStats.claims} claims, ${seedStats.mechanisms} mechanisms, ${seedStats.hypotheses} hypotheses, ${seedStats.analysisModels} analysis models.\n\nLiterature knowledge base:\n${knowledgeContext}\n\nCompleted analysis context:\n${analysisContext}\n\nRequired answer structure:\n${buildAnswerStructure(outputMode)}\n\nTask:\n${prompt}`,
       },
     ],
   });

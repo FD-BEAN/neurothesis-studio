@@ -124,10 +124,10 @@ export function buildResearchKnowledgeContext(prompt: string, userCards: Literat
   const userContext = buildUserLiteratureContext(userCards, prompt);
 
   return [
-    "=== Metro Rescue literature knowledge base: existing source cards ===",
+    "=== Metro Rescue literature knowledge base: curated source cards and synthesis ===",
     seedContext,
     "",
-    "=== Metro Rescue literature knowledge base: additional uploaded papers ===",
+    "=== Metro Rescue literature knowledge base: uploaded source cards using the same evidence rules ===",
     userContext,
     "",
     "Usage rule: distinguish literature evidence, project-specific hypotheses, and the user's own experimental results. Treat project hypotheses and writing blocks as drafting aids, not proven findings.",
@@ -197,7 +197,7 @@ export function getSeedKnowledgeReview(): SeedKnowledgeReview {
       },
       {
         id: "claims",
-        label: "Claims",
+        label: "论点",
         description: "可用于 Introduction、Theory、Methods 或 Discussion 的文献主张。",
         items: seedKnowledgeBase.claims.map((claim) => ({
           id: claim.Claim_ID,

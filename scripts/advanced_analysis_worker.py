@@ -32,18 +32,40 @@ END_EVENT = "evacuation_complete"
 FRONTAL_CHANNELS = {"fz", "f3", "f4", "fc1", "fc2"}
 POSTERIOR_CHANNELS = {"pz", "p3", "p4", "o1", "o2", "oz"}
 EVENT_WINDOWS = {
+    "sign_visible_enter": 2.0,
     "sign_readable": 2.0,
     "decision_point_enter": 4.0,
     "audio_play": 2.0,
 }
-BEHAVIOR_EVENTS = [
-    "audio_play",
+SIGNAGE_EVENTS = [
     "sign_visible_enter",
     "sign_readable",
+    "sign_readable_exit",
+    "sign_visible_exit",
+]
+DECISION_EVENTS = [
     "decision_point_enter",
     "decision_look_left",
     "decision_look_right",
     "decision_scan_both_sides",
+    "decision_point_exit",
+]
+INEFFICIENCY_EVENTS = [
+    "dwell_detected",
+    "u_turn_detected",
+    "route_backtrack_detected",
+]
+BEHAVIOR_EVENTS = [
+    "audio_play",
+    "sign_visible_enter",
+    "sign_readable",
+    "sign_readable_exit",
+    "sign_visible_exit",
+    "decision_point_enter",
+    "decision_look_left",
+    "decision_look_right",
+    "decision_scan_both_sides",
+    "decision_point_exit",
     "dwell_detected",
     "u_turn_detected",
     "route_backtrack_detected",
@@ -659,11 +681,21 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
             },
             {
                 "type": "bar",
-                "title": "行为负荷代理指标",
+                "title": "导航行为负荷代理指标",
                 "xLabel": "density/run",
                 "yLabel": "count",
                 "data": [
                     {"label": condition_label(row), "value": safe_chart_value(to_float(row.get("behavior_load_proxy")))}
+                    for row in run_rows
+                ],
+            },
+            {
+                "type": "bar",
+                "title": "决策扫描与回退代理指标",
+                "xLabel": "density/run",
+                "yLabel": "index",
+                "data": [
+                    {"label": condition_label(row), "value": safe_chart_value(to_float(row.get("decision_load_proxy")))}
                     for row in run_rows
                 ],
             },
@@ -674,6 +706,16 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
                 "yLabel": "index",
                 "data": [
                     {"label": condition_label(row), "value": safe_chart_value(to_float(row.get("eeg_load_proxy")))}
+                    for row in run_rows
+                ],
+            },
+            {
+                "type": "bar",
+                "title": "决策点事件窗 EEG load proxy",
+                "xLabel": "density/run",
+                "yLabel": "event-window index",
+                "data": [
+                    {"label": condition_label(row), "value": safe_chart_value(to_float(row.get("decision_point_enter_eeg_load_proxy")))}
                     for row in run_rows
                 ],
             },
@@ -692,11 +734,25 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
                     "duration_s",
                     "distance_m",
                     "exit",
+                    "first_sign_s",
+                    "first_decision_s",
+                    "readable_signs",
+                    "readable_ratio",
+                    "decision_points",
+                    "look_count",
+                    "look_balance",
+                    "scan_both",
+                    "u_turn",
+                    "backtrack",
+                    "inefficiency",
+                    "decision_load",
                     "behavior_load_proxy",
                     "eeg_load_proxy",
                     "theta_alpha_ratio",
                     "frontal_theta_4_7",
                     "posterior_alpha_8_12",
+                    "sign_readable_event_load",
+                    "decision_event_load",
                 ],
                 "rows": [
                     [
@@ -710,11 +766,25 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
                         row["duration_s"],
                         row["horizontal_distance_m"],
                         row["exit_label"],
+                        row["time_to_first_sign_readable_s"],
+                        row["time_to_first_decision_s"],
+                        row["sign_readable_count"],
+                        row["sign_readable_ratio"],
+                        row["decision_point_count"],
+                        row["decision_total_look_count"],
+                        row["decision_look_balance_abs"],
+                        row["decision_scan_both_count"],
+                        row["u_turn_count"],
+                        row["backtrack_count"],
+                        row["navigation_inefficiency_proxy"],
+                        row["decision_load_proxy"],
                         row["behavior_load_proxy"],
                         row["eeg_load_proxy"],
                         row["theta_alpha_ratio"],
                         row["frontal_theta_4_7"],
                         row["posterior_alpha_8_12"],
+                        row["sign_readable_eeg_load_proxy"],
+                        row["decision_point_enter_eeg_load_proxy"],
                     ]
                     for row in run_rows
                 ],
@@ -743,8 +813,41 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
 def extract_run_summary(document: dict[str, Any], report: dict[str, Any]) -> dict[str, str]:
     metrics = {metric.get("label"): metric.get("value") for metric in report.get("metrics", [])}
     session_parts = parse_session_label(str(metrics.get("主 trial", "")))
-    behavior = extract_metric_table(report, ["trial_duration_s", "horizontal_distance_m", "exit_label", "behavior_load_proxy"])
-    eeg = extract_metric_table(report, ["eeg_load_proxy", "frontal_theta_4_7", "posterior_alpha_8_12", "theta_alpha_ratio"])
+    behavior = extract_metric_table(
+        report,
+        [
+            "trial_duration_s",
+            "horizontal_distance_m",
+            "exit_label",
+            "time_to_first_sign_readable_s",
+            "time_to_first_decision_s",
+            "sign_readable_count",
+            "sign_readable_ratio",
+            "decision_point_count",
+            "decision_total_look_count",
+            "decision_look_balance_abs",
+            "decision_scan_both_count",
+            "u_turn_count",
+            "backtrack_count",
+            "navigation_inefficiency_proxy",
+            "decision_load_proxy",
+            "behavior_load_proxy",
+        ],
+    )
+    eeg = extract_metric_table(
+        report,
+        [
+            "eeg_load_proxy",
+            "theta_alpha_ratio",
+            "frontal_theta_4_7",
+            "posterior_alpha_8_12",
+            "sign_visible_enter_eeg_load_proxy",
+            "sign_readable_eeg_load_proxy",
+            "decision_point_enter_eeg_load_proxy",
+            "sign_readable_theta_alpha_ratio",
+            "decision_point_enter_theta_alpha_ratio",
+        ],
+    )
     file = document["filename"]
     density = infer_density_level(
         file,
@@ -767,11 +870,28 @@ def extract_run_summary(document: dict[str, Any], report: dict[str, Any]) -> dic
         "duration_s": behavior.get("trial_duration_s", "-"),
         "horizontal_distance_m": behavior.get("horizontal_distance_m", "-"),
         "exit_label": behavior.get("exit_label", "-"),
+        "time_to_first_sign_readable_s": behavior.get("time_to_first_sign_readable_s", "-"),
+        "time_to_first_decision_s": behavior.get("time_to_first_decision_s", "-"),
+        "sign_readable_count": behavior.get("sign_readable_count", "-"),
+        "sign_readable_ratio": behavior.get("sign_readable_ratio", "-"),
+        "decision_point_count": behavior.get("decision_point_count", "-"),
+        "decision_total_look_count": behavior.get("decision_total_look_count", "-"),
+        "decision_look_balance_abs": behavior.get("decision_look_balance_abs", "-"),
+        "decision_scan_both_count": behavior.get("decision_scan_both_count", "-"),
+        "u_turn_count": behavior.get("u_turn_count", "-"),
+        "backtrack_count": behavior.get("backtrack_count", "-"),
+        "navigation_inefficiency_proxy": behavior.get("navigation_inefficiency_proxy", "-"),
+        "decision_load_proxy": behavior.get("decision_load_proxy", "-"),
         "behavior_load_proxy": behavior.get("behavior_load_proxy", "-"),
         "eeg_load_proxy": eeg.get("eeg_load_proxy", "-"),
         "theta_alpha_ratio": eeg.get("theta_alpha_ratio", "-"),
         "frontal_theta_4_7": eeg.get("frontal_theta_4_7", "-"),
         "posterior_alpha_8_12": eeg.get("posterior_alpha_8_12", "-"),
+        "sign_visible_enter_eeg_load_proxy": eeg.get("sign_visible_enter_eeg_load_proxy", "-"),
+        "sign_readable_eeg_load_proxy": eeg.get("sign_readable_eeg_load_proxy", "-"),
+        "decision_point_enter_eeg_load_proxy": eeg.get("decision_point_enter_eeg_load_proxy", "-"),
+        "sign_readable_theta_alpha_ratio": eeg.get("sign_readable_theta_alpha_ratio", "-"),
+        "decision_point_enter_theta_alpha_ratio": eeg.get("decision_point_enter_theta_alpha_ratio", "-"),
         "has_completion": "yes" if behavior.get("trial_duration_s") not in (None, "", "-") else "no",
     }
 
@@ -861,10 +981,20 @@ def format_density_coverage(rows: list[dict[str, str]]) -> str:
 def compute_density_planned_contrasts(rows: list[dict[str, str]]) -> tuple[list[list[str]], list[dict[str, Any]]]:
     metrics = [
         ("eeg_load_proxy", "EEG load proxy"),
+        ("decision_point_enter_eeg_load_proxy", "decision-point EEG load"),
+        ("sign_readable_eeg_load_proxy", "sign-readable EEG load"),
         ("theta_alpha_ratio", "theta/alpha ratio"),
         ("frontal_theta_4_7", "frontal theta"),
         ("posterior_alpha_8_12", "posterior alpha"),
+        ("decision_load_proxy", "decision/scan load proxy"),
         ("behavior_load_proxy", "behavior load proxy"),
+        ("navigation_inefficiency_proxy", "navigation inefficiency"),
+        ("decision_total_look_count", "left/right look count"),
+        ("decision_look_balance_abs", "left-right imbalance"),
+        ("decision_scan_both_count", "both-side scans"),
+        ("sign_readable_ratio", "readable sign ratio"),
+        ("time_to_first_sign_readable_s", "time to first readable sign"),
+        ("time_to_first_decision_s", "time to first decision point"),
         ("duration_s", "completion time"),
     ]
     table_rows: list[list[str]] = []
@@ -913,11 +1043,21 @@ def compute_density_planned_contrasts(rows: list[dict[str, str]]) -> tuple[list[
 def metric_priority(metric: str) -> tuple[int, str]:
     order = {
         "eeg_load_proxy": 0,
-        "theta_alpha_ratio": 1,
-        "frontal_theta_4_7": 2,
-        "posterior_alpha_8_12": 3,
-        "behavior_load_proxy": 4,
-        "duration_s": 5,
+        "decision_point_enter_eeg_load_proxy": 1,
+        "sign_readable_eeg_load_proxy": 2,
+        "theta_alpha_ratio": 3,
+        "frontal_theta_4_7": 4,
+        "posterior_alpha_8_12": 5,
+        "decision_load_proxy": 6,
+        "behavior_load_proxy": 7,
+        "navigation_inefficiency_proxy": 8,
+        "decision_total_look_count": 9,
+        "decision_look_balance_abs": 10,
+        "decision_scan_both_count": 11,
+        "sign_readable_ratio": 12,
+        "time_to_first_sign_readable_s": 13,
+        "time_to_first_decision_s": 14,
+        "duration_s": 15,
     }
     return (order.get(metric, 99), metric)
 
@@ -1239,14 +1379,26 @@ def build_session_table(sessions: list[dict[str, Any]]) -> dict[str, Any]:
 def build_behavior_table(rows: list[dict[str, Any]], window: dict[str, float] | None) -> dict[str, Any]:
     counts = Counter(row.get("event", "") for row in rows)
     completion = find_first_event(rows, (END_EVENT,))
-    behavior_load_proxy = (
-        counts.get("dwell_detected", 0)
-        + counts.get("u_turn_detected", 0)
-        + counts.get("route_backtrack_detected", 0)
-        + counts.get("decision_scan_both_sides", 0)
-    )
+    sign_visible_count = counts.get("sign_visible_enter", 0)
+    sign_readable_count = counts.get("sign_readable", 0)
+    decision_count = counts.get("decision_point_enter", 0)
+    left_looks = counts.get("decision_look_left", 0)
+    right_looks = counts.get("decision_look_right", 0)
+    scan_both = counts.get("decision_scan_both_sides", 0)
+    dwell_count = counts.get("dwell_detected", 0)
+    u_turn_count = counts.get("u_turn_detected", 0)
+    backtrack_count = counts.get("route_backtrack_detected", 0)
+    look_total = left_looks + right_looks
+    look_balance_abs = abs(left_looks - right_looks)
+    behavior_load_proxy = dwell_count + u_turn_count + backtrack_count + scan_both
+    decision_load_proxy = look_total + 2 * scan_both + 2 * dwell_count + 3 * (u_turn_count + backtrack_count)
+    navigation_inefficiency_proxy = u_turn_count + backtrack_count + dwell_count
     duration_minutes = (window["duration_s"] / 60.0) if window and window.get("duration_s") else None
     behavior_load_rate = behavior_load_proxy / duration_minutes if duration_minutes else None
+    decision_rate = decision_count / duration_minutes if duration_minutes else None
+    readable_rate = sign_readable_count / duration_minutes if duration_minutes else None
+    look_rate = look_total / duration_minutes if duration_minutes else None
+    readable_ratio = safe_ratio(sign_readable_count, sign_visible_count)
     metrics = [
         ["trial_duration_s", fmt(window["duration_s"]) if window else "-"],
         ["exit_label", completion.get("exit", "") if completion else "-"],
@@ -1254,6 +1406,23 @@ def build_behavior_table(rows: list[dict[str, Any]], window: dict[str, float] | 
         ["time_to_first_sign_readable_s", fmt(first_event_latency(rows, "sign_readable", window))],
         ["time_to_first_decision_s", fmt(first_event_latency(rows, "decision_point_enter", window))],
         ["sign_readable_latency_from_visible_s", fmt(mean_sign_readable_latency(rows))],
+        ["sign_visible_count", str(sign_visible_count)],
+        ["sign_readable_count", str(sign_readable_count)],
+        ["sign_readable_ratio", fmt(readable_ratio)],
+        ["sign_readable_per_min", fmt(readable_rate)],
+        ["decision_point_count", str(decision_count)],
+        ["decision_left_look_count", str(left_looks)],
+        ["decision_right_look_count", str(right_looks)],
+        ["decision_total_look_count", str(look_total)],
+        ["decision_look_balance_abs", str(look_balance_abs)],
+        ["decision_scan_both_count", str(scan_both)],
+        ["decision_points_per_min", fmt(decision_rate)],
+        ["decision_looks_per_min", fmt(look_rate)],
+        ["dwell_count", str(dwell_count)],
+        ["u_turn_count", str(u_turn_count)],
+        ["backtrack_count", str(backtrack_count)],
+        ["navigation_inefficiency_proxy", str(navigation_inefficiency_proxy)],
+        ["decision_load_proxy", str(decision_load_proxy)],
         ["behavior_load_proxy", str(behavior_load_proxy)],
         ["behavior_load_proxy_per_min", fmt(behavior_load_rate)],
     ]
@@ -1334,6 +1503,7 @@ def analyze_eeg_stream(stream: dict[str, Any], rows: list[dict[str, Any]], windo
 
     event_report = compute_event_locked_report(data[:, signal_indices], timestamps, [labels[i] for i in signal_indices], fs, rows)
     if event_report:
+        tables.append(event_report["metricsTable"])
         tables.append(event_report["table"])
         charts.append(event_report["chart"])
         valid_event_epochs = event_report["valid_event_epochs"]
@@ -1430,16 +1600,26 @@ def compute_event_locked_report(data: np.ndarray, timestamps: np.ndarray, labels
             continue
         theta = powers["theta"]
         alpha = powers["alpha"]
+        frontal_theta = float(np.nanmean(theta[frontal_indices]))
+        posterior_alpha = float(np.nanmean(alpha[posterior_indices]))
+        theta_alpha_ratio = safe_ratio(float(np.nanmean(theta)), float(np.nanmean(alpha)))
+        eeg_event_load_proxy = (
+            math.log10(frontal_theta + 1e-12)
+            - math.log10(posterior_alpha + 1e-12)
+            + math.log10((theta_alpha_ratio or 0.0) + 1e-12)
+        )
         feature_rows.append(
             {
                 "event": event,
                 "window_s": duration,
                 "xdf_time": start_ts,
                 "samples": len(epoch),
-                "frontal_theta": float(np.nanmean(theta[frontal_indices])),
-                "posterior_alpha": float(np.nanmean(alpha[posterior_indices])),
-                "theta_alpha_ratio": safe_ratio(float(np.nanmean(theta)), float(np.nanmean(alpha))),
+                "frontal_theta": frontal_theta,
+                "posterior_alpha": posterior_alpha,
+                "theta_alpha_ratio": theta_alpha_ratio,
+                "eeg_event_load_proxy": eeg_event_load_proxy,
                 "near_audio": has_nearby_event(rows, start_ts, "audio_play", radius_s=2.0),
+                "near_inefficiency": any(has_nearby_event(rows, start_ts, event_name, radius_s=4.0) for event_name in INEFFICIENCY_EVENTS),
             }
         )
 
@@ -1447,14 +1627,19 @@ def compute_event_locked_report(data: np.ndarray, timestamps: np.ndarray, labels
         return None
 
     summary = []
+    metrics_rows = []
     chart_data = []
+    load_chart_data = []
     for event in EVENT_WINDOWS:
         event_rows = [row for row in feature_rows if row["event"] == event]
         if not event_rows:
             continue
-        mean_theta = float(np.nanmean([row["frontal_theta"] for row in event_rows]))
-        mean_alpha = float(np.nanmean([row["posterior_alpha"] for row in event_rows]))
-        mean_ratio = float(np.nanmean([row["theta_alpha_ratio"] for row in event_rows]))
+        mean_theta = mean_numeric([row["frontal_theta"] for row in event_rows])
+        mean_alpha = mean_numeric([row["posterior_alpha"] for row in event_rows])
+        mean_ratio = mean_numeric([row["theta_alpha_ratio"] for row in event_rows])
+        mean_load = mean_numeric([row["eeg_event_load_proxy"] for row in event_rows])
+        near_audio = sum(row["near_audio"] for row in event_rows)
+        near_inefficiency = sum(row["near_inefficiency"] for row in event_rows)
         summary.append(
             [
                 event,
@@ -1462,24 +1647,52 @@ def compute_event_locked_report(data: np.ndarray, timestamps: np.ndarray, labels
                 fmt(mean_theta),
                 fmt(mean_alpha),
                 fmt(mean_ratio),
-                str(sum(row["near_audio"] for row in event_rows)),
+                fmt(mean_load),
+                str(near_audio),
+                str(near_inefficiency),
+            ]
+        )
+        metrics_rows.extend(
+            [
+                [f"{event}_epochs", str(len(event_rows))],
+                [f"{event}_frontal_theta", fmt(mean_theta)],
+                [f"{event}_posterior_alpha", fmt(mean_alpha)],
+                [f"{event}_theta_alpha_ratio", fmt(mean_ratio)],
+                [f"{event}_eeg_load_proxy", fmt(mean_load)],
+                [f"{event}_near_audio_epochs", str(near_audio)],
+                [f"{event}_near_navigation_inefficiency_epochs", str(near_inefficiency)],
             ]
         )
         chart_data.append({"label": event, "value": safe_chart_value(mean_ratio)})
+        load_chart_data.append({"label": event, "value": safe_chart_value(mean_load)})
 
     return {
         "valid_event_epochs": len(feature_rows),
+        "metricsTable": {
+            "title": "事件窗 EEG 指标（run-level）",
+            "columns": ["metric", "value"],
+            "rows": metrics_rows,
+        },
         "table": {
             "title": "事件锁定 EEG 特征摘要",
-            "columns": ["event", "epochs", "mean_frontal_theta", "mean_posterior_alpha", "mean_theta_alpha_ratio", "near_audio_epochs"],
+            "columns": [
+                "event",
+                "epochs",
+                "mean_frontal_theta",
+                "mean_posterior_alpha",
+                "mean_theta_alpha_ratio",
+                "mean_eeg_event_load_proxy",
+                "near_audio_epochs",
+                "near_navigation_inefficiency_epochs",
+            ],
             "rows": summary,
         },
         "chart": {
             "type": "bar",
-            "title": "事件窗 theta/alpha ratio",
+            "title": "事件窗 EEG load proxy",
             "xLabel": "event",
-            "yLabel": "theta/alpha",
-            "data": chart_data,
+            "yLabel": "load proxy",
+            "data": load_chart_data or chart_data,
         },
     }
 
@@ -1875,6 +2088,11 @@ def to_float(value: Any) -> float | None:
     except (TypeError, ValueError):
         return None
     return result if math.isfinite(result) else None
+
+
+def mean_numeric(values: list[Any]) -> float | None:
+    clean = [value for value in (to_float(item) for item in values) if value is not None]
+    return float(np.mean(clean)) if clean else None
 
 
 def safe_ratio(numerator: float | int | None, denominator: float | int | None) -> float | None:

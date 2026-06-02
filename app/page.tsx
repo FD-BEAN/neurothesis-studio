@@ -47,8 +47,6 @@ type HtmlReportArtifact = {
   generatedAt?: string;
 };
 
-const thesisKeywords = researchProject.keywords;
-
 const workspaceModules = [
   {
     href: "#pipeline",
@@ -73,11 +71,11 @@ const workspaceModules = [
 ];
 
 const knowledgeReviewNotes = [
-  "文献知识库包含结构化、转述后的文献知识与 source anchor，不是 PDF 全文库。",
-  "写作时可以使用文献卡和引用锚点辅助定位；正式引用前仍需回到原文核对页码、作者、年份和 DOI。",
-  "项目假设、写作块和分析模型是写作与建模辅助；除非明确标记为直接文献证据，不等于已经得到实验结果。",
-  "部分历史字段仍使用 Signature1/2/3 命名；当前研究口径应统一映射为低/中/高密度条件，并在论文中使用 Density condition。",
-  "文献代码可在“文献卡”分类中检索；claims、机制、假设、风险和引用锚点默认显示 S001 这类文献简写，展开后查看完整文献标题。",
+  "这里保存的是可审阅的文献卡、论点、机制、风险和引用线索，不替代 PDF 原文。",
+  "正式写入论文前仍需回到原文核对页码、作者、年份、DOI 和原句语境。",
+  "项目假设、写作块和分析模型只用于组织论文与建模，不等于已经得到实验结果。",
+  "历史字段中的 Signature1/2/3 在当前研究中统一映射为低/中/高密度条件，论文正文使用 Density condition。",
+  "S001 这类编号只是文献索引；需要标题时可在条目中的“来源文献”展开查看。",
 ];
 
 const documentCategories = [
@@ -942,16 +940,7 @@ function Workspace({
                   <dt>存储容量</dt>
                   <dd>{formatBytes(totalStoredBytes)}</dd>
                 </div>
-                <div>
-                  <dt>当前选中文件</dt>
-                  <dd>{selectedDocument?.filename ?? "尚未选择"}</dd>
-                </div>
               </dl>
-              <div className="keyword-row compact quiet">
-                {thesisKeywords.map((keyword) => (
-                  <span key={keyword}>{keyword}</span>
-                ))}
-              </div>
             </aside>
           </div>
         </section>
@@ -1135,7 +1124,7 @@ function Workspace({
               刷新知识库
             </button>
           </div>
-          <SeedKnowledgeReviewPanel review={seedKnowledgeReview} />
+          <SeedKnowledgeReviewPanel entries={knowledgeEntries} review={seedKnowledgeReview} />
         </section>
 
         <section className="view is-visible" id="pipeline">
@@ -1372,18 +1361,49 @@ function AnalysisQueueOverview({
   onDeleteJobs: (jobIds: string[]) => void;
   onDownloadReport: (job: ResearchAnalysisJob) => void;
 }) {
-  const deletableJobs = jobs.filter((job) => job.status === "completed" || job.status === "failed" || job.status === "configuration_required" || isStaleJob(job));
+  const recentJobs = jobs.slice(0, 3);
+  const latestJob = recentJobs[0] ?? null;
+  const historyJobs = recentJobs.slice(1);
+  const deletableJobs = recentJobs.filter((job) => job.status === "completed" || job.status === "failed" || job.status === "configuration_required" || isStaleJob(job));
+
+  const renderJobRow = (job: ResearchAnalysisJob) => {
+    const reportArtifact = getJobHtmlReport(job);
+    return (
+      <article className="queue-row" key={job.id}>
+        <div>
+          <strong>{getJobDisplayTitle(job)}</strong>
+          <span>{new Date(job.created_at).toLocaleString("zh-CN")}</span>
+        </div>
+        <span className={`state-chip ${getJobTone(job)}`}>{isStaleJob(job) ? "疑似卡住" : formatJobStatus(job.status)}</span>
+        <ProgressBar value={getJobProgress(job)} tone={getJobTone(job)} />
+        <div className="job-actions">
+          {job.github_run_url ? (
+            <a className="secondary-link" href={job.github_run_url} target="_blank" rel="noreferrer">
+              GitHub
+            </a>
+          ) : null}
+          <button className="secondary-button" disabled={!reportArtifact} onClick={() => onDownloadReport(job)}>
+            {reportArtifact ? "下载 HTML" : job.status === "completed" ? "需重新生成" : "等待报告"}
+          </button>
+          <button className="secondary-button" onClick={() => onDeleteJobs([job.id])}>
+            删除
+          </button>
+        </div>
+        <p>{getJobMessage(job)}</p>
+      </article>
+    );
+  };
 
   return (
     <section className="work-panel queue-overview">
       <div className="analysis-head">
         <div>
           <p className="eyebrow">XDF 队列</p>
-          <h3>{jobViewFilters.find((item) => item.id === filter)?.label ?? "任务"} · {jobs.length}</h3>
+          <h3>{jobViewFilters.find((item) => item.id === filter)?.label ?? "任务"} · 最近 {recentJobs.length}/3</h3>
         </div>
         <div className="top-actions">
           <button className="secondary-button" disabled={!deletableJobs.length} onClick={() => onDeleteJobs(deletableJobs.map((job) => job.id))}>
-            清理当前列表
+            清理最近列表
           </button>
         </div>
       </div>
@@ -1398,35 +1418,15 @@ function AnalysisQueueOverview({
           </button>
         ))}
       </div>
-      {jobs.length ? (
+      {latestJob ? (
         <div className="queue-table">
-          {jobs.map((job) => {
-            const reportArtifact = getJobHtmlReport(job);
-            return (
-              <article className="queue-row" key={job.id}>
-                <div>
-                  <strong>{getJobDisplayTitle(job)}</strong>
-                  <span>{new Date(job.created_at).toLocaleString("zh-CN")}</span>
-                </div>
-                <span className={`state-chip ${getJobTone(job)}`}>{isStaleJob(job) ? "疑似卡住" : formatJobStatus(job.status)}</span>
-                <ProgressBar value={getJobProgress(job)} tone={getJobTone(job)} />
-                <div className="job-actions">
-                  {job.github_run_url ? (
-                    <a className="secondary-link" href={job.github_run_url} target="_blank" rel="noreferrer">
-                      GitHub
-                    </a>
-                  ) : null}
-                  <button className="secondary-button" disabled={!reportArtifact} onClick={() => onDownloadReport(job)}>
-                    {reportArtifact ? "下载 HTML" : job.status === "completed" ? "需重新生成" : "等待报告"}
-                  </button>
-                  <button className="secondary-button" onClick={() => onDeleteJobs([job.id])}>
-                    删除
-                  </button>
-                </div>
-                <p>{getJobMessage(job)}</p>
-              </article>
-            );
-          })}
+          {renderJobRow(latestJob)}
+          {historyJobs.length ? (
+            <details className="queue-history">
+              <summary>展开最近 {historyJobs.length} 个历史任务</summary>
+              <div className="queue-table compact-history">{historyJobs.map(renderJobRow)}</div>
+            </details>
+          ) : null}
         </div>
       ) : (
         <p className="muted">当前筛选下没有 XDF 分析任务。</p>
@@ -1577,11 +1577,63 @@ function getAuthErrorMessage(message: string) {
   return `登录失败：${message}`;
 }
 
-function SeedKnowledgeReviewPanel({ review }: { review: SeedKnowledgeReview | null }) {
+function mergeLiteratureEntriesIntoReview(review: SeedKnowledgeReview, entries: LiteratureKnowledgeEntry[]): SeedKnowledgeReview {
+  const sourceSection = review.sections.find((section) => section.id === "sources");
+  if (!sourceSection) return review;
+
+  const seenTitles = new Set(sourceSection.items.map((item) => normalizeKnowledgeTitle(item.title)));
+  const additionalItems: SeedKnowledgeReviewItem[] = [];
+  for (const entry of entries) {
+    const card = entry.card;
+    if (!card || entry.seedMatch) continue;
+    const title = card.title || stripLiteratureExtension(card.filename);
+    const normalizedTitle = normalizeKnowledgeTitle(title);
+    if (!normalizedTitle || seenTitles.has(normalizedTitle)) continue;
+    seenTitles.add(normalizedTitle);
+    const sourceCode = `S${String(sourceSection.items.length + additionalItems.length + 1).padStart(3, "0")}`;
+    additionalItems.push({
+      id: sourceCode,
+      title,
+      subtitle: card.citation || card.paperType || "文献卡",
+      body: card.oneSentenceTakeaway || card.abstractZh || card.researchQuestion || "已生成结构化文献卡，可用于写作助手检索。",
+      tags: (card.themeTags?.length ? card.themeTags : card.keywords).slice(0, 8),
+      meta: [
+        { label: "证据/方法", value: card.methods || card.eegOrMeasures || card.paperType || "-" },
+        { label: "用于本研究", value: card.relevanceToMetroRescue.join("；") || card.usableForSections.join("；") },
+        { label: "文件", value: card.filename },
+      ],
+      boundary: (card.doNotClaim?.length ? card.doNotClaim : card.limitations).join("；"),
+    });
+  }
+
+  if (!additionalItems.length) return review;
+
+  return {
+    ...review,
+    sections: review.sections.map((section) =>
+      section.id === "sources"
+        ? {
+            ...section,
+            items: [...section.items, ...additionalItems],
+          }
+        : section,
+    ),
+  };
+}
+
+function normalizeKnowledgeTitle(title: string) {
+  return stripLiteratureExtension(title)
+    .toLowerCase()
+    .replace(/[_\-\s:：，,.;；。()（）[\]]+/g, " ")
+    .trim();
+}
+
+function SeedKnowledgeReviewPanel({ entries, review }: { entries: LiteratureKnowledgeEntry[]; review: SeedKnowledgeReview | null }) {
   const [activeSectionId, setActiveSectionId] = useState("sources");
   const [query, setQuery] = useState("");
+  const displayReview = useMemo(() => (review ? mergeLiteratureEntriesIntoReview(review, entries) : null), [entries, review]);
 
-  const activeSection = review?.sections.find((section) => section.id === activeSectionId) ?? review?.sections[0] ?? null;
+  const activeSection = displayReview?.sections.find((section) => section.id === activeSectionId) ?? displayReview?.sections[0] ?? null;
   const filteredItems = useMemo(() => {
     if (!activeSection) return [];
 
@@ -1604,7 +1656,7 @@ function SeedKnowledgeReviewPanel({ review }: { review: SeedKnowledgeReview | nu
     );
   }, [activeSection, query]);
 
-  if (!review) {
+  if (!displayReview) {
     return (
       <section className="work-panel seed-review-panel">
         <p className="muted">正在读取文献知识库审阅数据。</p>
@@ -1612,33 +1664,36 @@ function SeedKnowledgeReviewPanel({ review }: { review: SeedKnowledgeReview | nu
     );
   }
 
-  const totalItems = review.sections.reduce((total, section) => total + section.items.length, 0);
+  const totalItems = displayReview.sections.reduce((total, section) => total + section.items.length, 0);
+  const sourceCount = displayReview.sections.find((section) => section.id === "sources")?.items.length ?? 0;
+  const synthesisCount = Math.max(0, totalItems - sourceCount);
+  const reviewFocusCount = knowledgeReviewNotes.length;
 
   return (
     <section className="work-panel seed-review-panel">
       <div className="analysis-head">
         <div>
           <p className="eyebrow">文献知识库</p>
-          <h3>Metro Rescue 结构化知识层</h3>
+          <h3>统一文献知识库</h3>
         </div>
         <span className="status-pill compact">{totalItems} 个条目</span>
       </div>
 
       <div className="seed-review-summary">
         <div>
-          <span>版本</span>
-          <strong>{review.version.replace("metro-rescue-kb-", "v")}</strong>
-          <p>{review.generatedFrom}</p>
+          <span>文献卡</span>
+          <strong>{sourceCount}</strong>
+          <p>已整理成可检索、可审阅的文献入口。</p>
         </div>
         <div>
-          <span>分类</span>
-          <strong>{review.sections.length}</strong>
-          <p>文献卡、claims、机制、假设、模型等</p>
+          <span>证据单元</span>
+          <strong>{synthesisCount}</strong>
+          <p>论点、机制、假设、风险、写作块和引用线索。</p>
         </div>
         <div>
           <span>审阅重点</span>
-          <strong>3</strong>
-          <p>全文边界、命名统一、结果边界</p>
+          <strong>{reviewFocusCount}</strong>
+          <p>原文核对、命名统一、结果边界和证据来源。</p>
         </div>
       </div>
 
@@ -1650,7 +1705,7 @@ function SeedKnowledgeReviewPanel({ review }: { review: SeedKnowledgeReview | nu
 
       <div className="seed-review-layout">
         <aside className="seed-section-list" aria-label="知识库分类">
-          {review.sections.map((section) => (
+          {displayReview.sections.map((section) => (
             <button
               className={`seed-section-button ${activeSection?.id === section.id ? "is-active" : ""}`}
               key={section.id}

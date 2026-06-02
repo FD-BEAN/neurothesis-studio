@@ -1258,6 +1258,26 @@ textarea {
   gap: 16px;
 }
 
+.queue-history {
+  display: grid;
+  gap: 12px;
+}
+
+.queue-history summary {
+  min-height: 40px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--green);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.compact-history {
+  margin-top: 12px;
+}
+
 .seed-review-summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
