@@ -1169,6 +1169,162 @@ textarea {
   gap: 16px;
 }
 
+.seed-review-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.seed-review-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--line);
+}
+
+.seed-review-summary div {
+  min-height: 96px;
+  padding: 14px;
+  background: #ffffff;
+}
+
+.seed-review-summary span,
+.seed-section-button span,
+.seed-item-head span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.seed-review-summary strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--blue);
+  font-size: 1.2rem;
+}
+
+.seed-review-summary p,
+.review-note-list p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.review-note-list {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border-left: 3px solid #c9d9d6;
+  background: #f7faf9;
+}
+
+.seed-review-layout {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.seed-section-list,
+.seed-review-main,
+.seed-review-list,
+.seed-review-item {
+  display: grid;
+  gap: 10px;
+}
+
+.seed-section-button {
+  min-height: 54px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--ink);
+  text-align: left;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.seed-section-button.is-active {
+  border-color: #9dc4bc;
+  background: #eef7f4;
+}
+
+.seed-section-button strong {
+  color: var(--green);
+}
+
+.seed-review-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 360px);
+  gap: 14px;
+  align-items: end;
+}
+
+.seed-review-controls h3,
+.seed-review-item h4,
+.seed-review-item p {
+  margin: 0;
+}
+
+.seed-review-list {
+  max-height: 760px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.seed-review-item {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+}
+
+.seed-item-head {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.seed-item-head span {
+  color: var(--green);
+}
+
+.seed-item-head p,
+.seed-review-item > p,
+.seed-review-meta dd,
+.seed-boundary {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.seed-review-meta {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.seed-review-meta dt {
+  color: var(--ink);
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.seed-review-meta dd {
+  margin: 3px 0 0;
+}
+
+.seed-boundary {
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
 .knowledge-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1478,6 +1634,9 @@ textarea {
   .batch-controls,
   .batch-layout,
   .ai-grid,
+  .seed-review-summary,
+  .seed-review-layout,
+  .seed-review-controls,
   .materials-grid,
   .alert-grid,
   .module-overview,

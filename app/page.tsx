@@ -8,6 +8,7 @@ import {
   type ResearchAnalysisJob,
   type ResearchDocument,
 } from "@/lib/supabase";
+import type { SeedKnowledgeReview } from "@/lib/knowledgeBase";
 import { isLiteratureDocument, parseLiteratureCard, type LiteratureKnowledgeCard } from "@/lib/literature";
 import { metroAiPrompt, researchProject } from "@/lib/researchProject";
 
@@ -53,6 +54,11 @@ const workspaceModules = [
     href: "#files",
     title: "研究资料库",
     text: "文献知识库、XDF 原始数据、分析脚本和写作材料。",
+  },
+  {
+    href: "#knowledge",
+    title: "知识库审阅",
+    text: "查看内置文献卡、claims、机制、假设、模型和引用锚点。",
   },
   {
     href: "#pipeline",
@@ -322,6 +328,7 @@ function Workspace({
   const [jobLoading, setJobLoading] = useState(false);
   const [knowledgeEntries, setKnowledgeEntries] = useState<LiteratureKnowledgeEntry[]>([]);
   const [seedKnowledgeStats, setSeedKnowledgeStats] = useState<SeedKnowledgeStats | null>(null);
+  const [seedKnowledgeReview, setSeedKnowledgeReview] = useState<SeedKnowledgeReview | null>(null);
   const [knowledgeLoading, setKnowledgeLoading] = useState(false);
   const [knowledgeMessage, setKnowledgeMessage] = useState("");
   const [libraryQuery, setLibraryQuery] = useState("");
@@ -429,9 +436,14 @@ function Workspace({
 
     if (!response.ok) return;
 
-    const payload = (await response.json()) as { cards?: LiteratureKnowledgeEntry[]; seedStats?: SeedKnowledgeStats };
+    const payload = (await response.json()) as {
+      cards?: LiteratureKnowledgeEntry[];
+      seedStats?: SeedKnowledgeStats;
+      seedReview?: SeedKnowledgeReview;
+    };
     setKnowledgeEntries(payload.cards ?? []);
     setSeedKnowledgeStats(payload.seedStats ?? null);
+    setSeedKnowledgeReview(payload.seedReview ?? null);
   }
 
   async function handleUpload(event: React.ChangeEvent<HTMLInputElement>) {
@@ -701,6 +713,9 @@ function Workspace({
           <a className="nav-item" href="#files">
             研究资料库
           </a>
+          <a className="nav-item" href="#knowledge">
+            知识库审阅
+          </a>
           <a className="nav-item" href="#pipeline">
             数据分析与写作
           </a>
@@ -922,6 +937,20 @@ function Workspace({
           </div>
         </section>
 
+        <section className="view is-visible" id="knowledge">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">知识库审阅</p>
+              <h2>内置文献知识库与新增论文卡片</h2>
+            </div>
+            <button className="secondary-button" onClick={loadKnowledgeBase}>
+              刷新知识库
+            </button>
+          </div>
+          <SeedKnowledgeReviewPanel review={seedKnowledgeReview} />
+          <LiteratureKnowledgePanel entries={knowledgeEntries} seedStats={seedKnowledgeStats} onRefresh={loadKnowledgeBase} />
+        </section>
+
         <section className="view is-visible" id="pipeline">
           <div className="section-head">
             <div>
@@ -1004,7 +1033,6 @@ function Workspace({
               <pre>{aiState.output || "运行后，这里会显示整理结果。"}</pre>
             </section>
           </div>
-          <LiteratureKnowledgePanel entries={knowledgeEntries} seedStats={seedKnowledgeStats} onRefresh={loadKnowledgeBase} />
         </section>
       </section>
     </main>
@@ -1292,6 +1320,153 @@ function getAuthErrorMessage(message: string) {
   }
 
   return `登录失败：${message}`;
+}
+
+function SeedKnowledgeReviewPanel({ review }: { review: SeedKnowledgeReview | null }) {
+  const [activeSectionId, setActiveSectionId] = useState("sources");
+  const [query, setQuery] = useState("");
+
+  const activeSection = review?.sections.find((section) => section.id === activeSectionId) ?? review?.sections[0] ?? null;
+  const filteredItems = useMemo(() => {
+    if (!activeSection) return [];
+
+    const normalizedQuery = query.trim().toLowerCase();
+    if (!normalizedQuery) return activeSection.items;
+
+    return activeSection.items.filter((item) =>
+      [
+        item.id,
+        item.title,
+        item.subtitle ?? "",
+        item.body,
+        item.boundary ?? "",
+        item.tags.join(" "),
+        item.meta.map((entry) => `${entry.label} ${entry.value}`).join(" "),
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(normalizedQuery),
+    );
+  }, [activeSection, query]);
+
+  if (!review) {
+    return (
+      <section className="work-panel seed-review-panel">
+        <p className="muted">正在读取内置知识库审阅数据。</p>
+      </section>
+    );
+  }
+
+  const totalItems = review.sections.reduce((total, section) => total + section.items.length, 0);
+
+  return (
+    <section className="work-panel seed-review-panel">
+      <div className="analysis-head">
+        <div>
+          <p className="eyebrow">Seed KB</p>
+          <h3>Metro Rescue 初始知识层</h3>
+        </div>
+        <span className="status-pill compact">{totalItems} 个条目</span>
+      </div>
+
+      <div className="seed-review-summary">
+        <div>
+          <span>版本</span>
+          <strong>{review.version.replace("metro-rescue-kb-", "v")}</strong>
+          <p>{review.generatedFrom}</p>
+        </div>
+        <div>
+          <span>分类</span>
+          <strong>{review.sections.length}</strong>
+          <p>文献卡、claims、机制、假设、模型等</p>
+        </div>
+        <div>
+          <span>审阅重点</span>
+          <strong>3</strong>
+          <p>全文边界、命名统一、结果边界</p>
+        </div>
+      </div>
+
+      <div className="review-note-list">
+        {[...review.integrityNotes, ...review.reviewNotes].map((note) => (
+          <p key={note}>{note}</p>
+        ))}
+      </div>
+
+      <div className="seed-review-layout">
+        <aside className="seed-section-list" aria-label="知识库分类">
+          {review.sections.map((section) => (
+            <button
+              className={`seed-section-button ${activeSection?.id === section.id ? "is-active" : ""}`}
+              key={section.id}
+              onClick={() => setActiveSectionId(section.id)}
+              type="button"
+            >
+              <span>{section.label}</span>
+              <strong>{section.items.length}</strong>
+            </button>
+          ))}
+        </aside>
+
+        <div className="seed-review-main">
+          <div className="seed-review-controls">
+            <div>
+              <p className="eyebrow">{activeSection?.label}</p>
+              <h3>{activeSection?.description}</h3>
+            </div>
+            <label className="search-field">
+              检索当前分类
+              <input
+                type="search"
+                value={query}
+                placeholder="例如 EEG、density、S027、Methods"
+                onChange={(event) => setQuery(event.target.value)}
+              />
+            </label>
+          </div>
+
+          <div className="seed-review-list">
+            {filteredItems.length ? (
+              filteredItems.map((item) => (
+                <article className="seed-review-item" key={`${activeSection?.id}-${item.id}`}>
+                  <div className="seed-item-head">
+                    <span>{item.id}</span>
+                    <div>
+                      <h4>{item.title}</h4>
+                      {item.subtitle ? <p>{item.subtitle}</p> : null}
+                    </div>
+                  </div>
+                  <p>{item.body}</p>
+                  {item.tags.length ? (
+                    <div className="keyword-row compact quiet">
+                      {item.tags.slice(0, 8).map((tag) => (
+                        <span key={`${item.id}-${tag}`}>{tag}</span>
+                      ))}
+                    </div>
+                  ) : null}
+                  {item.meta.length ? (
+                    <dl className="seed-review-meta">
+                      {item.meta
+                        .filter((entry) => entry.value)
+                        .map((entry) => (
+                          <div key={`${item.id}-${entry.label}`}>
+                            <dt>{entry.label}</dt>
+                            <dd>{entry.value}</dd>
+                          </div>
+                        ))}
+                    </dl>
+                  ) : null}
+                  {item.boundary ? <p className="seed-boundary">边界：{item.boundary}</p> : null}
+                </article>
+              ))
+            ) : (
+              <p className="muted">当前分类里没有匹配条目。</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 function LiteratureKnowledgePanel({

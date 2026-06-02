@@ -294,6 +294,13 @@ XDF worker 目前输出：
 4. 下一阶段再升级为“待审核增量”：自动提出 candidate claims / mechanisms / quote anchors，由用户确认后合并进主知识库。
 
 当前版本先不做用户可见的 KB bundle 导入器；已有 KB 已经内置，新论文只需要按单篇文献逐步补充。
+
+2026-06-01 增加“知识库审阅”主界面入口：
+
+- 用户可以直接查看内置 seed KB 的 source cards、claims、mechanisms、hypotheses、analysis models、data tables、risks/fixes、writing blocks、defense QA 和 quote anchors。
+- 审阅页采用分类切换和当前分类搜索，不把原始 JSON 一次性铺满页面。
+- 审阅页必须提示三条边界：seed KB 不是 PDF 全文库；历史 Signature1/2/3 命名需要统一为低/中/高 density condition；hypotheses / writing blocks / analysis models 不是实验结果。
+- 新增文献知识卡片仍作为 user-added literature card 展示在同一审阅入口下，写作助手可同时读取 seed KB 和新增卡片。
 - 当前 GitHub Actions worker 已吸收其中的核心思路：只处理 `.xdf`，输出 stream/session/behavior/EEG QC、trial-level 频带特征和事件锁定 EEG 表；后续可继续把 HTML 报告渲染与跨被试汇总页面接入前端。
 
 限制：

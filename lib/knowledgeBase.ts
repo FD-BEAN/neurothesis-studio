@@ -4,6 +4,31 @@ import type { LiteratureKnowledgeCard } from "@/lib/literature";
 type SeedKnowledgeBase = typeof seedKnowledgeBase;
 type SeedSource = SeedKnowledgeBase["sources"][number];
 
+export type SeedKnowledgeReviewItem = {
+  id: string;
+  title: string;
+  subtitle?: string;
+  body: string;
+  tags: string[];
+  meta: Array<{ label: string; value: string }>;
+  boundary?: string;
+};
+
+export type SeedKnowledgeReviewSection = {
+  id: string;
+  label: string;
+  description: string;
+  items: SeedKnowledgeReviewItem[];
+};
+
+export type SeedKnowledgeReview = {
+  version: string;
+  generatedFrom: string;
+  integrityNotes: string[];
+  reviewNotes: string[];
+  sections: SeedKnowledgeReviewSection[];
+};
+
 type ScoredItem<T> = {
   item: T;
   score: number;
@@ -37,6 +62,168 @@ export function getSeedKnowledgeStats() {
     risksAndFixes: seedKnowledgeBase.risks_and_fixes.length,
     writingBlocks: seedKnowledgeBase.writing_blocks.length,
     quoteAnchors: seedKnowledgeBase.quote_anchors.length,
+  };
+}
+
+export function getSeedKnowledgeReview(): SeedKnowledgeReview {
+  return {
+    version: seedKnowledgeBase.version,
+    generatedFrom: seedKnowledgeBase.generated_from,
+    integrityNotes: seedKnowledgeBase.integrity_notes,
+    reviewNotes: [
+      "这是一层结构化、可审阅的文献知识库，不是 PDF 全文库；正式引用前仍要回到原文核对页码、作者、年份和 DOI。",
+      "KB 中部分历史字段仍使用 Signature1/2/3 命名；当前研究口径应统一映射为低/中/高密度条件，并在论文中使用 Density condition。",
+      "Hypotheses、writing blocks 和 analysis models 是写作与建模辅助，不等于已经得到实验结果。",
+    ],
+    sections: [
+      {
+        id: "sources",
+        label: "文献卡",
+        description: "每篇文献的用途、证据类型、可用章节和不可过度声称的边界。",
+        items: seedKnowledgeBase.sources.map((source) => ({
+          id: source.Source_ID,
+          title: source.Title,
+          subtitle: `Grade ${source.Grade} · ${source.Depth} · ${source.Thesis_Section}`,
+          body: source.Key_Takeaway_PDF_Free,
+          tags: splitTags(source.Theme_Tags),
+          meta: [
+            { label: "证据/方法", value: source.Method_or_Evidence },
+            { label: "用于本研究", value: source.How_to_use_in_Metro_Rescue },
+            { label: "文件", value: source.Filename },
+          ],
+          boundary: source.Do_not_claim,
+        })),
+      },
+      {
+        id: "claims",
+        label: "Claims",
+        description: "可用于 Introduction、Theory、Methods 或 Discussion 的文献主张。",
+        items: seedKnowledgeBase.claims.map((claim) => ({
+          id: claim.Claim_ID,
+          title: claim.Claim,
+          subtitle: `${claim.Type} · ${claim.Thesis_Section}`,
+          body: claim.How_to_use,
+          tags: getSourceIds(claim.Sources),
+          meta: [{ label: "来源", value: claim.Sources }],
+        })),
+      },
+      {
+        id: "mechanisms",
+        label: "机制",
+        description: "把标识、导航行为和 EEG 认知负荷连接起来的理论机制。",
+        items: seedKnowledgeBase.mechanisms.map((mechanism) => ({
+          id: mechanism.Mechanism_ID,
+          title: mechanism.Mechanism,
+          body: mechanism.Plain_Explanation,
+          tags: getSourceIds(mechanism.Sources),
+          meta: [
+            { label: "Metro 变量", value: mechanism.Metro_Variables },
+            { label: "分析含义", value: mechanism.Analysis_Implication },
+            { label: "来源", value: mechanism.Sources },
+          ],
+        })),
+      },
+      {
+        id: "hypotheses",
+        label: "假设",
+        description: "项目假设和 planned contrasts。这里是待检验假设，不是结果。",
+        items: seedKnowledgeBase.hypotheses.map((hypothesis) => ({
+          id: hypothesis.Hypothesis_ID,
+          title: hypothesis.Hypothesis,
+          subtitle: hypothesis.Prediction,
+          body: hypothesis.Model_Formula,
+          tags: getSourceIds(hypothesis.Sources),
+          meta: [
+            { label: "数据表", value: hypothesis.Data_Table },
+            { label: "来源", value: hypothesis.Sources },
+            { label: "备注", value: hypothesis.Note },
+          ],
+          boundary: "假设必须用真实 XDF/行为数据检验；不能写成已经得到的发现。",
+        })),
+      },
+      {
+        id: "analysis_models",
+        label: "分析模型",
+        description: "用于把 XDF/行为特征转成统计检验的模型草案。",
+        items: seedKnowledgeBase.analysis_models.map((model) => ({
+          id: model.Model_ID,
+          title: model.Purpose,
+          body: model.Model_Formula,
+          tags: [model.Data_Table],
+          meta: [
+            { label: "数据表", value: model.Data_Table },
+            { label: "解释", value: model.Interpretation },
+          ],
+        })),
+      },
+      {
+        id: "data_tables",
+        label: "数据表",
+        description: "正式分析与论文复现需要维护的数据结构。",
+        items: seedKnowledgeBase.data_tables.map((table) => ({
+          id: table.Table,
+          title: table.Table,
+          subtitle: table.Unit,
+          body: table.Purpose,
+          tags: [],
+          meta: [{ label: "关键字段", value: table.Key_Fields }],
+        })),
+      },
+      {
+        id: "risks",
+        label: "风险",
+        description: "审稿、答辩和数据分析中容易被质疑的点，以及修正方案。",
+        items: seedKnowledgeBase.risks_and_fixes.map((risk) => ({
+          id: risk.Risk_ID,
+          title: risk.Risk,
+          body: risk.Why_it_matters,
+          tags: getSourceIds(risk.Sources),
+          meta: [
+            { label: "修正", value: risk.Fix },
+            { label: "来源", value: risk.Sources },
+          ],
+        })),
+      },
+      {
+        id: "writing_blocks",
+        label: "写作块",
+        description: "可作为论文段落草稿的结构化素材，需要按最终结果再改写。",
+        items: seedKnowledgeBase.writing_blocks.map((block) => ({
+          id: block.Block_ID,
+          title: block.Use,
+          body: block.Draft_Text,
+          tags: [],
+          meta: [],
+          boundary: "这是草稿，不是最终可直接提交文本；需要结合真实结果和最终参考文献格式修订。",
+        })),
+      },
+      {
+        id: "qa",
+        label: "答辩问题",
+        description: "可能被问到的问题与当前回答口径。",
+        items: seedKnowledgeBase.qa.map((qa) => ({
+          id: qa.Question_ID,
+          title: qa.Question,
+          body: qa.Answer,
+          tags: getSourceIds(qa.Sources),
+          meta: [{ label: "来源", value: qa.Sources }],
+        })),
+      },
+      {
+        id: "quote_anchors",
+        label: "引用锚点",
+        description: "可回到 PDF 核对的短锚点；正式提交前必须核对页码和原文。",
+        items: seedKnowledgeBase.quote_anchors.map((anchor, index) => ({
+          id: `${anchor.Source_ID}-${index + 1}`,
+          title: anchor.Short_Original_Anchor,
+          subtitle: `${anchor.Source_ID} · ${anchor.Page_Target}`,
+          body: anchor.Use,
+          tags: [anchor.Source_ID],
+          meta: [{ label: "核对任务", value: anchor.Task }],
+          boundary: "只能作为回查线索；未核对原文前不要当作正式 quote。",
+        })),
+      },
+    ],
   };
 }
 
@@ -290,4 +477,11 @@ function tokenize(value: string) {
 
 function getSourceIds(value: string) {
   return value.match(SOURCE_ID_PATTERN) ?? [];
+}
+
+function splitTags(value: string) {
+  return value
+    .split(/[;/]/)
+    .map((tag) => tag.trim())
+    .filter(Boolean);
 }
