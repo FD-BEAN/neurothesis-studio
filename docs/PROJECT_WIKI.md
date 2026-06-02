@@ -301,6 +301,7 @@ XDF worker 目前输出：
 - 审阅页采用分类切换和当前分类搜索，不把原始 JSON 一次性铺满页面。
 - 审阅页必须提示三条边界：seed KB 不是 PDF 全文库；历史 Signature1/2/3 命名需要统一为低/中/高 density condition；hypotheses / writing blocks / analysis models 不是实验结果。
 - 新增文献知识卡片仍作为 user-added literature card 展示在同一审阅入口下，写作助手可同时读取 seed KB 和新增卡片。
+- `S001` 这类 source code 保留用于检索和引用，但所有 claims / mechanisms / hypotheses / risks / QA / quote anchors 需要在审阅页显示对应的 source title，避免用户必须跳回文献卡手动查表。
 - 当前 GitHub Actions worker 已吸收其中的核心思路：只处理 `.xdf`，输出 stream/session/behavior/EEG QC、trial-level 频带特征和事件锁定 EEG 表；后续可继续把 HTML 报告渲染与跨被试汇总页面接入前端。
 
 限制：

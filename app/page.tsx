@@ -1391,6 +1391,7 @@ function SeedKnowledgeReviewPanel({ review }: { review: SeedKnowledgeReview | nu
         {[...review.integrityNotes, ...review.reviewNotes].map((note) => (
           <p key={note}>{note}</p>
         ))}
+        <p>文献代码可以在“文献卡”分类中检索；claims、机制、假设、风险和引用锚点会同时显示“来源代码”和“来源文献”。</p>
       </div>
 
       <div className="seed-review-layout">

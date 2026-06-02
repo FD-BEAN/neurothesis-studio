@@ -35,6 +35,7 @@ type ScoredItem<T> = {
 };
 
 const SOURCE_ID_PATTERN = /S\d{3}/g;
+const sourceTitleById = new Map(seedKnowledgeBase.sources.map((source) => [source.Source_ID, source.Title]));
 
 export function buildResearchKnowledgeContext(prompt: string, userCards: LiteratureKnowledgeCard[]) {
   const seedContext = buildSeedContext(prompt);
@@ -104,7 +105,10 @@ export function getSeedKnowledgeReview(): SeedKnowledgeReview {
           subtitle: `${claim.Type} · ${claim.Thesis_Section}`,
           body: claim.How_to_use,
           tags: getSourceIds(claim.Sources),
-          meta: [{ label: "来源", value: claim.Sources }],
+          meta: [
+            { label: "来源代码", value: claim.Sources },
+            { label: "来源文献", value: formatSourceReferences(claim.Sources) },
+          ],
         })),
       },
       {
@@ -119,7 +123,8 @@ export function getSeedKnowledgeReview(): SeedKnowledgeReview {
           meta: [
             { label: "Metro 变量", value: mechanism.Metro_Variables },
             { label: "分析含义", value: mechanism.Analysis_Implication },
-            { label: "来源", value: mechanism.Sources },
+            { label: "来源代码", value: mechanism.Sources },
+            { label: "来源文献", value: formatSourceReferences(mechanism.Sources) },
           ],
         })),
       },
@@ -135,7 +140,8 @@ export function getSeedKnowledgeReview(): SeedKnowledgeReview {
           tags: getSourceIds(hypothesis.Sources),
           meta: [
             { label: "数据表", value: hypothesis.Data_Table },
-            { label: "来源", value: hypothesis.Sources },
+            { label: "来源代码", value: hypothesis.Sources },
+            { label: "来源文献", value: formatSourceReferences(hypothesis.Sources) },
             { label: "备注", value: hypothesis.Note },
           ],
           boundary: "假设必须用真实 XDF/行为数据检验；不能写成已经得到的发现。",
@@ -180,7 +186,8 @@ export function getSeedKnowledgeReview(): SeedKnowledgeReview {
           tags: getSourceIds(risk.Sources),
           meta: [
             { label: "修正", value: risk.Fix },
-            { label: "来源", value: risk.Sources },
+            { label: "来源代码", value: risk.Sources },
+            { label: "来源文献", value: formatSourceReferences(risk.Sources) },
           ],
         })),
       },
@@ -206,7 +213,10 @@ export function getSeedKnowledgeReview(): SeedKnowledgeReview {
           title: qa.Question,
           body: qa.Answer,
           tags: getSourceIds(qa.Sources),
-          meta: [{ label: "来源", value: qa.Sources }],
+          meta: [
+            { label: "来源代码", value: qa.Sources },
+            { label: "来源文献", value: formatSourceReferences(qa.Sources) },
+          ],
         })),
       },
       {
@@ -219,7 +229,10 @@ export function getSeedKnowledgeReview(): SeedKnowledgeReview {
           subtitle: `${anchor.Source_ID} · ${anchor.Page_Target}`,
           body: anchor.Use,
           tags: [anchor.Source_ID],
-          meta: [{ label: "核对任务", value: anchor.Task }],
+          meta: [
+            { label: "来源文献", value: formatSourceReferences(anchor.Source_ID) },
+            { label: "核对任务", value: anchor.Task },
+          ],
           boundary: "只能作为回查线索；未核对原文前不要当作正式 quote。",
         })),
       },
@@ -477,6 +490,13 @@ function tokenize(value: string) {
 
 function getSourceIds(value: string) {
   return value.match(SOURCE_ID_PATTERN) ?? [];
+}
+
+function formatSourceReferences(value: string) {
+  const ids = Array.from(new Set(getSourceIds(value)));
+  if (!ids.length) return value;
+
+  return ids.map((id) => `${id} — ${sourceTitleById.get(id) ?? "未找到对应文献卡"}`).join("\n");
 }
 
 function splitTags(value: string) {
