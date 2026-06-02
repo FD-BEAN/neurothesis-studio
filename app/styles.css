@@ -1278,34 +1278,6 @@ textarea {
   margin-top: 12px;
 }
 
-.knowledge-mode-tabs {
-  display: inline-flex;
-  width: fit-content;
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #ffffff;
-}
-
-.knowledge-mode-tabs button {
-  min-height: 42px;
-  padding: 0 16px;
-  border: 0;
-  border-right: 1px solid var(--line);
-  background: transparent;
-  color: var(--muted);
-  font-weight: 900;
-}
-
-.knowledge-mode-tabs button:last-child {
-  border-right: 0;
-}
-
-.knowledge-mode-tabs button.is-active {
-  background: #eef7f4;
-  color: var(--green);
-}
-
 .seed-review-summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

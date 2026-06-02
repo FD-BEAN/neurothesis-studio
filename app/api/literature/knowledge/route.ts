@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
-import { findSeedLiteratureMatch, getSeedKnowledgeReview } from "@/lib/knowledgeBase";
+import { findSeedLiteratureMatch } from "@/lib/knowledgeBase";
 import { encodeLiteratureCard, isLiteratureDocument, parseLiteratureCard, type LiteratureKnowledgeCard } from "@/lib/literature";
 import { getSupabaseServerClient, type ResearchDocument } from "@/lib/supabase";
 
@@ -188,7 +188,6 @@ export async function GET(request: Request) {
   const documents = ((data ?? []) as ResearchDocument[]).filter(isLiteratureDocument);
   return NextResponse.json(
     {
-      seedReview: getSeedKnowledgeReview(),
       cards: documents.map((document) => ({
         document,
         card: parseLiteratureCard(document.notes),

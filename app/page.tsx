@@ -8,8 +8,9 @@ import {
   type ResearchAnalysisJob,
   type ResearchDocument,
 } from "@/lib/supabase";
-import type { SeedKnowledgeReview, SeedKnowledgeReviewItem, SeedLiteratureMatch } from "@/lib/knowledgeBase";
+import type { SeedKnowledgeReviewItem, SeedLiteratureMatch } from "@/lib/knowledgeBase";
 import { isLiteratureDocument, parseLiteratureCard, type LiteratureKnowledgeCard } from "@/lib/literature";
+import literatureArticleKnowledgeBase from "@/lib/literature_article_kb.json";
 import { researchProject } from "@/lib/researchProject";
 import {
   compareXdfConditionNames,
@@ -36,7 +37,6 @@ type LiteratureKnowledgeEntry = {
 
 type LibraryFilter = "all" | "literature" | "analysis" | "notes";
 type JobViewFilter = "all" | "active" | "completed" | "failed" | "stale";
-type KnowledgeReviewMode = "global" | "article";
 
 const RESEARCH_FILE_ACCEPT = ".pdf,.doc,.docx,.csv,.tsv,.xlsx,.txt,.md,.svg,.png,.jpg,.jpeg,.json,.jsonl,.py,.m,.ipynb";
 const XDF_FILE_ACCEPT = ".xdf";
@@ -67,16 +67,16 @@ const workspaceModules = [
   {
     href: "#knowledge",
     title: "知识库审阅",
-    text: "查看内置文献卡、claims、机制、假设、模型和引用锚点。",
+    text: "逐篇查看文献的研究问题、方法、发现、用途、边界和引用线索。",
   },
 ];
 
 const knowledgeReviewNotes = [
-  "这里保存的是可审阅的文献卡、论点、机制、风险和引用线索，不替代 PDF 原文。",
+  "这里保存的是逐篇整理后的文献知识卡，不替代 PDF 原文。",
   "正式写入论文前仍需回到原文核对页码、作者、年份、DOI 和原句语境。",
-  "项目假设、写作块和分析模型只用于组织论文与建模，不等于已经得到实验结果。",
+  "每篇文献下的关联论点、机制、假设和风险只用于组织写作与建模，不等于已经得到实验结果。",
   "历史字段中的 Signature1/2/3 在当前研究中统一映射为低/中/高密度条件，论文正文使用 Density condition。",
-  "S001 这类编号只是文献索引；需要标题时可在条目中的“来源文献”展开查看。",
+  "S001 这类编号只是文献索引，正式引用仍以文章标题和原文信息为准。",
 ];
 
 const documentCategories = [
@@ -404,7 +404,6 @@ function Workspace({
   const [jobMessage, setJobMessage] = useState("");
   const [jobLoading, setJobLoading] = useState(false);
   const [knowledgeEntries, setKnowledgeEntries] = useState<LiteratureKnowledgeEntry[]>([]);
-  const [seedKnowledgeReview, setSeedKnowledgeReview] = useState<SeedKnowledgeReview | null>(null);
   const [knowledgeLoading, setKnowledgeLoading] = useState(false);
   const [knowledgeMessage, setKnowledgeMessage] = useState("");
   const [libraryQuery, setLibraryQuery] = useState("");
@@ -543,10 +542,8 @@ function Workspace({
 
     const payload = (await response.json()) as {
       cards?: LiteratureKnowledgeEntry[];
-      seedReview?: SeedKnowledgeReview;
     };
     setKnowledgeEntries(payload.cards ?? []);
-    setSeedKnowledgeReview(payload.seedReview ?? null);
   }
 
   async function handleResearchUpload(event: React.ChangeEvent<HTMLInputElement>) {
@@ -1125,7 +1122,7 @@ function Workspace({
               刷新知识库
             </button>
           </div>
-          <SeedKnowledgeReviewPanel entries={knowledgeEntries} review={seedKnowledgeReview} />
+          <SeedKnowledgeReviewPanel entries={knowledgeEntries} />
         </section>
 
         <section className="view is-visible" id="pipeline">
@@ -1578,50 +1575,6 @@ function getAuthErrorMessage(message: string) {
   return `登录失败：${message}`;
 }
 
-function mergeLiteratureEntriesIntoReview(review: SeedKnowledgeReview, entries: LiteratureKnowledgeEntry[]): SeedKnowledgeReview {
-  const sourceSection = review.sections.find((section) => section.id === "sources");
-  if (!sourceSection) return review;
-
-  const seenTitles = new Set(sourceSection.items.map((item) => normalizeKnowledgeTitle(item.title)));
-  const additionalItems: SeedKnowledgeReviewItem[] = [];
-  for (const entry of entries) {
-    const card = entry.card;
-    if (!card || entry.seedMatch) continue;
-    const title = card.title || stripLiteratureExtension(card.filename);
-    const normalizedTitle = normalizeKnowledgeTitle(title);
-    if (!normalizedTitle || seenTitles.has(normalizedTitle)) continue;
-    seenTitles.add(normalizedTitle);
-    const sourceCode = `S${String(sourceSection.items.length + additionalItems.length + 1).padStart(3, "0")}`;
-    additionalItems.push({
-      id: sourceCode,
-      title,
-      subtitle: card.citation || card.paperType || "文献卡",
-      body: card.oneSentenceTakeaway || card.abstractZh || card.researchQuestion || "已生成结构化文献卡，可用于写作助手检索。",
-      tags: (card.themeTags?.length ? card.themeTags : card.keywords).slice(0, 8),
-      meta: [
-        { label: "证据/方法", value: card.methods || card.eegOrMeasures || card.paperType || "-" },
-        { label: "用于本研究", value: card.relevanceToMetroRescue.join("；") || card.usableForSections.join("；") },
-        { label: "文件", value: card.filename },
-      ],
-      boundary: (card.doNotClaim?.length ? card.doNotClaim : card.limitations).join("；"),
-    });
-  }
-
-  if (!additionalItems.length) return review;
-
-  return {
-    ...review,
-    sections: review.sections.map((section) =>
-      section.id === "sources"
-        ? {
-            ...section,
-            items: [...section.items, ...additionalItems],
-          }
-        : section,
-    ),
-  };
-}
-
 function normalizeKnowledgeTitle(title: string) {
   return stripLiteratureExtension(title)
     .toLowerCase()
@@ -1629,13 +1582,10 @@ function normalizeKnowledgeTitle(title: string) {
     .trim();
 }
 
-function SeedKnowledgeReviewPanel({ entries, review }: { entries: LiteratureKnowledgeEntry[]; review: SeedKnowledgeReview | null }) {
-  const [reviewMode, setReviewMode] = useState<KnowledgeReviewMode>("global");
-  const [activeSectionId, setActiveSectionId] = useState("sources");
+function SeedKnowledgeReviewPanel({ entries }: { entries: LiteratureKnowledgeEntry[] }) {
   const [activeArticleId, setActiveArticleId] = useState("");
   const [query, setQuery] = useState("");
-  const displayReview = useMemo(() => (review ? mergeLiteratureEntriesIntoReview(review, entries) : null), [entries, review]);
-  const articleViews = useMemo(() => (displayReview ? buildArticleKnowledgeViews(displayReview, entries) : []), [displayReview, entries]);
+  const articleViews = useMemo(() => buildArticleKnowledgeViews(entries), [entries]);
 
   useEffect(() => {
     if (!articleViews.length) {
@@ -1648,28 +1598,6 @@ function SeedKnowledgeReviewPanel({ entries, review }: { entries: LiteratureKnow
     }
   }, [activeArticleId, articleViews]);
 
-  const activeSection = displayReview?.sections.find((section) => section.id === activeSectionId) ?? displayReview?.sections[0] ?? null;
-  const filteredItems = useMemo(() => {
-    if (!activeSection) return [];
-
-    const normalizedQuery = query.trim().toLowerCase();
-    if (!normalizedQuery) return activeSection.items;
-
-    return activeSection.items.filter((item) =>
-      [
-        item.id,
-        item.title,
-        item.subtitle ?? "",
-        item.body,
-        item.boundary ?? "",
-        item.tags.join(" "),
-        item.meta.map((entry) => `${entry.label} ${entry.value}`).join(" "),
-      ]
-        .join(" ")
-        .toLowerCase()
-      .includes(normalizedQuery),
-    );
-  }, [activeSection, query]);
   const filteredArticles = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     if (!normalizedQuery) return articleViews;
@@ -1700,17 +1628,8 @@ function SeedKnowledgeReviewPanel({ entries, review }: { entries: LiteratureKnow
     articleViews[0] ??
     null;
 
-  if (!displayReview) {
-    return (
-      <section className="work-panel seed-review-panel">
-        <p className="muted">正在读取文献知识库审阅数据。</p>
-      </section>
-    );
-  }
-
-  const totalItems = displayReview.sections.reduce((total, section) => total + section.items.length, 0);
-  const sourceCount = displayReview.sections.find((section) => section.id === "sources")?.items.length ?? 0;
-  const synthesisCount = Math.max(0, totalItems - sourceCount);
+  const sourceCount = articleViews.length;
+  const schemaCount = literatureArticleKnowledgeBase.schema.length;
   const reviewFocusCount = knowledgeReviewNotes.length;
 
   return (
@@ -1723,33 +1642,16 @@ function SeedKnowledgeReviewPanel({ entries, review }: { entries: LiteratureKnow
         <span className="status-pill compact">{sourceCount} 篇文献</span>
       </div>
 
-      <div className="knowledge-mode-tabs" role="tablist" aria-label="知识库审阅方式">
-        <button
-          className={reviewMode === "global" ? "is-active" : ""}
-          type="button"
-          onClick={() => setReviewMode("global")}
-        >
-          整体知识结构
-        </button>
-        <button
-          className={reviewMode === "article" ? "is-active" : ""}
-          type="button"
-          onClick={() => setReviewMode("article")}
-        >
-          单篇文献结构
-        </button>
-      </div>
-
       <div className="seed-review-summary">
         <div>
-          <span>文献卡</span>
+          <span>文献</span>
           <strong>{sourceCount}</strong>
-          <p>已整理成可检索、可审阅的文献入口。</p>
+          <p>每篇文章都按同一套结构审阅。</p>
         </div>
         <div>
-          <span>证据单元</span>
-          <strong>{synthesisCount}</strong>
-          <p>论点、机制、假设、风险、写作块和引用线索。</p>
+          <span>结构字段</span>
+          <strong>{schemaCount}</strong>
+          <p>身份、问题、方法、发现、用途、边界和引用线索。</p>
         </div>
         <div>
           <span>审阅重点</span>
@@ -1764,87 +1666,14 @@ function SeedKnowledgeReviewPanel({ entries, review }: { entries: LiteratureKnow
         ))}
       </div>
 
-      {reviewMode === "global" ? (
-        <GlobalKnowledgeStructure
-          displayReview={displayReview}
-          activeSection={activeSection}
-          filteredItems={filteredItems}
-          query={query}
-          onQueryChange={setQuery}
-          onSectionChange={setActiveSectionId}
-        />
-      ) : (
-        <ArticleKnowledgeStructure
-          articles={filteredArticles}
-          activeArticle={activeArticle}
-          query={query}
-          onQueryChange={setQuery}
-          onArticleChange={setActiveArticleId}
-        />
-      )}
+      <ArticleKnowledgeStructure
+        articles={filteredArticles}
+        activeArticle={activeArticle}
+        query={query}
+        onQueryChange={setQuery}
+        onArticleChange={setActiveArticleId}
+      />
     </section>
-  );
-}
-
-function GlobalKnowledgeStructure({
-  displayReview,
-  activeSection,
-  filteredItems,
-  query,
-  onQueryChange,
-  onSectionChange,
-}: {
-  displayReview: SeedKnowledgeReview;
-  activeSection: SeedKnowledgeReview["sections"][number] | null;
-  filteredItems: SeedKnowledgeReviewItem[];
-  query: string;
-  onQueryChange: (query: string) => void;
-  onSectionChange: (sectionId: string) => void;
-}) {
-  return (
-    <div className="seed-review-layout">
-      <aside className="seed-section-list" aria-label="知识库分类">
-        {displayReview.sections.map((section) => (
-          <button
-            className={`seed-section-button ${activeSection?.id === section.id ? "is-active" : ""}`}
-            key={section.id}
-            onClick={() => onSectionChange(section.id)}
-            type="button"
-          >
-            <span>{section.label}</span>
-            <strong>{section.items.length}</strong>
-          </button>
-        ))}
-      </aside>
-
-      <div className="seed-review-main">
-        <div className="seed-review-controls">
-          <div>
-            <p className="eyebrow">{activeSection?.label}</p>
-            <h3>{activeSection?.description}</h3>
-          </div>
-          <label className="search-field">
-            检索当前分类
-            <input
-              type="search"
-              value={query}
-              placeholder="例如 EEG、density、S027、Methods"
-              onChange={(event) => onQueryChange(event.target.value)}
-            />
-          </label>
-        </div>
-
-        <div className="seed-review-list">
-          {filteredItems.length ? (
-            filteredItems.map((item) => (
-              <KnowledgeReviewItemCard item={item} sectionId={activeSection?.id ?? "section"} key={`${activeSection?.id}-${item.id}`} />
-            ))
-          ) : (
-            <p className="muted">当前分类里没有匹配条目。</p>
-          )}
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -2005,10 +1834,9 @@ function ArticleKnowledgeStructure({
   );
 }
 
-function buildArticleKnowledgeViews(review: SeedKnowledgeReview, entries: LiteratureKnowledgeEntry[]): ArticleKnowledgeView[] {
-  const sourceSection = review.sections.find((section) => section.id === "sources");
-  if (!sourceSection) return [];
+type LocalArticleKnowledgeCard = (typeof literatureArticleKnowledgeBase)["articles"][number];
 
+function buildArticleKnowledgeViews(entries: LiteratureKnowledgeEntry[]): ArticleKnowledgeView[] {
   const entryBySourceId = new Map<string, LiteratureKnowledgeEntry>();
   const entryByTitle = new Map<string, LiteratureKnowledgeEntry>();
 
@@ -2032,30 +1860,29 @@ function buildArticleKnowledgeViews(review: SeedKnowledgeReview, entries: Litera
     }
   }
 
-  return sourceSection.items.map((sourceItem) => {
-    const entry = entryBySourceId.get(sourceItem.id) ?? entryByTitle.get(normalizeKnowledgeTitle(sourceItem.title)) ?? null;
+  const baseArticles = literatureArticleKnowledgeBase.articles.map((article) => {
+    const entry = entryBySourceId.get(article.id) ?? entryByTitle.get(normalizeKnowledgeTitle(article.title)) ?? null;
     const card = entry?.card ?? null;
-    const linkedItems = getArticleLinkedItems(review, sourceItem.id);
-    const quoteItems = linkedItems.filter((item) => item.id.startsWith(`${sourceItem.id}-`));
-    const evidenceItems = linkedItems.filter((item) => !item.id.startsWith(`${sourceItem.id}-`));
-    const methodOrEvidence = getReviewMetaValue(sourceItem, "证据/方法");
-    const metroUse = getReviewMetaValue(sourceItem, "用于本研究");
-    const sourceFile = getReviewMetaValue(sourceItem, "文件") || entry?.document.filename || card?.filename || "";
+    const evidenceItems = buildLinkedEvidenceItems(article);
+    const quoteItems = buildQuoteAnchorItems(article);
+    const sourceFile = article.matchedPdfFilename || article.filename || entry?.document.filename || card?.filename || "";
     const libraryMeta = entry?.document ? formatDocumentListMeta(entry.document) : sourceFile ? `文件：${sourceFile}` : "";
 
     return {
-      id: sourceItem.id,
-      title: sourceItem.title,
-      subtitle: sourceItem.subtitle ?? "",
+      id: article.id,
+      title: article.title,
+      subtitle: `${article.articleRole} · Grade ${article.grade} · ${article.depth}`,
       libraryMeta,
-      tags: sourceItem.tags,
+      tags: article.themeTags,
       sections: [
         {
           id: "identity",
           title: "文献身份",
           rows: compactRows([
-            { label: "文献编号", value: sourceItem.id },
-            { label: "类型/等级", value: sourceItem.subtitle ?? "" },
+            { label: "文献编号", value: article.id },
+            { label: "知识角色", value: article.articleRole },
+            { label: "等级", value: `Grade ${article.grade} · ${article.depth}` },
+            { label: "论文位置", value: article.thesisSection },
             { label: "文件", value: sourceFile },
             { label: "入库信息", value: entry?.document ? formatDocumentListMeta(entry.document) : "" },
           ]),
@@ -2065,16 +1892,16 @@ function buildArticleKnowledgeViews(review: SeedKnowledgeReview, entries: Litera
         {
           id: "question",
           title: "研究问题与定位",
-          body: card?.researchQuestion || sourceItem.body,
+          body: card?.researchQuestion || article.researchPosition,
           rows: [],
-          points: compactStrings([card?.oneSentenceTakeaway, card?.abstractZh]),
+          points: compactStrings([card?.oneSentenceTakeaway, article.oneSentenceSummary, card?.abstractZh]),
           linkedItems: [],
         },
         {
           id: "methods",
           title: "方法与数据",
           rows: compactRows([
-            { label: "方法/证据", value: card?.methods || methodOrEvidence },
+            { label: "方法/证据", value: card?.methods || article.methodAndData },
             { label: "被试/样本", value: card?.participants },
             { label: "任务与材料", value: card?.taskAndMaterials },
             { label: "EEG/行为指标", value: card?.eegOrMeasures || card?.variablesAndMeasures?.join("；") },
@@ -2086,7 +1913,7 @@ function buildArticleKnowledgeViews(review: SeedKnowledgeReview, entries: Litera
           id: "findings",
           title: "主要发现",
           rows: [],
-          points: compactStrings(card?.keyFindings?.length ? card.keyFindings : [sourceItem.body]),
+          points: compactStrings(card?.keyFindings?.length ? card.keyFindings : article.keyFindings),
           linkedItems: [],
         },
         {
@@ -2097,7 +1924,7 @@ function buildArticleKnowledgeViews(review: SeedKnowledgeReview, entries: Litera
             { label: "证据等级", value: card?.evidenceLevel || card?.sourceGrade },
           ]),
           points: compactStrings([
-            metroUse,
+            ...article.metroRescueUse,
             ...(card?.relevanceToMetroRescue ?? []),
             ...(card?.densityHypothesisRelevance ?? []),
             ...(card?.resultsDiscussionUse ?? []),
@@ -2108,7 +1935,7 @@ function buildArticleKnowledgeViews(review: SeedKnowledgeReview, entries: Litera
           id: "boundaries",
           title: "边界与不能声称",
           rows: [],
-          points: compactStrings([sourceItem.boundary, ...(card?.doNotClaim ?? []), ...(card?.limitations ?? []), ...(card?.qualityCaveats ?? [])]),
+          points: compactStrings([...article.boundaries, ...(card?.doNotClaim ?? []), ...(card?.limitations ?? []), ...(card?.qualityCaveats ?? [])]),
           linkedItems: [],
         },
         {
@@ -2128,29 +1955,171 @@ function buildArticleKnowledgeViews(review: SeedKnowledgeReview, entries: Litera
       ],
     };
   });
+
+  const seen = new Set(baseArticles.flatMap((article) => [article.id, normalizeKnowledgeTitle(article.title)]));
+  const dynamicArticles = entries
+    .filter((entry) => entry.card && !entry.seedMatch)
+    .map((entry, index) => {
+      const card = entry.card;
+      if (!card) return null;
+      const normalizedTitle = normalizeKnowledgeTitle(card.title || entry.document.filename);
+      if (seen.has(normalizedTitle)) return null;
+      seen.add(normalizedTitle);
+      return buildDynamicArticleView(entry, `U${String(index + 1).padStart(3, "0")}`);
+    })
+    .filter((article): article is ArticleKnowledgeView => Boolean(article));
+
+  return [...baseArticles, ...dynamicArticles];
 }
 
-function getArticleLinkedItems(review: SeedKnowledgeReview, sourceId: string) {
-  return review.sections
-    .filter((section) => section.id !== "sources")
-    .flatMap((section) =>
-      section.items
-        .filter((item) => knowledgeItemReferencesSource(item, sourceId))
-        .map((item) => ({
-          ...item,
-          subtitle: item.subtitle ? `${section.label} · ${item.subtitle}` : section.label,
-        })),
-    );
+function buildDynamicArticleView(entry: LiteratureKnowledgeEntry, id: string): ArticleKnowledgeView | null {
+  const card = entry.card;
+  if (!card) return null;
+  const title = card.title || stripLiteratureExtension(entry.document.filename);
+  return {
+    id,
+    title,
+    subtitle: card.paperType || card.citation || "新增文献知识卡",
+    libraryMeta: formatDocumentListMeta(entry.document),
+    tags: (card.themeTags?.length ? card.themeTags : card.keywords).slice(0, 8),
+    sections: [
+      {
+        id: "identity",
+        title: "文献身份",
+        rows: compactRows([
+          { label: "文献编号", value: id },
+          { label: "引用信息", value: card.citation },
+          { label: "文件", value: entry.document.filename },
+          { label: "入库信息", value: formatDocumentListMeta(entry.document) },
+        ]),
+        points: [],
+        linkedItems: [],
+      },
+      {
+        id: "question",
+        title: "研究问题与定位",
+        body: card.researchQuestion || card.oneSentenceTakeaway || card.abstractZh,
+        rows: [],
+        points: compactStrings([card.oneSentenceTakeaway, card.abstractZh]),
+        linkedItems: [],
+      },
+      {
+        id: "methods",
+        title: "方法与数据",
+        rows: compactRows([
+          { label: "方法/证据", value: card.methods },
+          { label: "被试/样本", value: card.participants },
+          { label: "任务与材料", value: card.taskAndMaterials },
+          { label: "EEG/行为指标", value: card.eegOrMeasures || card.variablesAndMeasures?.join("；") },
+        ]),
+        points: compactStrings([...(card.methodsWritingUse ?? [])]),
+        linkedItems: [],
+      },
+      {
+        id: "findings",
+        title: "主要发现",
+        rows: [],
+        points: compactStrings(card.keyFindings),
+        linkedItems: [],
+      },
+      {
+        id: "metro-use",
+        title: "对本研究的用途",
+        rows: compactRows([
+          { label: "可用于", value: card.usableForSections.join("；") },
+          { label: "证据等级", value: card.evidenceLevel || card.sourceGrade },
+        ]),
+        points: compactStrings([...(card.relevanceToMetroRescue ?? []), ...(card.densityHypothesisRelevance ?? []), ...(card.resultsDiscussionUse ?? [])]),
+        linkedItems: [],
+      },
+      {
+        id: "boundaries",
+        title: "边界与不能声称",
+        rows: [],
+        points: compactStrings([...(card.doNotClaim ?? []), ...(card.limitations ?? []), ...(card.qualityCaveats ?? [])]),
+        linkedItems: [],
+      },
+      {
+        id: "linked-evidence",
+        title: "关联证据单元",
+        rows: [],
+        points: compactStrings([...(card.candidateClaims ?? []), ...(card.theoryOrMechanism ?? [])]),
+        linkedItems: [],
+      },
+      {
+        id: "quote-anchors",
+        title: "引用线索",
+        rows: [],
+        points: compactStrings([...(card.quoteAnchorsToVerify ?? [])]),
+        linkedItems: [],
+      },
+    ],
+  };
 }
 
-function knowledgeItemReferencesSource(item: SeedKnowledgeReviewItem, sourceId: string) {
-  if (item.id.startsWith(`${sourceId}-`)) return true;
-  if (item.tags.includes(sourceId)) return true;
-  return item.meta.some((entry) => entry.value.includes(sourceId));
+function buildLinkedEvidenceItems(article: LocalArticleKnowledgeCard): SeedKnowledgeReviewItem[] {
+  const claims = article.linkedEvidence.claims.map((claim) => ({
+    id: claim.id,
+    title: claim.text,
+    subtitle: `论点 · ${claim.type}`,
+    body: claim.use,
+    tags: [article.id],
+    meta: compactRows([
+      { label: "论文位置", value: claim.section },
+    ]),
+  }));
+  const mechanisms = article.linkedEvidence.mechanisms.map((mechanism) => ({
+    id: mechanism.id,
+    title: mechanism.mechanism,
+    subtitle: "机制",
+    body: mechanism.explanation,
+    tags: [article.id],
+    meta: compactRows([
+      { label: "Metro 变量", value: mechanism.metroVariables },
+      { label: "分析含义", value: mechanism.analysisImplication },
+    ]),
+  }));
+  const hypotheses = article.linkedEvidence.hypotheses.map((hypothesis) => ({
+    id: hypothesis.id,
+    title: hypothesis.hypothesis,
+    subtitle: "假设",
+    body: hypothesis.model,
+    tags: [article.id],
+    meta: compactRows([
+      { label: "预测", value: hypothesis.prediction },
+      { label: "备注", value: hypothesis.note },
+    ]),
+    boundary: "假设必须用真实 XDF/行为数据检验，不能写成已经得到的结果。",
+  }));
+  const risks = article.linkedEvidence.risks.map((risk) => ({
+    id: risk.id,
+    title: risk.risk,
+    subtitle: "风险",
+    body: risk.whyItMatters,
+    tags: [article.id],
+    meta: compactRows([{ label: "修正", value: risk.fix }]),
+  }));
+  const qa = article.linkedEvidence.qa.map((item) => ({
+    id: item.id,
+    title: item.question,
+    subtitle: "答辩问题",
+    body: item.answer,
+    tags: [article.id],
+    meta: [],
+  }));
+  return [...claims, ...mechanisms, ...hypotheses, ...risks, ...qa];
 }
 
-function getReviewMetaValue(item: SeedKnowledgeReviewItem, label: string) {
-  return item.meta.find((entry) => entry.label === label)?.value ?? "";
+function buildQuoteAnchorItems(article: LocalArticleKnowledgeCard): SeedKnowledgeReviewItem[] {
+  return article.linkedEvidence.quoteAnchors.map((anchor) => ({
+    id: anchor.id,
+    title: anchor.anchor,
+    subtitle: `引用线索 · ${anchor.pageTarget}`,
+    body: anchor.use,
+    tags: [article.id],
+    meta: compactRows([{ label: "核对任务", value: anchor.verificationTask }]),
+    boundary: "只能作为回查线索；未核对原文前不要当作正式 quote。",
+  }));
 }
 
 function compactRows(rows: Array<{ label: string; value?: string | null }>): ArticleKnowledgeRow[] {
