@@ -72,12 +72,11 @@ const workspaceModules = [
 ];
 
 const knowledgeReviewNotes = [
-  "这里保存的是逐篇整理后的文献知识卡，不替代 PDF 原文。",
-  "正式写入论文前仍需回到原文核对页码、作者、年份、DOI 和原句语境。",
-  "每篇文献下的关联论点、机制、假设和风险只用于组织写作与建模，不等于已经得到实验结果。",
-  "历史字段中的 Signature1/2/3 在当前研究中统一映射为低/中/高路径确认支持条件，论文正文使用 Route-confirmation support level。",
-  "当前论文主框架进一步表述为路径确认支持水平：低/中/高条件用于检验路径确认信息链对行动迟滞、准确率和 EEG 信息加工负荷的影响。",
-  "S001 这类编号只是文献索引，正式引用仍以文章标题和原文信息为准。",
+  "这里保存的是逐篇论文档案：每篇文献都有自己的研究问题、设计、发现、可信度、写作用途和边界。",
+  "正式写入论文前仍需回到 PDF 原文核对作者、年份、DOI、页码和原句语境。",
+  "路径确认支持水平统一写作口径为 low / medium / high route-confirmation support；历史 Signature1/2/3 只作为素材命名线索。",
+  "文献只能支持理论、方法和解释机制；中等支持条件是否产生最高认知负荷，必须由真实 XDF/EEG 与行为数据检验。",
+  "S001 这类编号只是站内文献索引；展开单篇档案时可以看到完整题名和可写入论文的位置。",
 ];
 
 const documentCategories = [
@@ -1622,6 +1621,8 @@ function SeedKnowledgeReviewPanel({ entries }: { entries: LiteratureKnowledgeEnt
         article.title,
         article.subtitle,
         article.tags.join(" "),
+        JSON.stringify(article.dossier),
+        JSON.stringify(article.thesisMap),
         article.sections
           .map((section) =>
             [section.title, section.body ?? "", section.points.join(" "), section.rows.map((row) => `${row.label} ${row.value}`).join(" ")]
@@ -1651,26 +1652,26 @@ function SeedKnowledgeReviewPanel({ entries }: { entries: LiteratureKnowledgeEnt
       <div className="analysis-head">
         <div>
           <p className="eyebrow">文献知识库</p>
-          <h3>逐篇文献知识卡</h3>
+          <h3>逐篇论文档案</h3>
         </div>
         <span className="status-pill compact">{sourceCount} 篇文献</span>
       </div>
 
       <div className="seed-review-summary">
         <div>
-          <span>文献</span>
+          <span>论文档案</span>
           <strong>{sourceCount}</strong>
-          <p>每篇文章都按同一套结构审阅。</p>
+          <p>每篇文章保留自己的研究问题、方法、发现和边界。</p>
         </div>
         <div>
-          <span>结构字段</span>
+          <span>写作映射</span>
           <strong>{schemaCount}</strong>
-          <p>身份、问题、方法、发现、用途、边界和引用线索。</p>
+          <p>把文献证据映射到综述、假设、方法、讨论和中文段落。</p>
         </div>
         <div>
-          <span>审阅重点</span>
+          <span>核对提醒</span>
           <strong>{reviewFocusCount}</strong>
-          <p>原文核对、命名统一、结果边界和证据来源。</p>
+          <p>正式引用前回 PDF 核对页码、作者、年份、DOI 和语境。</p>
         </div>
       </div>
 
@@ -1738,12 +1739,67 @@ type ArticleKnowledgeSection = {
   linkedItems: SeedKnowledgeReviewItem[];
 };
 
+type ArticleDossier = {
+  verdict: string;
+  problem: string;
+  motivation: string;
+  design: {
+    overview: string;
+    sample: string;
+    task: string;
+    variables: string[];
+    measures: string[];
+    analysis: string;
+  };
+  findings: string[];
+  credibility: string;
+  thesisRelevance: string;
+};
+
+type ArticleConstructUse = {
+  construct: string;
+  support: string;
+  use: string;
+  caution: string;
+};
+
+type ArticleWritingBlock = {
+  section: string;
+  purpose: string;
+  draft: string;
+};
+
+type ArticleThesisWritingMap = {
+  relationType: string;
+  frameworkRole: string;
+  constructs: ArticleConstructUse[];
+  chapterUses: string[];
+  writingBlocks: ArticleWritingBlock[];
+  overclaimWarnings: string[];
+  verificationTasks: string[];
+};
+
+type ArticleVerification = {
+  sourceCode: string;
+  sourceTitle: string;
+  filename: string;
+  libraryMeta: string;
+  quoteAnchors: string[];
+  evidenceSnippets: Array<{ label: string; value: string }>;
+  linkedItems: SeedKnowledgeReviewItem[];
+};
+
 type ArticleKnowledgeView = {
   id: string;
   title: string;
   subtitle: string;
   libraryMeta: string;
   tags: string[];
+  grade: string;
+  articleRole: string;
+  dossier: ArticleDossier;
+  thesisMap: ArticleThesisWritingMap;
+  verification: ArticleVerification;
   sections: ArticleKnowledgeSection[];
 };
 
@@ -1768,7 +1824,7 @@ function ArticleKnowledgeStructure({
           <input
             type="search"
             value={query}
-            placeholder="按标题、编号、方法或关键词搜索"
+            placeholder="按标题、编号、方法或关键词检索"
             onChange={(event) => onQueryChange(event.target.value)}
           />
         </label>
@@ -1795,9 +1851,13 @@ function ArticleKnowledgeStructure({
         {activeArticle ? (
           <>
             <div className="article-knowledge-head">
-              <span>{activeArticle.id}</span>
+              <div className="article-head-kicker">
+                <span>{activeArticle.id}</span>
+                {activeArticle.grade ? <span>{activeArticle.grade}</span> : null}
+                {activeArticle.articleRole ? <span>{activeArticle.articleRole}</span> : null}
+              </div>
               <h3>{activeArticle.title}</h3>
-              {activeArticle.subtitle ? <p>{activeArticle.subtitle}</p> : null}
+              {activeArticle.dossier.verdict ? <p>{activeArticle.dossier.verdict}</p> : null}
               {activeArticle.tags.length ? (
                 <div className="keyword-row compact quiet">
                   {activeArticle.tags.slice(0, 8).map((tag) => (
@@ -1806,43 +1866,160 @@ function ArticleKnowledgeStructure({
                 </div>
               ) : null}
             </div>
-            <div className="article-knowledge-sections">
-              {activeArticle.sections.map((section) => (
-                <section className="article-knowledge-section" key={`${activeArticle.id}-${section.id}`}>
-                  <h4>{section.title}</h4>
-                  {section.body ? <p>{section.body}</p> : null}
-                  {section.rows.length ? (
-                    <dl className="seed-review-meta">
-                      {section.rows.map((row) => (
-                        <div key={`${section.id}-${row.label}`}>
-                          <dt>{row.label}</dt>
-                          <dd>{row.value}</dd>
-                        </div>
-                      ))}
-                    </dl>
-                  ) : null}
-                  {section.points.length ? (
-                    <ul>
-                      {section.points.map((point) => (
-                        <li key={point}>{point}</li>
-                      ))}
-                    </ul>
-                  ) : null}
-                  {section.linkedItems.length ? (
-                    <div className="article-linked-items">
-                      {section.linkedItems.map((item) => (
-                        <KnowledgeReviewItemCard item={item} sectionId={`${activeArticle.id}-${section.id}`} key={`${section.id}-${item.id}`} />
-                      ))}
+            <div className="article-dossier-sections">
+              <section className="article-dossier-section article-dossier-hero">
+                <span>速读结论</span>
+                <h4>这篇论文在本研究中的作用</h4>
+                <p>{activeArticle.dossier.problem}</p>
+                <p>{activeArticle.dossier.motivation}</p>
+                <p>{activeArticle.dossier.thesisRelevance}</p>
+              </section>
+
+              <section className="article-dossier-section">
+                <span>研究设计拆解</span>
+                <h4>方法、任务与指标</h4>
+                <dl className="dossier-definition-list">
+                  <div>
+                    <dt>设计概括</dt>
+                    <dd>{activeArticle.dossier.design.overview}</dd>
+                  </div>
+                  <div>
+                    <dt>样本/被试</dt>
+                    <dd>{activeArticle.dossier.design.sample}</dd>
+                  </div>
+                  <div>
+                    <dt>任务材料</dt>
+                    <dd>{activeArticle.dossier.design.task}</dd>
+                  </div>
+                  <div>
+                    <dt>分析启发</dt>
+                    <dd>{activeArticle.dossier.design.analysis}</dd>
+                  </div>
+                </dl>
+                <KeywordList values={[...activeArticle.dossier.design.variables, ...activeArticle.dossier.design.measures]} />
+              </section>
+
+              <section className="article-dossier-section">
+                <span>核心发现与可信度</span>
+                <h4>能支持什么</h4>
+                <ul>
+                  {activeArticle.dossier.findings.map((finding) => (
+                    <li key={finding}>{finding}</li>
+                  ))}
+                </ul>
+                <p className="dossier-boundary">{activeArticle.dossier.credibility}</p>
+              </section>
+
+              <section className="article-dossier-section wide">
+                <span>与本论文的关系</span>
+                <h4>{activeArticle.thesisMap.relationType}</h4>
+                <p>{activeArticle.thesisMap.frameworkRole}</p>
+                <div className="construct-map-grid">
+                  {activeArticle.thesisMap.constructs.map((item) => (
+                    <article className="construct-map-item" key={`${activeArticle.id}-${item.construct}`}>
+                      <span>{item.support}</span>
+                      <h5>{item.construct}</h5>
+                      <p>{item.use}</p>
+                      <small>{item.caution}</small>
+                    </article>
+                  ))}
+                </div>
+              </section>
+
+              <section className="article-dossier-section wide">
+                <span>可直接写进中文论文</span>
+                <h4>段落草稿</h4>
+                <div className="writing-block-list">
+                  {activeArticle.thesisMap.writingBlocks.map((block) => (
+                    <article className="writing-block" key={`${activeArticle.id}-${block.section}-${block.draft.slice(0, 24)}`}>
+                      <div>
+                        <strong>{block.section}</strong>
+                        <small>{block.purpose}</small>
+                      </div>
+                      <p>{block.draft}</p>
+                    </article>
+                  ))}
+                </div>
+              </section>
+
+              <section className="article-dossier-section">
+                <span>不能这样使用</span>
+                <h4>过度推断边界</h4>
+                <ul>
+                  {activeArticle.thesisMap.overclaimWarnings.map((warning) => (
+                    <li key={warning}>{warning}</li>
+                  ))}
+                </ul>
+              </section>
+
+              <section className="article-dossier-section">
+                <span>回原文核对</span>
+                <h4>正式引用前要查什么</h4>
+                <dl className="dossier-definition-list">
+                  <div>
+                    <dt>来源文献</dt>
+                    <dd>{activeArticle.verification.sourceCode} — {activeArticle.verification.sourceTitle}</dd>
+                  </div>
+                  {activeArticle.verification.filename ? (
+                    <div>
+                      <dt>文件</dt>
+                      <dd>{activeArticle.verification.filename}</dd>
                     </div>
                   ) : null}
-                </section>
-              ))}
+                  {activeArticle.verification.libraryMeta ? (
+                    <div>
+                      <dt>入库信息</dt>
+                      <dd>{activeArticle.verification.libraryMeta}</dd>
+                    </div>
+                  ) : null}
+                </dl>
+                <ul>
+                  {activeArticle.thesisMap.verificationTasks.map((task) => (
+                    <li key={task}>{task}</li>
+                  ))}
+                </ul>
+                {activeArticle.verification.quoteAnchors.length || activeArticle.verification.evidenceSnippets.length ? (
+                  <details className="verification-details">
+                    <summary>查看原文核对线索</summary>
+                    {activeArticle.verification.quoteAnchors.length ? (
+                      <ul>
+                        {activeArticle.verification.quoteAnchors.map((anchor) => (
+                          <li key={anchor}>{anchor}</li>
+                        ))}
+                      </ul>
+                    ) : null}
+                    {activeArticle.verification.evidenceSnippets.length ? (
+                      <dl className="dossier-definition-list compact">
+                        {activeArticle.verification.evidenceSnippets.map((snippet) => (
+                          <div key={`${activeArticle.id}-${snippet.label}`}>
+                            <dt>{snippet.label}</dt>
+                            <dd>{snippet.value}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    ) : null}
+                  </details>
+                ) : null}
+              </section>
             </div>
           </>
         ) : (
           <p className="muted">请选择一篇文献查看结构化知识。</p>
         )}
       </div>
+    </div>
+  );
+}
+
+function KeywordList({ values }: { values: string[] }) {
+  const items = compactStrings(values).slice(0, 10);
+  if (!items.length) return null;
+
+  return (
+    <div className="keyword-row compact quiet">
+      {items.map((item) => (
+        <span key={item}>{item}</span>
+      ))}
     </div>
   );
 }
@@ -1867,6 +2044,8 @@ type LocalArticleTaskLens = {
   manuscriptUse?: string[];
   caveats?: string[];
 };
+type LocalArticlePaperDossier = ArticleDossier;
+type LocalArticleThesisWritingMap = ArticleThesisWritingMap;
 
 function buildArticleKnowledgeViews(entries: LiteratureKnowledgeEntry[]): ArticleKnowledgeView[] {
   const entryBySourceId = new Map<string, LiteratureKnowledgeEntry>();
@@ -1901,6 +2080,16 @@ function buildArticleKnowledgeViews(entries: LiteratureKnowledgeEntry[]): Articl
     const evidenceSnippets = article.evidenceSnippets ?? {};
     const readingNote = (article as LocalArticleKnowledgeCard & { readingNote?: LocalArticleReadingNote }).readingNote;
     const taskLens = (article as LocalArticleKnowledgeCard & { taskLens?: LocalArticleTaskLens }).taskLens;
+    const dossierView = buildLocalArticleDossierView({
+      article,
+      sourceFile,
+      libraryMeta,
+      evidenceItems,
+      quoteItems,
+      readingNote,
+      taskLens,
+      evidenceSnippets,
+    });
 
     return {
       id: article.id,
@@ -1908,6 +2097,9 @@ function buildArticleKnowledgeViews(entries: LiteratureKnowledgeEntry[]): Articl
       subtitle: `${article.articleRole} · ${article.evidenceType} · Grade ${article.grade}`,
       libraryMeta,
       tags: article.themeTags,
+      grade: `Grade ${article.grade}`,
+      articleRole: article.articleRole,
+      ...dossierView,
       sections: [
         {
           id: "identity",
@@ -2056,12 +2248,16 @@ function buildDynamicArticleView(entry: LiteratureKnowledgeEntry, id: string): A
   if (!card) return null;
   const title = card.title || stripLiteratureExtension(entry.document.filename);
   const taskLens = buildDynamicTaskLens(card);
+  const dossierView = buildDynamicArticleDossierView(entry, id, taskLens);
   return {
     id,
     title,
     subtitle: card.paperType || card.citation || "新增文献知识卡",
     libraryMeta: formatDocumentListMeta(entry.document),
     tags: (card.themeTags?.length ? card.themeTags : card.keywords).slice(0, 8),
+    grade: card.sourceGrade ? `Grade ${card.sourceGrade}` : card.evidenceLevel || "新增文献",
+    articleRole: card.paperType || "新增文献",
+    ...dossierView,
     sections: [
       {
         id: "identity",
@@ -2148,6 +2344,317 @@ function buildDynamicArticleView(entry: LiteratureKnowledgeEntry, id: string): A
         linkedItems: [],
       },
     ],
+  };
+}
+
+function buildLocalArticleDossierView({
+  article,
+  sourceFile,
+  libraryMeta,
+  evidenceItems,
+  quoteItems,
+  readingNote,
+  taskLens,
+  evidenceSnippets,
+}: {
+  article: LocalArticleKnowledgeCard;
+  sourceFile: string;
+  libraryMeta: string;
+  evidenceItems: SeedKnowledgeReviewItem[];
+  quoteItems: SeedKnowledgeReviewItem[];
+  readingNote?: LocalArticleReadingNote;
+  taskLens?: LocalArticleTaskLens;
+  evidenceSnippets: Record<string, string | undefined>;
+}): Pick<ArticleKnowledgeView, "dossier" | "thesisMap" | "verification"> {
+  const extended = article as LocalArticleKnowledgeCard & {
+    paperDossier?: LocalArticlePaperDossier;
+    thesisWritingMap?: LocalArticleThesisWritingMap;
+  };
+  const fallbackDossier: ArticleDossier = {
+    verdict: readingNote?.tldr || article.oneSentenceSummary,
+    problem: readingNote?.problem || article.researchQuestion,
+    motivation: readingNote?.motivation || article.researchPosition,
+    design: {
+      overview: readingNote?.methodSummary || article.studyDesign,
+      sample: article.participantsAndSample,
+      task: article.taskAndMaterials,
+      variables: compactStrings(article.variablesAndMeasures),
+      measures: compactStrings([...article.eegOrPhysioMeasures, ...article.behavioralMeasures]),
+      analysis: inferArticleAnalysisUse(article.title, article.studyDesign, article.keyFindings.join(" ")),
+    },
+    findings: compactStrings(article.keyFindings).slice(0, 6),
+    credibility: article.qualityTier,
+    thesisRelevance: compactStrings([
+      taskLens?.frameworkRole,
+      article.metroRescueUse[0],
+      article.densityHypothesisRelevance[0],
+    ]).join(" "),
+  };
+  const fallbackThesisMap: ArticleThesisWritingMap = {
+    relationType: inferArticleRelationType(article.grade, article.title, article.articleRole),
+    frameworkRole: taskLens?.frameworkRole || article.researchPosition,
+    constructs: buildConstructViews(taskLens?.constructSupport ?? []),
+    chapterUses: compactStrings([...(taskLens?.manuscriptUse ?? []), ...article.writingUse]).slice(0, 8),
+    writingBlocks: buildFallbackWritingBlocks({
+      id: article.id,
+      title: article.title,
+      finding: article.keyFindings[0] || article.oneSentenceSummary,
+      method: article.studyDesign,
+      use: article.metroRescueUse[0] || article.researchPosition,
+      boundary: article.boundaries[0] || article.doNotClaim[0],
+    }),
+    overclaimWarnings: compactStrings([...(taskLens?.caveats ?? []), ...article.doNotClaim, ...article.boundaries]).slice(0, 8),
+    verificationTasks: compactStrings([...article.needsVerification, ...article.quoteAnchorsToVerify]).slice(0, 10),
+  };
+
+  return {
+    dossier: normalizeDossier(extended.paperDossier, fallbackDossier),
+    thesisMap: normalizeThesisMap(extended.thesisWritingMap, fallbackThesisMap),
+    verification: {
+      sourceCode: article.id,
+      sourceTitle: article.title,
+      filename: sourceFile,
+      libraryMeta,
+      quoteAnchors: compactStrings([
+        ...article.quoteAnchorsToVerify,
+        ...quoteItems.map((item) => `${item.subtitle ?? "核对线索"}：${item.title}`),
+      ]).slice(0, 12),
+      evidenceSnippets: compactRows([
+        { label: "摘要线索", value: evidenceSnippets.abstract },
+        { label: "方法线索", value: evidenceSnippets.methods },
+        { label: "结果/讨论线索", value: evidenceSnippets.resultsDiscussion },
+      ]),
+      linkedItems: evidenceItems.slice(0, 10),
+    },
+  };
+}
+
+function buildDynamicArticleDossierView(
+  entry: LiteratureKnowledgeEntry,
+  id: string,
+  taskLens: Required<LocalArticleTaskLens>,
+): Pick<ArticleKnowledgeView, "dossier" | "thesisMap" | "verification"> {
+  const card = entry.card;
+  if (!card) {
+    return {
+      dossier: emptyArticleDossier(),
+      thesisMap: emptyThesisMap(),
+      verification: emptyVerification(id),
+    };
+  }
+  const fallbackDossier: ArticleDossier = {
+    verdict: card.oneSentenceTakeaway || card.abstractZh || "这篇新增文献尚未形成完整摘要。",
+    problem: card.researchQuestion || card.abstractZh || "研究问题尚未识别。",
+    motivation: card.abstractZh || card.oneSentenceTakeaway || "请生成知识卡后再查看完整动机。",
+    design: {
+      overview: card.methods || "方法尚未识别。",
+      sample: card.participants || "样本信息尚未识别。",
+      task: card.taskAndMaterials || "任务材料尚未识别。",
+      variables: compactStrings(card.variablesAndMeasures ?? []),
+      measures: compactStrings([card.eegOrMeasures, ...(card.variablesAndMeasures ?? [])]),
+      analysis: inferArticleAnalysisUse(card.title, card.methods, card.keyFindings.join(" ")),
+    },
+    findings: compactStrings(card.keyFindings).slice(0, 6),
+    credibility: card.evidenceLevel || card.sourceGrade || "新增文献，证据等级待复核。",
+    thesisRelevance: compactStrings([taskLens.frameworkRole, ...(card.relevanceToMetroRescue ?? []), ...(card.densityHypothesisRelevance ?? [])]).join(" "),
+  };
+  const fallbackThesisMap: ArticleThesisWritingMap = {
+    relationType: inferArticleRelationType(card.sourceGrade, card.title, card.paperType),
+    frameworkRole: taskLens.frameworkRole,
+    constructs: buildConstructViews(taskLens.constructSupport),
+    chapterUses: compactStrings([...taskLens.manuscriptUse, ...card.usableForSections]).slice(0, 8),
+    writingBlocks: buildFallbackWritingBlocks({
+      id,
+      title: card.title,
+      finding: card.keyFindings[0] || card.oneSentenceTakeaway || card.abstractZh,
+      method: card.methods,
+      use: card.relevanceToMetroRescue[0] || card.oneSentenceTakeaway || "",
+      boundary: card.doNotClaim?.[0] || card.limitations[0] || "",
+    }),
+    overclaimWarnings: compactStrings([...taskLens.caveats, ...(card.doNotClaim ?? []), ...(card.qualityCaveats ?? [])]).slice(0, 8),
+    verificationTasks: compactStrings([
+      ...(card.quoteAnchorsToVerify ?? []),
+      "正式引用前核对作者、年份、期刊、DOI、页码和原文语境。",
+    ]).slice(0, 10),
+  };
+
+  return {
+    dossier: normalizeDossier(card.paperDossier, fallbackDossier),
+    thesisMap: normalizeThesisMap(card.thesisWritingMap, fallbackThesisMap),
+    verification: {
+      sourceCode: id,
+      sourceTitle: card.title,
+      filename: entry.document.filename,
+      libraryMeta: formatDocumentListMeta(entry.document),
+      quoteAnchors: compactStrings(card.quoteAnchorsToVerify ?? []).slice(0, 12),
+      evidenceSnippets: [],
+      linkedItems: [],
+    },
+  };
+}
+
+function normalizeDossier(input: LocalArticlePaperDossier | undefined, fallback: ArticleDossier): ArticleDossier {
+  if (!input) return fallback;
+  return {
+    verdict: input.verdict || fallback.verdict,
+    problem: input.problem || fallback.problem,
+    motivation: input.motivation || fallback.motivation,
+    design: {
+      overview: input.design?.overview || fallback.design.overview,
+      sample: input.design?.sample || fallback.design.sample,
+      task: input.design?.task || fallback.design.task,
+      variables: compactStrings(input.design?.variables ?? fallback.design.variables),
+      measures: compactStrings(input.design?.measures ?? fallback.design.measures),
+      analysis: input.design?.analysis || fallback.design.analysis,
+    },
+    findings: compactStrings(input.findings?.length ? input.findings : fallback.findings),
+    credibility: input.credibility || fallback.credibility,
+    thesisRelevance: input.thesisRelevance || fallback.thesisRelevance,
+  };
+}
+
+function normalizeThesisMap(input: LocalArticleThesisWritingMap | undefined, fallback: ArticleThesisWritingMap): ArticleThesisWritingMap {
+  if (!input) return fallback;
+  return {
+    relationType: input.relationType || fallback.relationType,
+    frameworkRole: input.frameworkRole || fallback.frameworkRole,
+    constructs: input.constructs?.length ? input.constructs : fallback.constructs,
+    chapterUses: compactStrings(input.chapterUses?.length ? input.chapterUses : fallback.chapterUses),
+    writingBlocks: input.writingBlocks?.length ? input.writingBlocks : fallback.writingBlocks,
+    overclaimWarnings: compactStrings(input.overclaimWarnings?.length ? input.overclaimWarnings : fallback.overclaimWarnings),
+    verificationTasks: compactStrings(input.verificationTasks?.length ? input.verificationTasks : fallback.verificationTasks),
+  };
+}
+
+function buildConstructViews(items: Array<{ construct?: string; use?: string; strength?: string }>): ArticleConstructUse[] {
+  const constructs = items.map((item) => ({
+    construct: item.construct || "相关构念",
+    support: item.strength === "high" ? "直接相关" : item.strength === "medium" ? "中等相关" : "背景相关",
+    use: item.use || "作为背景或方法线索使用。",
+    caution:
+      item.strength === "high"
+        ? "仍需用本研究数据检验，不能把文献发现写成本研究结果。"
+        : "更适合作为类比或背景，不宜单独支撑核心结论。",
+  }));
+
+  return constructs.length
+    ? constructs.slice(0, 6)
+    : [
+        {
+          construct: "背景/方法边界",
+          support: "背景相关",
+          use: "用于补充研究语境或方法边界。",
+          caution: "不能写成已验证本研究主假设。",
+        },
+      ];
+}
+
+function buildFallbackWritingBlocks({
+  id,
+  title,
+  finding,
+  method,
+  use,
+  boundary,
+}: {
+  id: string;
+  title: string;
+  finding?: string | null;
+  method?: string | null;
+  use?: string | null;
+  boundary?: string | null;
+}): ArticleWritingBlock[] {
+  const sourceLabel = `${id}《${title}》`;
+  return [
+    {
+      section: "文献综述",
+      purpose: "把这篇文章接入研究背景与理论链条。",
+      draft: `围绕应急情境下的空间导向与疏散决策，${sourceLabel}提供了与本研究相邻的经验证据。其核心启发在于：${finding || "相关行为或认知指标需要结合具体任务情境解释"}。因此，该文献可用于说明地铁逃生中的路径确认并非单纯的空间移动问题，而是包含目标提示、环境线索识别和行动选择的连续过程。`,
+    },
+    {
+      section: "方法与指标",
+      purpose: "把文献方法转写为本研究的可复现分析口径。",
+      draft: `${sourceLabel}采用的研究思路可为本研究的方法设计提供参考。结合本文的 LabRecorder XDF 数据，可进一步围绕 Unity marker 中的 sign_readable、decision_point_enter、方向选择、停留和回退事件建立 trial-level 指标，并与 EEG 事件窗特征同步。`,
+    },
+    {
+      section: "讨论与边界",
+      purpose: "避免把相邻文献误写成本研究结果。",
+      draft: `需要说明的是，${sourceLabel}的作用主要在于${use || "提供理论、方法或背景参照"}。${boundary || "它不能替代本研究基于 90 名被试、270 个实验 run 的组内和组间统计检验。"} 因此，正式写作时应把文献证据、项目假设和真实实验结果分层陈述。`,
+    },
+  ];
+}
+
+function inferArticleRelationType(grade: string | undefined, title: string, role: string | undefined) {
+  const text = [title, role].join(" ").toLowerCase();
+  if (grade === "A" && /(eeg|sign|signage|wayfinding|vr|virtual)/.test(text)) {
+    return "主证据：可用于理论框架、变量定义或方法依据";
+  }
+  if (/(eeg|sign|signage|wayfinding|vr|virtual|route|navigation)/.test(text)) {
+    return "相邻证据：可用于方法类比、指标定义或结果讨论";
+  }
+  if (/(review|framework|meta)/.test(text)) {
+    return "框架证据：可用于文献综述和假设形成";
+  }
+  return "背景证据：用于补充研究语境、局限或未来工作";
+}
+
+function inferArticleAnalysisUse(title: string, method: string, findings: string) {
+  const text = [title, method, findings].join(" ").toLowerCase();
+  if (/(mixed|within-subject|repeated|anova|regression|model)/.test(text)) {
+    return "可借鉴其统计建模思路；本研究应以被试为单位，检验 low / medium / high route-confirmation support 的组内差异。";
+  }
+  if (/(eeg|theta|alpha|erp|frequency|classification)/.test(text)) {
+    return "可借鉴其 EEG 特征提取或分类思路；本研究应围绕 Unity marker 事件窗提取 theta、alpha 和 theta/alpha 等负荷指标。";
+  }
+  if (/(eye|gaze|attention|fixation|search)/.test(text)) {
+    return "可转化为视觉搜索、回看、停留、扫描和路径确认成本等行为指标。";
+  }
+  if (/(vr|virtual|evacuation|wayfinding)/.test(text)) {
+    return "可用于支持 VR 疏散任务的实验设计和生态效度讨论。";
+  }
+  return "主要作为背景或边界材料；是否进入主模型需看与本研究变量的贴近程度。";
+}
+
+function emptyArticleDossier(): ArticleDossier {
+  return {
+    verdict: "尚未生成论文档案。",
+    problem: "尚未识别研究问题。",
+    motivation: "尚未识别研究动机。",
+    design: {
+      overview: "尚未识别方法。",
+      sample: "尚未识别样本。",
+      task: "尚未识别任务材料。",
+      variables: [],
+      measures: [],
+      analysis: "尚未识别可迁移的分析思路。",
+    },
+    findings: ["尚未生成主要发现。"],
+    credibility: "证据等级待复核。",
+    thesisRelevance: "尚未映射到本论文。",
+  };
+}
+
+function emptyThesisMap(): ArticleThesisWritingMap {
+  return {
+    relationType: "待判断",
+    frameworkRole: "尚未生成写作映射。",
+    constructs: [],
+    chapterUses: [],
+    writingBlocks: [],
+    overclaimWarnings: [],
+    verificationTasks: [],
+  };
+}
+
+function emptyVerification(id: string): ArticleVerification {
+  return {
+    sourceCode: id,
+    sourceTitle: "",
+    filename: "",
+    libraryMeta: "",
+    quoteAnchors: [],
+    evidenceSnippets: [],
+    linkedItems: [],
   };
 }
 

@@ -11,6 +11,42 @@ export type ImportedPdfMetadata = {
   importedAt?: string;
 };
 
+export type LiteraturePaperDossier = {
+  verdict: string;
+  problem: string;
+  motivation: string;
+  design: {
+    overview: string;
+    sample: string;
+    task: string;
+    variables: string[];
+    measures: string[];
+    analysis: string;
+  };
+  findings: string[];
+  credibility: string;
+  thesisRelevance: string;
+};
+
+export type LiteratureThesisWritingMap = {
+  relationType: string;
+  frameworkRole: string;
+  constructs: Array<{
+    construct: string;
+    support: string;
+    use: string;
+    caution: string;
+  }>;
+  chapterUses: string[];
+  writingBlocks: Array<{
+    section: string;
+    purpose: string;
+    draft: string;
+  }>;
+  overclaimWarnings: string[];
+  verificationTasks: string[];
+};
+
 export type LiteratureKnowledgeCard = {
   version: 1 | 2 | 3;
   documentId: string;
@@ -43,6 +79,8 @@ export type LiteratureKnowledgeCard = {
   methodsWritingUse?: string[];
   resultsDiscussionUse?: string[];
   qualityCaveats?: string[];
+  paperDossier?: LiteraturePaperDossier;
+  thesisWritingMap?: LiteratureThesisWritingMap;
   extractionMeta?: {
     extractedChars: number;
     digestChunks: number;

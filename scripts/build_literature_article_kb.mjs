@@ -426,23 +426,18 @@ async function main() {
   }
 
   const output = {
-    version: "literature-article-kb-v5-route-confirmation-task-lens",
-    generatedBy: "Codex local PDF evidence extraction plus dailypaper-style single-article notes; no website API and no OpenAI key usage",
+    version: "literature-article-kb-v6-paper-dossier-writing-map",
+    generatedBy: "Codex local PDF evidence extraction plus single-paper dossiers and Chinese thesis writing maps; no website API and no OpenAI key usage",
     generatedAt: new Date().toISOString(),
     source: "Uploaded related-literature PDFs matched to Metro Rescue source cards",
     schema: [
-      "文献身份",
-      "一句话贡献",
-      "研究任务映射",
-      "研究问题与定位",
-      "研究动机",
-      "方法与数据",
-      "关键结果",
-      "可迁移变量/指标",
-      "对本研究的用途",
-      "边界与不能声称",
-      "关联证据单元",
-      "引用线索",
+      "速读结论",
+      "研究设计拆解",
+      "核心发现与可信度",
+      "与本论文的关系",
+      "可直接写进中文论文的段落",
+      "不能这样使用",
+      "回原文核对任务",
     ],
     pdfDirectoryMatched: Boolean(pdfDirectory),
     pdfCount: pdfFilenames.length,
@@ -471,6 +466,10 @@ function buildExtractiveArticleCard(source, matchedPdfFilename, extractedText) {
     findingEvidence,
     extractedText,
   });
+  const taskLens = buildRouteConfirmationTaskLens(source, curated, linkedEvidence);
+  const readingNote = buildPaperReadingNote(source, curated, linkedEvidence, extractedTitleCandidate);
+  const paperDossier = buildPaperDossier(source, curated, taskLens, readingNote, extractedTitleCandidate);
+  const thesisWritingMap = buildThesisWritingMap(source, curated, taskLens, readingNote, linkedEvidence);
 
   const card = {
     id: source.Source_ID,
@@ -507,8 +506,10 @@ function buildExtractiveArticleCard(source, matchedPdfFilename, extractedText) {
     ]).slice(0, 8),
     keywords: uniqueCompact([...splitTags(source.Theme_Tags), ...extractKeywords(extractedText)]).slice(0, 12),
     writingUse: curated.writingUse,
-    taskLens: buildRouteConfirmationTaskLens(source, curated, linkedEvidence),
-    readingNote: buildPaperReadingNote(source, curated, linkedEvidence, extractedTitleCandidate),
+    taskLens,
+    readingNote,
+    paperDossier,
+    thesisWritingMap,
     linkedEvidence,
     confidence: abstractText || methodText || resultText ? "medium" : "low",
     needsVerification: [
@@ -900,6 +901,157 @@ function buildPaperReadingNote(source, curated, linkedEvidence, extractedTitleCa
       "确认该文是否能支持 Metro Rescue 的 density condition，还是只能作为 VR/wayfinding/EEG 方法类比。",
     ]),
   };
+}
+
+function buildPaperDossier(source, curated, taskLens, readingNote, extractedTitleCandidate) {
+  const measures = uniqueCompact([
+    ...curated.variablesAndMeasures,
+    ...curated.eegOrPhysioMeasures,
+    ...curated.behavioralMeasures,
+  ]).slice(0, 8);
+  const findings = uniqueCompact([
+    ...curated.keyFindings,
+    readingNote.resultSummary,
+  ]).slice(0, 6);
+
+  return {
+    verdict: readingNote.tldr || curated.oneSentenceSummary,
+    problem: readingNote.problem || curated.researchQuestion,
+    motivation: readingNote.motivation || buildPaperMotivation(source, curated),
+    design: {
+      overview: curated.studyDesign,
+      sample: curated.participantsAndSample,
+      task: curated.taskAndMaterials,
+      variables: uniqueCompact(curated.variablesAndMeasures).slice(0, 6),
+      measures,
+      analysis: inferDossierAnalysisStyle(source, curated),
+    },
+    findings,
+    credibility: [
+      curated.qualityTier,
+      source.Grade === "A"
+        ? "在本项目中属于优先使用文献，可进入主证据链，但仍需回原文核对页码和语境。"
+        : "在本项目中更适合作为类比、背景、方法或边界材料，不能单独支撑核心结论。",
+    ].join(" "),
+    thesisRelevance: uniqueCompact([
+      taskLens.frameworkRole,
+      curated.metroRescueUse[0],
+      curated.densityHypothesisRelevance[0],
+      extractedTitleCandidate && normalizeLiteratureKey(extractedTitleCandidate) !== normalizeLiteratureKey(source.Title)
+        ? `注意：PDF 首页标题抽取结果可能需要人工校正为“${extractedTitleCandidate}”。`
+        : "",
+    ]).join(" "),
+  };
+}
+
+function buildThesisWritingMap(source, curated, taskLens, readingNote, linkedEvidence) {
+  const constructMaps = taskLens.constructSupport.map((item) => ({
+    construct: item.construct,
+    support: item.strength === "high" ? "直接相关" : item.strength === "medium" ? "中等相关" : "背景相关",
+    use: item.use,
+    caution:
+      item.strength === "high"
+        ? "仍需把文献证据和本研究真实 XDF 结果分开陈述。"
+        : "写作时应表述为方法类比或理论背景，不要写成已经验证了本研究条件效应。",
+  }));
+
+  return {
+    relationType: inferThesisRelationType(source, curated, taskLens),
+    frameworkRole: taskLens.frameworkRole,
+    constructs: constructMaps.slice(0, 6),
+    chapterUses: uniqueCompact([
+      ...taskLens.manuscriptUse,
+      ...curated.writingUse.map((item) => `可进入：${item}`),
+    ]).slice(0, 8),
+    writingBlocks: buildChineseWritingBlocks(source, curated, taskLens, readingNote, linkedEvidence),
+    overclaimWarnings: uniqueCompact([
+      ...taskLens.caveats,
+      ...curated.doNotClaim,
+      ...curated.boundaries,
+    ]).slice(0, 8),
+    verificationTasks: uniqueCompact([
+      ...readingNote.followUpQuestions,
+      ...linkedEvidence.quoteAnchors.map((anchor) => `${anchor.pageTarget}: ${anchor.anchor}`),
+      "正式提交前核对作者、年份、期刊、DOI、页码和原文语境。",
+    ]).slice(0, 10),
+  };
+}
+
+function inferDossierAnalysisStyle(source, curated) {
+  const text = [source.Title, source.Method_or_Evidence, curated.studyDesign, curated.keyFindings.join(" ")].join(" ").toLowerCase();
+  if (text.includes("mixed") || text.includes("within-subject") || text.includes("repeated")) {
+    return "适合借鉴其组内比较、重复测量或 mixed-effects 处理思路，并将本研究的 low / medium / high route-confirmation support 作为组内因素。";
+  }
+  if (text.includes("classification") || text.includes("machine learning") || text.includes("classifier")) {
+    return "适合借鉴其特征提取、分类或可解释模型思路；在本研究中应优先作为辅助分析，而不是替代预注册的组内对比。";
+  }
+  if (text.includes("review") || text.includes("framework") || text.includes("meta-analysis")) {
+    return "适合用于理论框架、变量命名和研究假设建构；不能替代本研究的实验统计检验。";
+  }
+  if (text.includes("vr") || text.includes("virtual")) {
+    return "适合用于支持 VR 实验范式、任务生态效度和行为指标定义，并在方法章节说明其可控性与限制。";
+  }
+  return "适合用于背景论证或边界讨论；是否进入主证据链需要根据与 Metro Rescue 核心变量的贴近程度决定。";
+}
+
+function inferThesisRelationType(source, curated, taskLens) {
+  const text = [source.Title, source.Theme_Tags, curated.articleRole, taskLens.frameworkRole].join(" ").toLowerCase();
+  if (source.Grade === "A" && (text.includes("eeg") || text.includes("sign") || text.includes("wayfinding"))) {
+    return "主证据：可用于理论框架、变量定义或方法依据。";
+  }
+  if (text.includes("vr") || text.includes("virtual") || text.includes("eeg") || text.includes("sign")) {
+    return "相邻证据：可用于方法类比、指标定义或结果讨论。";
+  }
+  if (text.includes("review") || text.includes("framework")) {
+    return "框架证据：可用于文献综述和假设形成。";
+  }
+  return "背景证据：用于补充研究语境、局限或未来工作。";
+}
+
+function buildChineseWritingBlocks(source, curated, taskLens, readingNote, linkedEvidence) {
+  const sourceLabel = `${source.Source_ID}《${source.Title}》`;
+  const firstFinding = curated.keyFindings[0] || curated.oneSentenceSummary;
+  const firstUse = curated.metroRescueUse[0] || source.How_to_use_in_Metro_Rescue;
+  const mainConstruct = taskLens.constructSupport[0]?.construct || "本研究相关变量";
+  const claimUse = linkedEvidence.claims[0]?.use || "用于支撑相关理论和方法背景";
+
+  return uniqueWritingBlocks([
+    {
+      section: "文献综述",
+      purpose: "说明这篇文献在相关研究中的位置，并把它接入本论文的研究问题。",
+      draft: `既有研究表明，${firstFinding} 这一发现提示，地铁应急疏散中的导向行为不能只从空间最短路径或标识数量解释，还需要关注个体在关键决策点如何识别、确认并信任环境中的路径信息。${sourceLabel}因此可作为本研究讨论${mainConstruct}的相邻证据。`,
+    },
+    {
+      section: "理论假设",
+      purpose: "把文献证据转写为本研究假设的理论依据，而不是当作本研究结果。",
+      draft: `结合${sourceLabel}提供的证据，可以将路径确认支持理解为一种影响信息加工负荷和行动迟滞的情境条件。对于本研究而言，该文献更适合支持“路径确认信息链会改变决策过程”的理论前提；至于中等支持条件是否产生最高负荷，仍需由 90 名被试、每名 3 个 run 的 XDF 数据进行组内 planned contrast 检验。`,
+    },
+    {
+      section: "方法与指标",
+      purpose: "把文献中的方法或指标转化为本项目可复现的 XDF/Unity marker 分析口径。",
+      draft: `在方法设计上，${sourceLabel}对${curated.studyDesign}的处理为本研究提供了指标组织参考。本研究可进一步将 Unity marker 中的 sign_readable、decision_point_enter、route choice、回退与停留事件，同步到 EEG 事件窗，形成以被试为单位、以 low / medium / high route-confirmation support 为组内因素的分析表。`,
+    },
+    {
+      section: "讨论与边界",
+      purpose: "提醒论文写作中应该如何克制使用这篇文献。",
+      draft: `需要注意的是，${sourceLabel}并不能直接证明本研究的中等路径确认支持会产生最高认知负荷。它的作用主要是提供${claimUse}。因此，在结果讨论中应把该文献作为解释机制和方法背景，而不能替代本研究的 EEG 与行为统计结果。`,
+    },
+    ...(readingNote.writingAngles ?? []).slice(0, 2).map((angle) => ({
+      section: "可扩写线索",
+      purpose: "由读论文笔记转化出的后续写作角度。",
+      draft: `围绕${angle}，可以在中文论文中进一步说明${sourceLabel}与 Metro Rescue 研究对象之间的相似性、差异性和可迁移边界。`,
+    })),
+  ]).slice(0, 5);
+}
+
+function uniqueWritingBlocks(blocks) {
+  const seen = new Set();
+  return blocks.filter((block) => {
+    const key = `${block.section}-${block.draft}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return block.draft && block.draft.trim();
+  });
 }
 
 function buildPaperMotivation(source, curated) {

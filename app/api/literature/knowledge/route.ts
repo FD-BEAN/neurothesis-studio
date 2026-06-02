@@ -43,11 +43,8 @@ type PdfJsModule = {
     data: Uint8Array;
     isEvalSupported: false;
     useWorkerFetch: false;
+    disableWorker?: true;
   }): { promise: Promise<PdfJsDocument> };
-};
-
-type PdfJsWorkerModule = {
-  WorkerMessageHandler: unknown;
 };
 
 class PdfDomMatrixPolyfill {
@@ -322,17 +319,13 @@ async function extractDocumentText(supabase: ReturnType<typeof getSupabaseServer
 
 async function extractPdfTextWithoutWorker(buffer: Buffer) {
   installPdfNodePolyfills();
-  const [pdfjs, pdfWorker] = (await Promise.all([
-    import("pdfjs-dist/legacy/build/pdf.mjs"),
-    import("pdfjs-dist/legacy/build/pdf.worker.mjs"),
-  ])) as unknown as [PdfJsModule, PdfJsWorkerModule];
-  const scope = globalThis as unknown as { pdfjsWorker?: { WorkerMessageHandler?: unknown } };
-  scope.pdfjsWorker = { WorkerMessageHandler: pdfWorker.WorkerMessageHandler };
+  const pdfjs = (await import("pdfjs-dist/legacy/build/pdf.mjs")) as unknown as PdfJsModule;
 
   const loadingTask = pdfjs.getDocument({
     data: new Uint8Array(buffer),
     isEvalSupported: false,
     useWorkerFetch: false,
+    disableWorker: true,
   });
   const pdf = await loadingTask.promise;
   const pages: string[] = [];
@@ -373,7 +366,7 @@ async function buildKnowledgeCard(apiKey: string, document: ResearchDocument, ex
       {
         role: "system",
         content:
-          "You build structured bilingual literature knowledge cards for a thesis knowledge base. Return only valid JSON. Do not invent bibliographic details, page numbers, results, effect sizes, or quotations that are missing from the text; use '未识别' when uncertain. Be conservative, separate literature evidence from project hypotheses, and include boundaries under doNotClaim.",
+          "You build structured bilingual literature knowledge cards for a thesis knowledge base. Return only valid JSON. Build a single-paper dossier first, then map it to Chinese thesis writing. Do not invent bibliographic details, page numbers, results, effect sizes, or quotations that are missing from the text; use '未识别' when uncertain. Be conservative, separate literature evidence from project hypotheses, and include boundaries under doNotClaim.",
       },
       {
         role: "user",
@@ -499,11 +492,32 @@ ${directText || "(No text could be extracted; use only filename and state limita
 Trailing excerpt, often references/discussion/limitations:
 ${trailingText || "(No trailing excerpt.)"}
 
-Return JSON with exactly these keys: title, citation, paperType, oneSentenceTakeaway, abstractZh, abstractEn, researchQuestion, methods, participants, taskAndMaterials, eegOrMeasures, keyFindings, limitations, relevanceToMetroRescue, usableForSections, keywords, evidenceLevel, sourceGrade, themeTags, doNotClaim, candidateClaims, quoteAnchorsToVerify, theoryOrMechanism, variablesAndMeasures, densityHypothesisRelevance, methodsWritingUse, resultsDiscussionUse, qualityCaveats. Arrays must be arrays of short Chinese strings. sourceGrade should be A/B/C/未识别 based on relevance and evidence strength for this thesis, not journal prestige.`;
+Return JSON with exactly these keys: title, citation, paperType, oneSentenceTakeaway, abstractZh, abstractEn, researchQuestion, methods, participants, taskAndMaterials, eegOrMeasures, keyFindings, limitations, relevanceToMetroRescue, usableForSections, keywords, evidenceLevel, sourceGrade, themeTags, doNotClaim, candidateClaims, quoteAnchorsToVerify, theoryOrMechanism, variablesAndMeasures, densityHypothesisRelevance, methodsWritingUse, resultsDiscussionUse, qualityCaveats, paperDossier, thesisWritingMap. Arrays must be arrays of short Chinese strings. sourceGrade should be A/B/C/未识别 based on relevance and evidence strength for this thesis, not journal prestige. paperDossier is a readable Chinese single-paper dossier. thesisWritingMap contains concrete Chinese thesis-writing uses, including short draft paragraphs that can be edited into the dissertation.`;
 }
 
 function literatureCardSchema() {
   const stringArray = { type: "array", items: { type: "string" } };
+  const writingBlock = {
+    type: "object",
+    additionalProperties: false,
+    required: ["section", "purpose", "draft"],
+    properties: {
+      section: { type: "string" },
+      purpose: { type: "string" },
+      draft: { type: "string" },
+    },
+  };
+  const constructMap = {
+    type: "object",
+    additionalProperties: false,
+    required: ["construct", "support", "use", "caution"],
+    properties: {
+      construct: { type: "string" },
+      support: { type: "string" },
+      use: { type: "string" },
+      caution: { type: "string" },
+    },
+  };
   return {
     type: "object",
     additionalProperties: false,
@@ -536,6 +550,8 @@ function literatureCardSchema() {
       "methodsWritingUse",
       "resultsDiscussionUse",
       "qualityCaveats",
+      "paperDossier",
+      "thesisWritingMap",
     ],
     properties: {
       title: { type: "string" },
@@ -566,6 +582,46 @@ function literatureCardSchema() {
       methodsWritingUse: stringArray,
       resultsDiscussionUse: stringArray,
       qualityCaveats: stringArray,
+      paperDossier: {
+        type: "object",
+        additionalProperties: false,
+        required: ["verdict", "problem", "motivation", "design", "findings", "credibility", "thesisRelevance"],
+        properties: {
+          verdict: { type: "string" },
+          problem: { type: "string" },
+          motivation: { type: "string" },
+          design: {
+            type: "object",
+            additionalProperties: false,
+            required: ["overview", "sample", "task", "variables", "measures", "analysis"],
+            properties: {
+              overview: { type: "string" },
+              sample: { type: "string" },
+              task: { type: "string" },
+              variables: stringArray,
+              measures: stringArray,
+              analysis: { type: "string" },
+            },
+          },
+          findings: stringArray,
+          credibility: { type: "string" },
+          thesisRelevance: { type: "string" },
+        },
+      },
+      thesisWritingMap: {
+        type: "object",
+        additionalProperties: false,
+        required: ["relationType", "frameworkRole", "constructs", "chapterUses", "writingBlocks", "overclaimWarnings", "verificationTasks"],
+        properties: {
+          relationType: { type: "string" },
+          frameworkRole: { type: "string" },
+          constructs: { type: "array", items: constructMap },
+          chapterUses: stringArray,
+          writingBlocks: { type: "array", items: writingBlock },
+          overclaimWarnings: stringArray,
+          verificationTasks: stringArray,
+        },
+      },
     },
   };
 }

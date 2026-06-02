@@ -441,10 +441,20 @@ XDF 命名与分析规则：
 ## 2026-06-01 PDF 知识卡片生成修复
 
 - Vercel serverless 环境中，`pdf-parse` / PDF.js 的 fake worker 可能会尝试运行时加载 `.next/server/chunks/pdf.worker.mjs`，导致新增文献点击“生成/更新知识卡片”时报 `Cannot find module ... pdf.worker.mjs`。
-- 文献知识卡片 API 现在直接使用 `pdfjs-dist/legacy/build/pdf.mjs` 和 `pdf.worker.mjs`，并在调用 `getDocument` 前把 `WorkerMessageHandler` 挂到 `globalThis.pdfjsWorker`。
-- 这样 PDF.js fake worker 会使用已经打包进服务端 bundle 的 worker handler，不再按相对路径寻找 worker 文件。
+- 文献知识卡片 API 现在只使用 `pdfjs-dist/legacy/build/pdf.mjs`，并在 `getDocument` 中显式设置 `disableWorker: true`。
+- API 路由不再导入 `pdf.worker.mjs`，避免 Vercel serverless 运行时继续按 `.next/server/chunks/pdf.worker.mjs` 路径查找 worker 文件。
 - 仍然保留 `DOMMatrix/ImageData/Path2D` 最小 polyfill，用于 Vercel/Node 环境中的 PDF 文本抽取。
 - 修改后已用 `npm run build` 和内存 PDF 文本抽取验证。新增/更新文献知识卡片仍只在“未命中已有卡片、未命中内置 seed KB”时才会调用 OpenAI。
+
+## 2026-06-02 文献知识库 v6：逐篇论文档案与中文论文写作映射
+
+- 文献知识库不再按“全局知识图谱”或松散摘要来组织，而是以单篇论文为单位，形成可审阅、可追溯、可用于中文论文写作的论文档案。
+- 已有 47 篇相关文献由本地 Codex 脚本重建为 `literature-article-kb-v6-paper-dossier-writing-map`，不调用网页 API，也不使用 OpenAI key。
+- 每篇论文统一包含 `paperDossier` 与 `thesisWritingMap`：速读结论、研究问题、研究动机、研究设计、核心发现、可信度与边界、与本论文的关系、构念映射、可进入章节、可直接写进中文论文的段落、不能这样使用、回原文核对任务。
+- 新增 PDF 文献只有在未命中已有资料库与内置 KB 时才调用网页 API；生成结果也必须映射到同一套单篇论文档案结构，不能另做“新增文献专区”。
+- “引用线索/回原文核对”不是正式引文，也不是逐字引用；它只是提醒写论文前回到 PDF 原文核对作者、年份、DOI、页码、变量定义和原文语境。
+- Grade A/B/C/D 是本项目内部的相关性与可用度标签，不是期刊等级，也不是论文质量评判。
+- 论文写作默认输出中文正文草稿。文献只能支撑背景、理论、方法和讨论边界；真实 Results 与显著性结论只能来自 XDF 分析报告或用户提供的真实统计结果。
 
 ## 2026-06-01 文献数量显示口径
 

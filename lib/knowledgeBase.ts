@@ -24,6 +24,31 @@ type CuratedArticleTaskLens = {
   manuscriptUse?: string[];
   caveats?: string[];
 };
+type CuratedPaperDossier = {
+  verdict?: string;
+  problem?: string;
+  motivation?: string;
+  design?: {
+    overview?: string;
+    sample?: string;
+    task?: string;
+    variables?: string[];
+    measures?: string[];
+    analysis?: string;
+  };
+  findings?: string[];
+  credibility?: string;
+  thesisRelevance?: string;
+};
+type CuratedThesisWritingMap = {
+  relationType?: string;
+  frameworkRole?: string;
+  constructs?: Array<{ construct?: string; support?: string; use?: string; caution?: string }>;
+  chapterUses?: string[];
+  writingBlocks?: Array<{ section?: string; purpose?: string; draft?: string }>;
+  overclaimWarnings?: string[];
+  verificationTasks?: string[];
+};
 
 export type SeedKnowledgeReviewItem = {
   id: string;
@@ -474,6 +499,8 @@ function buildCuratedArticleContext(prompt: string) {
       article.keywords.join(" "),
       article.themeTags.join(" "),
       JSON.stringify((article as CuratedArticleKnowledgeCard & { taskLens?: CuratedArticleTaskLens }).taskLens ?? {}),
+      JSON.stringify((article as CuratedArticleKnowledgeCard & { paperDossier?: CuratedPaperDossier }).paperDossier ?? {}),
+      JSON.stringify((article as CuratedArticleKnowledgeCard & { thesisWritingMap?: CuratedThesisWritingMap }).thesisWritingMap ?? {}),
     ].join(" "),
   ).slice(0, 16);
 
@@ -490,11 +517,26 @@ function buildCuratedArticleContext(prompt: string) {
 function formatCuratedArticleForWriting(article: CuratedArticleKnowledgeCard) {
   const readingNote = (article as CuratedArticleKnowledgeCard & { readingNote?: CuratedPaperReadingNote }).readingNote;
   const taskLens = (article as CuratedArticleKnowledgeCard & { taskLens?: CuratedArticleTaskLens }).taskLens;
+  const dossier = (article as CuratedArticleKnowledgeCard & { paperDossier?: CuratedPaperDossier }).paperDossier;
+  const writingMap = (article as CuratedArticleKnowledgeCard & { thesisWritingMap?: CuratedThesisWritingMap }).thesisWritingMap;
 
   return [
     `[${article.id}] ${article.title}`,
     article.extractedTitleCandidate ? `PDF title candidate: ${article.extractedTitleCandidate}` : "",
     `Role/type/grade: ${article.articleRole}; ${article.evidenceType}; ${article.qualityTier}`,
+    `单篇论文档案-速读结论: ${dossier?.verdict || readingNote?.tldr || article.oneSentenceSummary}`,
+    `单篇论文档案-研究问题: ${dossier?.problem || readingNote?.problem || article.researchQuestion}`,
+    `单篇论文档案-研究动机: ${dossier?.motivation || readingNote?.motivation || article.researchPosition}`,
+    `单篇论文档案-方法设计: ${dossier?.design?.overview || readingNote?.methodSummary || article.studyDesign}`,
+    `单篇论文档案-样本任务指标: ${joinKnowledgeValues([dossier?.design?.sample, dossier?.design?.task, ...(dossier?.design?.variables ?? article.variablesAndMeasures), ...(dossier?.design?.measures ?? [...article.eegOrPhysioMeasures, ...article.behavioralMeasures])].filter(Boolean) as string[])}`,
+    `单篇论文档案-核心发现: ${joinKnowledgeValues(dossier?.findings ?? article.keyFindings)}`,
+    `单篇论文档案-可信度与边界: ${dossier?.credibility || joinKnowledgeValues(readingNote?.weaknesses ?? [...article.doNotClaim, ...article.limitations, ...article.boundaries])}`,
+    `本论文关系: ${writingMap?.relationType || taskLens?.frameworkRole || article.researchPosition}`,
+    `构念映射: ${joinKnowledgeValues((writingMap?.constructs ?? taskLens?.constructSupport ?? []).map((item) => `${item.construct}: ${"use" in item ? item.use : ""}`))}`,
+    `可进入章节: ${joinKnowledgeValues(writingMap?.chapterUses ?? taskLens?.manuscriptUse ?? article.writingUse)}`,
+    `可写入中文论文段落: ${joinKnowledgeValues((writingMap?.writingBlocks ?? []).map((block) => `${block.section}: ${block.draft}`))}`,
+    `不能这样使用: ${joinKnowledgeValues(writingMap?.overclaimWarnings ?? readingNote?.weaknesses ?? [...article.doNotClaim, ...article.limitations, ...article.boundaries])}`,
+    `回原文核对: ${joinKnowledgeValues(writingMap?.verificationTasks ?? article.quoteAnchorsToVerify)}`,
     `TL;DR: ${readingNote?.tldr || article.oneSentenceSummary}`,
     `Problem: ${readingNote?.problem || article.researchQuestion}`,
     `Motivation: ${readingNote?.motivation || article.researchPosition}`,
@@ -551,6 +593,8 @@ function buildUserLiteratureContext(cards: LiteratureKnowledgeCard[], prompt: st
       card.methodsWritingUse?.join(" ") ?? "",
       card.resultsDiscussionUse?.join(" ") ?? "",
       card.qualityCaveats?.join(" ") ?? "",
+      JSON.stringify(card.paperDossier ?? {}),
+      JSON.stringify(card.thesisWritingMap ?? {}),
     ].join(" "),
   )
     .slice(0, 24)
@@ -559,6 +603,8 @@ function buildUserLiteratureContext(cards: LiteratureKnowledgeCard[], prompt: st
         `[U${index + 1}] ${card.title || card.filename}`,
         `Filename: ${card.filename}`,
         `Citation: ${card.citation}`,
+        `单篇论文档案: ${card.paperDossier ? JSON.stringify(card.paperDossier) : "未生成"}`,
+        `论文写作映射: ${card.thesisWritingMap ? JSON.stringify(card.thesisWritingMap) : "未生成"}`,
         `Takeaway: ${card.oneSentenceTakeaway ?? card.abstractZh ?? "未生成"}`,
         `Research question: ${card.researchQuestion}`,
         `Methods: ${card.methods}`,
