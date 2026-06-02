@@ -60,6 +60,65 @@ const SOURCE_ID_PATTERN = /S\d{3}/g;
 const sourceTitleById = new Map(seedKnowledgeBase.sources.map((source) => [source.Source_ID, source.Title]));
 const seedSourceByNormalizedKey = buildSeedSourceKeyMap();
 
+const projectAnalysisDesignReviewItems: SeedKnowledgeReviewItem[] = [
+  {
+    id: "DESIGN-001",
+    title: "被试与文件编号映射",
+    body: "正式 XDF 数据按三连号归并被试：001/002/003 属于第 1 名被试，004/005/006 属于第 2 名被试，007/008/009 属于第 3 名被试，以此类推。文件中的 sub-007 这类编号代表实验文件序号，不应直接解释为第 7 名被试。",
+    tags: ["XDF", "subject", "coding-rule"],
+    meta: [
+      { label: "组内单位", value: "同一被试的 3 个密度条件 run" },
+      { label: "页面与 worker 规则", value: "按三连号自动生成 sub-001, sub-002, sub-003..." },
+    ],
+    boundary: "如果未来文件名改为真正的被试编号，需要同步更新命名规则，避免把 run 序号和 participant ID 混用。",
+  },
+  {
+    id: "DESIGN-002",
+    title: "Signature 到 Density condition 的映射",
+    body: "当前研究口径统一为 Density condition：Signature1 = 低密度，Signature2 = 中密度，Signature3 = 高密度。论文正文优先使用 low / medium / high density condition；Signature 只作为实验素材或 Unity/文件命名的历史字段。",
+    tags: ["density", "signature", "methods"],
+    meta: [
+      { label: "低密度", value: "Signature1" },
+      { label: "中密度", value: "Signature2" },
+      { label: "高密度", value: "Signature3" },
+    ],
+    boundary: "如果 Signature 实际还包含颜色、图形或朝向等非密度差异，Methods 需要单独列出操控定义，不能只写成密度。",
+  },
+  {
+    id: "DESIGN-003",
+    title: "组内主检验",
+    body: "主假设不是线性“越密越高负荷”，而是中等密度最高。每名被试先形成 low、medium、high 三个 run-level 指标，再计算 planned contrast：medium - mean(low, high)，权重为 low:-1, medium:2, high:-1。",
+    tags: ["within-subject", "planned-contrast", "hypothesis"],
+    meta: [
+      { label: "主指标候选", value: "EEG load proxy、theta/alpha、frontal theta、posterior alpha、completion time、behavior load proxy" },
+      { label: "显著性层级", value: "先 subject-level contrast，再做全样本 one-sample test 或 mixed-effects contrast" },
+    ],
+    boundary: "单个被试报告只能给方向性结果；显著性结论必须来自全样本或明确提供的统计输出。",
+  },
+  {
+    id: "DESIGN-004",
+    title: "组间分析",
+    body: "组间问题应建立在被试元数据上，例如组别、年龄、性别、VR 经验、专业背景、实验顺序或 counterbalance。统计上关注 Density × Group 交互，而不是把不同被试的单个 XDF 文件直接混在一起比较。",
+    tags: ["between-subject", "metadata", "mixed-effects"],
+    meta: [
+      { label: "建议模型", value: "Load ~ Density * Group + RunOrder + Map + (1 + Density | Subject)" },
+      { label: "需要补充", value: "subject metadata / counterbalance / exclusion log" },
+    ],
+    boundary: "没有 subject-level metadata 时，只能报告总体组内密度效应，不能声称某类人群之间存在差异。",
+  },
+  {
+    id: "DESIGN-005",
+    title: "事件窗优先于全程均值",
+    body: "理论机制更可能发生在 sign_readable 与 decision_point_enter 附近，因此 EEG 与行为指标应同时保留 trial-level 和 event-window 两个层级。全程均值适合质控和主表，事件窗更适合解释导向标识如何影响认知负荷。",
+    tags: ["event-window", "EEG", "Unity-marker"],
+    meta: [
+      { label: "核心事件", value: "sign_readable, decision_point_enter" },
+      { label: "控制变量", value: "movement speed, head yaw, audio overlap, trial order, map" },
+    ],
+    boundary: "如果 marker 与 EEG 时间轴覆盖不足，事件窗结果必须标记为不可用或探索性。",
+  },
+];
+
 export function buildResearchKnowledgeContext(prompt: string, userCards: LiteratureKnowledgeCard[]) {
   const seedContext = buildSeedContext(prompt);
   const userContext = buildUserLiteratureContext(userCards, prompt);
@@ -82,7 +141,6 @@ export function getSeedKnowledgeStats() {
     mechanisms: seedKnowledgeBase.mechanisms.length,
     hypotheses: seedKnowledgeBase.hypotheses.length,
     analysisModels: seedKnowledgeBase.analysis_models.length,
-    dataTables: seedKnowledgeBase.data_tables.length,
     risksAndFixes: seedKnowledgeBase.risks_and_fixes.length,
     writingBlocks: seedKnowledgeBase.writing_blocks.length,
     quoteAnchors: seedKnowledgeBase.quote_anchors.length,
@@ -181,7 +239,6 @@ export function getSeedKnowledgeReview(): SeedKnowledgeReview {
           body: hypothesis.Model_Formula,
           tags: getSourceIds(hypothesis.Sources),
           meta: [
-            { label: "数据表", value: hypothesis.Data_Table },
             { label: "来源代码", value: hypothesis.Sources },
             { label: "来源文献", value: formatSourceReferences(hypothesis.Sources) },
             { label: "备注", value: hypothesis.Note },
@@ -197,25 +254,15 @@ export function getSeedKnowledgeReview(): SeedKnowledgeReview {
           id: model.Model_ID,
           title: model.Purpose,
           body: model.Model_Formula,
-          tags: [model.Data_Table],
-          meta: [
-            { label: "数据表", value: model.Data_Table },
-            { label: "解释", value: model.Interpretation },
-          ],
+          tags: [],
+          meta: [{ label: "解释", value: model.Interpretation }],
         })),
       },
       {
-        id: "data_tables",
-        label: "数据表",
-        description: "正式分析与论文复现需要维护的数据结构。",
-        items: seedKnowledgeBase.data_tables.map((table) => ({
-          id: table.Table,
-          title: table.Table,
-          subtitle: table.Unit,
-          body: table.Purpose,
-          tags: [],
-          meta: [{ label: "关键字段", value: table.Key_Fields }],
-        })),
+        id: "analysis_design",
+        label: "分析口径",
+        description: "把当前实验的文件编码、密度条件、组内主检验和组间建模边界固定下来。",
+        items: projectAnalysisDesignReviewItems,
       },
       {
         id: "risks",
@@ -299,10 +346,6 @@ function buildSeedContext(prompt: string) {
     [item.Model_ID, item.Purpose, item.Data_Table, item.Model_Formula, item.Interpretation].join(" "),
   ).slice(0, 5);
 
-  const dataTables = rankItems(seedKnowledgeBase.data_tables, prompt, (item) =>
-    [item.Table, item.Unit, item.Key_Fields, item.Purpose].join(" "),
-  ).slice(0, 5);
-
   const risks = rankItems(seedKnowledgeBase.risks_and_fixes, prompt, (item) =>
     [item.Risk_ID, item.Risk, item.Why_it_matters, item.Fix, item.Sources].join(" "),
   ).slice(0, 4);
@@ -341,18 +384,17 @@ function buildSeedContext(prompt: string) {
     formatSeedSection(
       "Hypotheses",
       hypotheses,
-      (item) => `${item.Hypothesis_ID} ${item.Hypothesis}: ${item.Prediction} Table: ${item.Data_Table}. Model: ${item.Model_Formula}. Sources: ${item.Sources}. Note: ${item.Note}`,
+      (item) => `${item.Hypothesis_ID} ${item.Hypothesis}: ${item.Prediction}. Model: ${item.Model_Formula}. Sources: ${item.Sources}. Note: ${item.Note}`,
     ),
     formatSeedSection(
       "Analysis models",
       analysisModels,
-      (item) => `${item.Model_ID} ${item.Purpose}: ${item.Model_Formula}. Table: ${item.Data_Table}. Interpretation: ${item.Interpretation}`,
+      (item) => `${item.Model_ID} ${item.Purpose}: ${item.Model_Formula}. Interpretation: ${item.Interpretation}`,
     ),
-    formatSeedSection(
-      "Required data tables",
-      dataTables,
-      (item) => `${item.Table}: unit=${item.Unit}; fields=${item.Key_Fields}; purpose=${item.Purpose}`,
-    ),
+    [
+      "Project analysis design rules",
+      ...projectAnalysisDesignReviewItems.map((item) => `- ${item.id} ${item.title}: ${item.body}`),
+    ].join("\n"),
     formatSeedSection(
       "Risks and fixes",
       risks,

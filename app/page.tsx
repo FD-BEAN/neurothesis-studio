@@ -11,6 +11,15 @@ import {
 import type { SeedKnowledgeReview, SeedKnowledgeReviewItem, SeedLiteratureMatch } from "@/lib/knowledgeBase";
 import { isLiteratureDocument, parseLiteratureCard, type LiteratureKnowledgeCard } from "@/lib/literature";
 import { metroAiPrompt, researchProject } from "@/lib/researchProject";
+import {
+  compareXdfConditionNames,
+  densityLabels,
+  densityLevels,
+  inferXdfDensityLevel,
+  inferXdfRunLabel,
+  inferXdfSubjectId,
+  type DensityLevel,
+} from "@/lib/xdfNaming";
 
 type UploadState = "idle" | "uploading" | "done" | "error";
 
@@ -31,7 +40,6 @@ type SeedKnowledgeStats = {
   mechanisms: number;
   hypotheses: number;
   analysisModels: number;
-  dataTables: number;
   risksAndFixes: number;
   writingBlocks: number;
   quoteAnchors: number;
@@ -39,7 +47,6 @@ type SeedKnowledgeStats = {
 
 type LibraryFilter = "all" | "literature" | "raw-data" | "analysis" | "notes";
 type JobViewFilter = "all" | "active" | "completed" | "failed" | "stale";
-type DensityLevel = "low" | "medium" | "high";
 
 type HtmlReportArtifact = {
   storagePath: string;
@@ -129,13 +136,6 @@ const jobViewFilters: Array<{ id: JobViewFilter; label: string }> = [
   { id: "failed", label: "失败" },
   { id: "stale", label: "疑似卡住" },
 ];
-
-const densityLevels: DensityLevel[] = ["low", "medium", "high"];
-const densityLabels: Record<DensityLevel, string> = {
-  low: "低密度",
-  medium: "中密度",
-  high: "高密度",
-};
 
 const writingAssistantPresets = [
   {
@@ -1179,7 +1179,6 @@ function AnalysisQueueOverview({
           <h3>{jobViewFilters.find((item) => item.id === filter)?.label ?? "任务"} · {jobs.length}</h3>
         </div>
         <div className="top-actions">
-          <p className="muted compact-note">疑似卡住表示任务超过 10 分钟没有状态回写，通常需要查看 GitHub Actions 或重新提交。</p>
           <button className="secondary-button" disabled={!deletableJobs.length} onClick={() => onDeleteJobs(deletableJobs.map((job) => job.id))}>
             清理当前列表
           </button>
@@ -1270,7 +1269,7 @@ function SubjectBatchPanel({
         </span>
       </div>
       <p className="muted">
-        正式数据按 90 名被试 × 3 个密度条件组织。每个被试建议一次提交低密度、中密度、高密度 3 个 XDF；报告会输出被试内密度表和主 planned contrast：中密度 - 低/高密度平均。
+        正式数据按 90 名被试 × 3 个密度条件组织。文件编号 001/002/003 归为第 1 名被试，004/005/006 归为第 2 名被试，以此类推；Signature1/2/3 分别对应低/中/高密度。报告会输出被试内密度表和主 planned contrast：中密度 - 低/高密度平均。
       </p>
       <div className="design-strip" aria-label="分析设计">
         <span>90 被试</span>
@@ -1337,7 +1336,7 @@ function SubjectBatchPanel({
               );
             })
           ) : (
-            <p className="muted">还没有 XDF 文件。上传后会按文件名中的 sub- 编号推断分组。</p>
+            <p className="muted">还没有 XDF 文件。上传后会按文件编号三连组推断被试，并按 Signature 或编号位置推断低/中/高密度条件。</p>
           )}
         </div>
       </div>
@@ -1915,7 +1914,7 @@ function getBatchProgressFromMessage(message: string | null) {
 
 function getJobMessage(job: ResearchAnalysisJob) {
   if (isStaleJob(job)) {
-    return "超过 10 分钟没有状态回写。可能是 GitHub Actions 失败、Secret 不匹配，或 worker 启动前报错；建议查看 GitHub Actions 后重新提交。";
+    return job.status_message || job.error_message || "任务长时间未更新。";
   }
   return job.status_message || job.error_message || "等待 worker 更新任务状态。";
 }
@@ -1948,38 +1947,15 @@ function groupXdfDocumentsBySubject(documents: ResearchDocument[]) {
 }
 
 function inferSubjectIdFromFilename(filename: string) {
-  const bidsMatch = filename.match(/sub-([A-Za-z0-9]+)/i);
-  if (bidsMatch?.[1]) return `sub-${bidsMatch[1]}`;
-  const subjectMatch = filename.match(/(?:subject|subj|participant|p)[-_]?([A-Za-z0-9]+)/i);
-  if (subjectMatch?.[1]) return `sub-${subjectMatch[1]}`;
-  return "subject-unknown";
+  return inferXdfSubjectId(filename);
 }
 
 function inferRunLabelFromFilename(filename: string) {
-  const runMatch = filename.match(/run-([A-Za-z0-9]+)/i);
-  if (runMatch?.[1]) return `run-${runMatch[1]}`;
-  const signatureMatch = filename.match(/signature[-_]?([A-Za-z0-9]+)/i);
-  if (signatureMatch?.[1]) return `signature-${signatureMatch[1]}`;
-  return formatDocumentKind({ filename });
+  return inferXdfRunLabel(filename);
 }
 
 function inferDensityLevelFromFilename(filename: string): DensityLevel | null {
-  const normalized = filename.toLowerCase().replace(/_/g, "-");
-  if (/中等?密度|中密度|medium[-\s_]?density|density[-\s_]?medium|density[-\s_]?mid|condition[-\s_]?medium|level[-\s_]?2/.test(normalized)) {
-    return "medium";
-  }
-  if (/低密度|low[-\s_]?density|density[-\s_]?low|condition[-\s_]?low|level[-\s_]?1/.test(normalized)) {
-    return "low";
-  }
-  if (/高密度|high[-\s_]?density|density[-\s_]?high|condition[-\s_]?high|level[-\s_]?3/.test(normalized)) {
-    return "high";
-  }
-
-  const tokens = new Set(normalized.match(/[a-z0-9]+|[\u4e00-\u9fff]+/g) ?? []);
-  if (["medium", "mid", "med", "middle", "中", "中等"].some((token) => tokens.has(token))) return "medium";
-  if (["low", "lo", "sparse", "light", "低"].some((token) => tokens.has(token))) return "low";
-  if (["high", "hi", "dense", "heavy", "高"].some((token) => tokens.has(token))) return "high";
-  return null;
+  return inferXdfDensityLevel(filename);
 }
 
 function formatDensityLabel(level: DensityLevel | null) {
@@ -1998,10 +1974,5 @@ function summarizeDensityCoverage(documents: ResearchDocument[]) {
 }
 
 function compareXdfConditionOrder(a: string, b: string) {
-  const densityA = inferDensityLevelFromFilename(a);
-  const densityB = inferDensityLevelFromFilename(b);
-  const densityIndexA = densityA ? densityLevels.indexOf(densityA) : densityLevels.length;
-  const densityIndexB = densityB ? densityLevels.indexOf(densityB) : densityLevels.length;
-  if (densityIndexA !== densityIndexB) return densityIndexA - densityIndexB;
-  return inferRunLabelFromFilename(a).localeCompare(inferRunLabelFromFilename(b));
+  return compareXdfConditionNames(a, b);
 }

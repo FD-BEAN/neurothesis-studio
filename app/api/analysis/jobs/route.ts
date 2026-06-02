@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient, type ResearchAnalysisJob, type ResearchDocument } from "@/lib/supabase";
+import { inferXdfDensityLevel, inferXdfRunLabel, inferXdfSubjectId } from "@/lib/xdfNaming";
 
 type CreateJobBody = {
   documentId?: string;
@@ -18,8 +19,10 @@ const DENSITY_ANALYSIS_DESIGN = {
   expectedSubjects: 90,
   runsPerSubject: 3,
   expectedTotalRuns: 270,
+  fileCodingRule: "001/002/003 = subject 1; 004/005/006 = subject 2; each triplet is one within-subject density set",
   withinSubjectFactor: "density",
   densityLevels: ["low", "medium", "high"],
+  signatureMapping: { Signature1: "low", Signature2: "medium", Signature3: "high" },
   primaryHypothesis: "medium density has the highest cognitive load",
   primaryContrast: {
     name: "medium_minus_low_high_mean",
@@ -328,36 +331,13 @@ function uniqueStrings(values: string[]) {
 }
 
 function inferSubjectId(filename: string) {
-  const bidsMatch = filename.match(/sub-([A-Za-z0-9]+)/i);
-  if (bidsMatch?.[1]) return `sub-${bidsMatch[1]}`;
-  const subjectMatch = filename.match(/(?:subject|subj|participant|p)[-_]?([A-Za-z0-9]+)/i);
-  if (subjectMatch?.[1]) return `sub-${subjectMatch[1]}`;
-  return "subject-unknown";
+  return inferXdfSubjectId(filename);
 }
 
 function inferRunLabel(filename: string) {
-  const runMatch = filename.match(/run-([A-Za-z0-9]+)/i);
-  if (runMatch?.[1]) return `run-${runMatch[1]}`;
-  const signatureMatch = filename.match(/signature[-_]?([A-Za-z0-9]+)/i);
-  if (signatureMatch?.[1]) return `signature-${signatureMatch[1]}`;
-  return getExtension(filename).toUpperCase() || "file";
+  return inferXdfRunLabel(filename);
 }
 
 function inferDensityLevel(filename: string) {
-  const normalized = filename.toLowerCase().replace(/_/g, "-");
-  if (/中等?密度|中密度|medium[-\s_]?density|density[-\s_]?medium|density[-\s_]?mid|condition[-\s_]?medium|level[-\s_]?2/.test(normalized)) {
-    return "medium";
-  }
-  if (/低密度|low[-\s_]?density|density[-\s_]?low|condition[-\s_]?low|level[-\s_]?1/.test(normalized)) {
-    return "low";
-  }
-  if (/高密度|high[-\s_]?density|density[-\s_]?high|condition[-\s_]?high|level[-\s_]?3/.test(normalized)) {
-    return "high";
-  }
-
-  const tokens = new Set(normalized.match(/[a-z0-9]+|[\u4e00-\u9fff]+/g) ?? []);
-  if (["medium", "mid", "med", "middle", "中", "中等"].some((token) => tokens.has(token))) return "medium";
-  if (["low", "lo", "sparse", "light", "低"].some((token) => tokens.has(token))) return "low";
-  if (["high", "hi", "dense", "heavy", "高"].some((token) => tokens.has(token))) return "high";
-  return null;
+  return inferXdfDensityLevel(filename);
 }

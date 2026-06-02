@@ -548,7 +548,9 @@ def analyze_cohort_density(subject_rows: list[dict[str, Any]]) -> dict[str, Any]
             "expected_subjects": 90,
             "runs_per_subject": 3,
             "expected_total_runs": 270,
+            "file_coding_rule": "001/002/003 = subject 1; 004/005/006 = subject 2; each triplet is one within-subject density set",
             "within_subject_factor": "density",
+            "signature_mapping": {"Signature1": "low", "Signature2": "medium", "Signature3": "high"},
             "primary_contrast": "medium - mean(low, high)",
         },
         "metrics": [
@@ -625,8 +627,10 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
             "expected_subjects": 90,
             "runs_per_subject": 3,
             "expected_total_runs": 270,
+            "file_coding_rule": "001/002/003 = subject 1; 004/005/006 = subject 2; each triplet is one within-subject density set",
             "within_subject_factor": "density",
             "density_levels": list(DENSITY_LEVELS),
+            "signature_mapping": {"Signature1": "low", "Signature2": "medium", "Signature3": "high"},
             "primary_hypothesis": "medium density produces the highest cognitive load",
             "primary_contrast_weights": PRIMARY_CONTRAST_WEIGHTS,
         },
@@ -753,7 +757,7 @@ def extract_run_summary(document: dict[str, Any], report: dict[str, Any]) -> dic
     return {
         "file": file,
         "run_label": infer_run_label(file),
-        "subject": session_parts.get("subject") or infer_subject_id(file),
+        "subject": infer_subject_id(session_parts.get("subject") or file, fallback_filename=file),
         "session": session_parts.get("session", ""),
         "map": session_parts.get("map", ""),
         "signature": session_parts.get("signature", ""),
@@ -791,6 +795,13 @@ def infer_density_level(*values: Any) -> str:
     text = " ".join(str(value or "") for value in values).lower()
     compact = text.replace("_", "-")
 
+    if re.search(r"signature[-\s_]?2\b", compact):
+        return "medium"
+    if re.search(r"signature[-\s_]?1\b", compact):
+        return "low"
+    if re.search(r"signature[-\s_]?3\b", compact):
+        return "high"
+
     if re.search(r"中等?密度|中密度|medium[-\s_]?density|density[-\s_]?medium|density[-\s_]?mid|condition[-\s_]?medium|level[-\s_]?2", compact):
         return "medium"
     if re.search(r"低密度|low[-\s_]?density|density[-\s_]?low|condition[-\s_]?low|level[-\s_]?1", compact):
@@ -804,6 +815,13 @@ def infer_density_level(*values: Any) -> str:
     if tokens & {"low", "lo", "sparse", "light", "低"}:
         return "low"
     if tokens & {"high", "hi", "dense", "heavy", "高"}:
+        return "high"
+    run_position = infer_run_position(*values)
+    if run_position == 1:
+        return "low"
+    if run_position == 2:
+        return "medium"
+    if run_position == 3:
         return "high"
     return ""
 
@@ -821,8 +839,8 @@ def density_sort_key(level: str) -> int:
 
 def sort_run_rows_by_density(rows: list[dict[str, str]]) -> list[dict[str, str]]:
     if any(row.get("density") for row in rows):
-        return sorted(rows, key=lambda row: (density_sort_key(row.get("density", "")), row.get("run_label", ""), row.get("file", "")))
-    return rows
+        return sorted(rows, key=lambda row: (density_sort_key(row.get("density", "")), infer_sequence_index(row.get("file", "")) or 999999, row.get("run_label", ""), row.get("file", "")))
+    return sorted(rows, key=lambda row: (infer_sequence_index(row.get("file", "")) or 999999, row.get("run_label", ""), row.get("file", "")))
 
 
 def condition_label(row: dict[str, str]) -> str:
@@ -988,10 +1006,39 @@ def parse_session_label(label: str) -> dict[str, str]:
     return {key: parts[index] for index, key in enumerate(keys) if index < len(parts)}
 
 
-def infer_subject_id(filename: str) -> str:
+def infer_sequence_index(*values: Any) -> int | None:
     import re
 
-    match = re.search(r"sub-([A-Za-z0-9]+)", filename, re.IGNORECASE)
+    text = " ".join(str(value or "") for value in values)
+    patterns = [
+        r"(?:^|[^A-Za-z0-9])sub-?p?0*(\d{1,4})(?=[^0-9]|$)",
+        r"(?:^|[^A-Za-z0-9])(?:subject|subj|participant|p)[-_\s]?0*(\d{1,4})(?=[^0-9]|$)",
+        r"^0*(\d{1,4})$",
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            value = int(match.group(1))
+            if value > 0:
+                return value
+    return None
+
+
+def infer_run_position(*values: Any) -> int | None:
+    sequence_index = infer_sequence_index(*values)
+    if not sequence_index:
+        return None
+    return ((sequence_index - 1) % 3) + 1
+
+
+def infer_subject_id(filename: str, fallback_filename: str = "") -> str:
+    import re
+
+    sequence_index = infer_sequence_index(filename, fallback_filename)
+    if sequence_index:
+        return f"sub-{math.ceil(sequence_index / 3):03d}"
+
+    match = re.search(r"sub-([A-Za-z0-9]+)", f"{filename} {fallback_filename}", re.IGNORECASE)
     if match:
         return f"sub-{match.group(1)}"
     return "subject-unknown"
@@ -999,6 +1046,11 @@ def infer_subject_id(filename: str) -> str:
 
 def infer_run_label(filename: str) -> str:
     import re
+
+    sequence_index = infer_sequence_index(filename)
+    run_position = infer_run_position(filename)
+    if sequence_index and run_position:
+        return f"file-{sequence_index:03d} / condition-{run_position}"
 
     run = re.search(r"run-([A-Za-z0-9]+)", filename, re.IGNORECASE)
     if run:

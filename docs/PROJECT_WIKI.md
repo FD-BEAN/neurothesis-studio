@@ -245,7 +245,7 @@ XDF worker 目前输出：
 - 不把真实论文 PDF、XDF、EEG 原始数据或被试数据提交到公开 GitHub repo 的 `data` 目录。公开 GitHub 只保存代码、schema、wiki 和可公开的模板；私有数据优先放 Supabase private Storage。
 - GitHub Actions 的 `SUPABASE_SERVICE_ROLE_KEY` 可以使用新版 `sb_secret_...` 或旧版 JWT `service_role`。worker 请求头需要区分两者：新版 secret key 只放 `apikey`，旧版 JWT 才放 `Authorization: Bearer ...`。
 - 文件管理界面必须以“文件为中心”呈现分析状态：XDF 文件旁边直接显示未提交、排队、运行、完成、失败、疑似卡住；任务队列支持状态筛选和进度条。270 个实验文件不能只靠一串卡片堆叠。
-- XDF 正式分析必须支持“被试批量任务”：同一被试的低/中/高密度 3 个 XDF run 一起提交，先逐 run 做 QC，再汇总成 subject-level density table。核心组内因素是 Density；Metro/map、run order、signage version 可作为控制变量或辅助解释字段。组间因素需要用户额外提供 subject metadata 表，例如 subject_id、group、age、sex、VR experience、专业背景、实验顺序/分组等。
+- XDF 正式分析必须支持“被试批量任务”：同一被试的低/中/高密度 3 个 XDF run 一起提交，先逐 run 做 QC，再汇总成 subject-level density table。当前文件编码规则为 001/002/003 = 第 1 名被试，004/005/006 = 第 2 名被试，007/008/009 = 第 3 名被试，以此类推；Signature1/2/3 分别映射为低/中/高密度。核心组内因素是 Density；Metro/map、run order、signage version 可作为控制变量或辅助解释字段。组间因素需要用户额外提供 subject metadata 表，例如 subject_id、group、age、sex、VR experience、专业背景、实验顺序/分组等。
 - “数据分析与论文写作”还需要一个全样本汇总任务：读取已完成的被试批量报告，提取每名被试的 `medium - mean(low, high)` contrast，输出 n、均值、95% CI、t/p、Cohen dz 和结论口径。该汇总只能回答组内主假设；组间显著性需要额外 subject metadata 后再做 Density × Group 交互模型。
 - 运行完成、失败、配置错误、疑似卡住的任务应该能从界面删除，避免历史错误任务堆积影响判断。
 - XDF worker 的正式输出不要在 dashboard 内长篇展示；生成自包含 HTML report，存入 Supabase private Storage，并在任务列表中提供下载入口。页面只显示队列状态、进度和下载按钮。
@@ -266,7 +266,6 @@ XDF worker 目前输出：
 - 8 个 mechanisms
 - 6 个 hypotheses
 - 8 个 analysis models
-- 6 个 required data tables
 - 7 个 risks/fixes
 - 6 个 writing blocks
 - 10 个 defense QA
@@ -274,7 +273,7 @@ XDF worker 目前输出：
 
 公正评价：
 
-- 优点：这份 KB 已经把 PDF 从“文献堆”转换成了可写作、可建模、可答辩的中间知识层；尤其是 `Do_not_claim`、`How_to_use_in_Metro_Rescue`、`analysis_models` 和 `required data tables` 对论文非常有价值。
+- 优点：这份 KB 已经把 PDF 从“文献堆”转换成了可写作、可建模、可答辩的中间知识层；尤其是 `Do_not_claim`、`How_to_use_in_Metro_Rescue`、`analysis_models`、机制链条和写作块对论文非常有价值。
 - 风险：它不是完整全文 RAG，也不是最终参考文献库。当前内容多为 paraphrase 和短锚点，正式论文提交前，核心引用仍必须回到 PDF 核对页码、作者、年份、DOI 和原文表述。
 - 已修正：原始 `hypotheses` CSV/JSON 字段存在错位，接入 seed 时已修正为 `Prediction / Data_Table / Model_Formula / Sources / Note`。
 - 仍需增强：quote anchors 只有 14 条，少于 47 篇 source cards；后续核心 A 级文献应补页码锚点和可核验短引文。
@@ -297,7 +296,7 @@ XDF worker 目前输出：
 
 2026-06-01 增加“知识库审阅”主界面入口：
 
-- 用户可以直接查看内置 seed KB 的 source cards、claims、mechanisms、hypotheses、analysis models、data tables、risks/fixes、writing blocks、defense QA 和 quote anchors。
+- 用户可以直接查看内置 seed KB 的 source cards、claims、mechanisms、hypotheses、analysis models、分析口径、risks/fixes、writing blocks、defense QA 和 quote anchors。知识库审阅页不再展示 `data_tables` 作为知识内容；数据结构设计留在 wiki/schema/worker 报告中。
 - 审阅页采用分类切换和当前分类搜索，不把原始 JSON 一次性铺满页面。
 - 审阅页必须提示三条边界：seed KB 不是 PDF 全文库；历史 Signature1/2/3 命名需要统一为低/中/高 density condition；hypotheses / writing blocks / analysis models 不是实验结果。
 - 新增文献知识卡片仍作为 user-added literature card 展示在同一审阅入口下，写作助手可同时读取 seed KB 和新增卡片。
@@ -370,6 +369,14 @@ AI 不应该：
 - 真正不在内置 KB 里的新文献才走 PDF 文本抽取和 OpenAI 知识卡片生成流程。
 - 知识库审阅页只显示中文说明，不混用 seed bundle 原始英文提示。
 - claims、机制、假设、风险和引用锚点中的来源默认显示 S001 这类文献简写，字段名统一为“来源文献”；完整标题通过展开控件查看，避免列表过长。
+- 知识库审阅不显示 seed `data_tables` 分类；数据结构设计属于 schema/wiki/worker 报告，不作为文献知识内容展示。
+- PDF 文本抽取在 Vercel/Node 环境下需要安装最小 `DOMMatrix/ImageData/Path2D` polyfill，避免新增文献生成知识卡片时报 `DOMMatrix is not defined`。
+
+XDF 命名与分析规则：
+
+- `lib/xdfNaming.ts` 是前端和 API 共用的 XDF 命名推断规则。001/002/003 自动归为 `sub-001`，004/005/006 自动归为 `sub-002`，007/008/009 自动归为 `sub-003`。
+- Signature 映射固定为：Signature1 = low density，Signature2 = medium density，Signature3 = high density；如果文件名没有 Signature，则三连号中的第 1/2/3 个文件作为低/中/高密度 fallback。
+- Python worker 使用相同规则写入 HTML report：单个被试报告只给方向性 contrast；显著性需要全样本 `medium - mean(low, high)` 汇总或带 subject metadata 的 mixed-effects model。
 
 主界面顺序：
 

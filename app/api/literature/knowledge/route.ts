@@ -24,6 +24,126 @@ type LiteratureChunkDigest = {
   quoteAnchors: string[];
 };
 
+class PdfDomMatrixPolyfill {
+  a = 1;
+  b = 0;
+  c = 0;
+  d = 1;
+  e = 0;
+  f = 0;
+  is2D = true;
+
+  constructor(init?: string | number[]) {
+    if (Array.isArray(init)) {
+      this.a = Number(init[0] ?? 1);
+      this.b = Number(init[1] ?? 0);
+      this.c = Number(init[2] ?? 0);
+      this.d = Number(init[3] ?? 1);
+      this.e = Number(init[4] ?? 0);
+      this.f = Number(init[5] ?? 0);
+    }
+  }
+
+  static fromFloat32Array(array32: Float32Array) {
+    return new PdfDomMatrixPolyfill(Array.from(array32));
+  }
+
+  static fromFloat64Array(array64: Float64Array) {
+    return new PdfDomMatrixPolyfill(Array.from(array64));
+  }
+
+  static fromMatrix(other?: { a?: number; b?: number; c?: number; d?: number; e?: number; f?: number }) {
+    return new PdfDomMatrixPolyfill([other?.a ?? 1, other?.b ?? 0, other?.c ?? 0, other?.d ?? 1, other?.e ?? 0, other?.f ?? 0]);
+  }
+
+  get isIdentity() {
+    return this.a === 1 && this.b === 0 && this.c === 0 && this.d === 1 && this.e === 0 && this.f === 0;
+  }
+
+  multiplySelf(other?: PdfDomMatrixPolyfill) {
+    if (!other) return this;
+    const a = this.a * other.a + this.c * other.b;
+    const b = this.b * other.a + this.d * other.b;
+    const c = this.a * other.c + this.c * other.d;
+    const d = this.b * other.c + this.d * other.d;
+    const e = this.a * other.e + this.c * other.f + this.e;
+    const f = this.b * other.e + this.d * other.f + this.f;
+    Object.assign(this, { a, b, c, d, e, f });
+    return this;
+  }
+
+  preMultiplySelf(other?: PdfDomMatrixPolyfill) {
+    return other ? Object.assign(this, new PdfDomMatrixPolyfill([other.a, other.b, other.c, other.d, other.e, other.f]).multiplySelf(this)) : this;
+  }
+
+  translateSelf(tx = 0, ty = 0) {
+    this.e += tx;
+    this.f += ty;
+    return this;
+  }
+
+  scaleSelf(scaleX = 1, scaleY = scaleX) {
+    this.a *= scaleX;
+    this.d *= scaleY;
+    return this;
+  }
+
+  rotateSelf() {
+    return this;
+  }
+
+  invertSelf() {
+    const determinant = this.a * this.d - this.b * this.c;
+    if (!determinant) return this;
+    const a = this.d / determinant;
+    const b = -this.b / determinant;
+    const c = -this.c / determinant;
+    const d = this.a / determinant;
+    const e = (this.c * this.f - this.d * this.e) / determinant;
+    const f = (this.b * this.e - this.a * this.f) / determinant;
+    Object.assign(this, { a, b, c, d, e, f });
+    return this;
+  }
+
+  transformPoint(point: { x?: number; y?: number }) {
+    const x = Number(point.x ?? 0);
+    const y = Number(point.y ?? 0);
+    return { x: this.a * x + this.c * y + this.e, y: this.b * x + this.d * y + this.f, z: 0, w: 1 };
+  }
+
+  toFloat32Array() {
+    return Float32Array.from([this.a, this.b, 0, 0, this.c, this.d, 0, 0, 0, 0, 1, 0, this.e, this.f, 0, 1]);
+  }
+
+  toFloat64Array() {
+    return Float64Array.from(this.toFloat32Array());
+  }
+}
+
+class PdfImageDataPolyfill {
+  colorSpace = "srgb";
+
+  constructor(
+    public data: Uint8ClampedArray,
+    public width: number,
+    public height: number,
+  ) {}
+}
+
+class PdfPath2DPolyfill {}
+
+function installPdfNodePolyfills() {
+  const scope = globalThis as unknown as {
+    DOMMatrix?: unknown;
+    ImageData?: unknown;
+    Path2D?: unknown;
+  };
+
+  scope.DOMMatrix ??= PdfDomMatrixPolyfill;
+  scope.ImageData ??= PdfImageDataPolyfill;
+  scope.Path2D ??= PdfPath2DPolyfill;
+}
+
 export async function GET(request: Request) {
   const auth = await authenticate(request);
   if ("response" in auth) return auth.response;
@@ -163,6 +283,7 @@ async function extractDocumentText(supabase: ReturnType<typeof getSupabaseServer
 
   if (extension === "pdf" || document.mime_type?.includes("pdf")) {
     const buffer = Buffer.from(await fileBlob.arrayBuffer());
+    installPdfNodePolyfills();
     const { PDFParse } = (await import("pdf-parse")) as unknown as {
       PDFParse: new (options: { data: Buffer }) => {
         getText(options?: { first?: number; last?: number }): Promise<{ text?: string }>;
