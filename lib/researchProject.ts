@@ -161,7 +161,7 @@ export const researchProject = {
 };
 
 export const metroAiPrompt =
-  "请作为 Metro Rescue 论文写作者，基于文献知识库和已有 XDF 分析结果，直接写出论文正文：1) 路径确认信息链的研究问题与理论逻辑；2) 低/中/高路径确认支持的组内设计；3) 行动迟滞、路径判断准确率、感知信息可靠性、EEG 信息加工负荷与保护性行动指令清晰度的变量定义；4) 主假设 medium - mean(low, high) 的统计路线；5) Methods / Theory / Hypotheses / Results template 的英文正文；6) 目前不能过度声称的边界。";
+  "请作为 Metro Rescue 中文论文写作者，基于文献知识库和已有 XDF 分析结果，直接写出论文正文：1) 路径确认信息链的研究问题与理论逻辑；2) 低/中/高路径确认支持的组内设计；3) 行动迟滞、路径判断准确率、感知信息可靠性、EEG 信息加工负荷与保护性行动指令清晰度的变量定义；4) 主假设 medium - mean(low, high) 的统计路线；5) 引言、文献综述、理论假设、研究方法、结果模板和讨论的中文正文；6) 目前不能过度声称的边界。";
 
 export const projectWritingContext = [
   "Project: Metro Rescue, a VR subway evacuation wayfinding study with synchronized Unity LSL markers and EEG LabRecorder .xdf files.",
@@ -175,5 +175,5 @@ export const projectWritingContext = [
   "Primary planned contrast: medium - mean(low, high), weights low:-1, medium:2, high:-1.",
   "Primary data products: subject-level support-level table, EEG load proxy, theta/alpha ratio, frontal theta, posterior alpha, behavior hesitation proxy, completion time, decision accuracy, and event-window features around sign_readable and decision_point_enter.",
   "Statistics: within-subject route-confirmation support model first; between-subject conclusions require subject metadata and Support x Group interaction. Do not claim significance unless cohort summary or user-provided results support it.",
-  "Writing rule: produce manuscript-ready English paragraphs when asked for writing; put Chinese explanation, evidence trace, and limitations after the draft. Distinguish literature evidence, project hypotheses, and actual experimental results.",
+  "Writing rule: produce manuscript-ready Chinese academic paragraphs when asked for writing; keep English only for necessary variable names, model terms, marker names, and original paper titles. Put evidence trace and limitations after the draft. Distinguish literature evidence, project hypotheses, and actual experimental results.",
 ].join("\n");

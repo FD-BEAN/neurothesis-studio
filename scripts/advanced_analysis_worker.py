@@ -247,6 +247,7 @@ def render_html_report(report: dict[str, Any], job: dict[str, Any], generated_at
     charts = report.get("charts") if isinstance(report.get("charts"), list) else []
     tables = report.get("tables") if isinstance(report.get("tables"), list) else []
     notes = report.get("notes") if isinstance(report.get("notes"), list) else []
+    narrative_sections = report.get("narrativeSections") if isinstance(report.get("narrativeSections"), list) else []
 
     parts = [
         "<!doctype html><html lang='zh-CN'><head><meta charset='utf-8'>",
@@ -263,6 +264,9 @@ def render_html_report(report: dict[str, Any], job: dict[str, Any], generated_at
 
     if summary:
         parts.extend(["<section class='card'><h2>报告摘要</h2>", f"<p>{h(summary)}</p>", "</section>"])
+
+    if narrative_sections:
+        parts.append(render_narrative_sections(narrative_sections))
 
     if metrics:
         parts.append("<section class='metric-grid'>")
@@ -291,6 +295,8 @@ def render_html_report(report: dict[str, Any], job: dict[str, Any], generated_at
             y_label = chart.get("yLabel")
             if x_label or y_label:
                 parts.append(f"<p class='muted'>{h(x_label)} / {h(y_label)}</p>")
+            if chart.get("caption"):
+                parts.append(f"<p class='chart-caption'>{h(chart.get('caption'))}</p>")
             parts.append("</article>")
         parts.append("</section>")
 
@@ -315,6 +321,23 @@ def render_html_report(report: dict[str, Any], job: dict[str, Any], generated_at
             "</main></body></html>",
         ]
     )
+    return "".join(parts)
+
+
+def render_narrative_sections(sections: list[Any]) -> str:
+    parts = ["<section class='grid two narrative-grid'>"]
+    for section in sections:
+        if not isinstance(section, dict):
+            continue
+        paragraphs = section.get("paragraphs") if isinstance(section.get("paragraphs"), list) else []
+        if not paragraphs:
+            continue
+        parts.append("<article class='card narrative-card'>")
+        parts.append(f"<h2>{h(section.get('title', '结果解读'))}</h2>")
+        for paragraph in paragraphs:
+            parts.append(f"<p>{h(paragraph)}</p>")
+        parts.append("</article>")
+    parts.append("</section>")
     return "".join(parts)
 
 
@@ -515,6 +538,8 @@ def analyze_cohort_density(subject_rows: list[dict[str, Any]]) -> dict[str, Any]
 
     summary_rows = []
     metric_charts = []
+    metric_n_charts = []
+    metric_p_charts = []
     primary_result = None
     for metric, rows in sorted(by_metric.items(), key=lambda item: metric_priority(item[0])):
         values = [float(row["estimate"]) for row in rows]
@@ -536,6 +561,9 @@ def analyze_cohort_density(subject_rows: list[dict[str, Any]]) -> dict[str, Any]
             ]
         )
         metric_charts.append({"label": metric_label, "value": safe_chart_value(stats["mean"])})
+        metric_n_charts.append({"label": metric_label, "value": safe_chart_value(stats["n"])})
+        if stats["p"] is not None:
+            metric_p_charts.append({"label": metric_label, "value": safe_chart_value(stats["p"])})
 
     subject_table_rows = [
         [
@@ -566,6 +594,7 @@ def analyze_cohort_density(subject_rows: list[dict[str, Any]]) -> dict[str, Any]
         "kind": "Cohort Route-confirmation Support Summary",
         "subjectId": "cohort-density-summary",
         "summary": f"从 {len(unique_subjects)} 名被试的已完成批量报告中汇总低/中/高路径确认支持 planned contrast。主结论口径：{primary_text}",
+        "narrativeSections": build_cohort_narrative(unique_subjects, primary_result, summary_rows),
         "design": {
             "expected_subjects": 90,
             "runs_per_subject": 3,
@@ -587,6 +616,23 @@ def analyze_cohort_density(subject_rows: list[dict[str, Any]]) -> dict[str, Any]
                 "xLabel": "metric",
                 "yLabel": "medium - mean(low, high)",
                 "data": metric_charts,
+                "caption": "正值表示中等路径确认支持高于低/高支持平均，符合主假设方向；负值表示方向相反或不支持。",
+            },
+            {
+                "type": "bar",
+                "title": "各指标纳入被试数",
+                "xLabel": "metric",
+                "yLabel": "n",
+                "data": metric_n_charts,
+                "caption": "不同指标的可用被试数可能不同；正式写作时应报告主指标的 n，并说明缺失原因。",
+            },
+            {
+                "type": "bar",
+                "title": "各指标 p 值概览",
+                "xLabel": "metric",
+                "yLabel": "p value",
+                "data": metric_p_charts,
+                "caption": "该图仅用于快速检查，不替代多重比较控制和预注册主指标判断。",
             }
         ],
         "tables": [
@@ -612,6 +658,37 @@ def analyze_cohort_density(subject_rows: list[dict[str, Any]]) -> dict[str, Any]
         ],
         "notes": notes,
     }
+
+
+def build_cohort_narrative(unique_subjects: list[str], primary_result: dict[str, Any] | None, summary_rows: list[list[str]]) -> list[dict[str, Any]]:
+    n_subjects = len(unique_subjects)
+    primary_paragraph = (
+        f"当前全样本汇总纳入 {n_subjects} 名被试的已完成三条件报告。主指标为 {primary_result['metricLabel']}，"
+        f"其中 medium - mean(low, high) 的均值为 {fmt(primary_result['mean'])}，95% CI 为 {format_ci(primary_result)}，"
+        f"p={fmt_p(primary_result['p'])}，结论口径为“{primary_result['conclusion']}”。"
+        if primary_result
+        else f"当前全样本汇总纳入 {n_subjects} 名被试，但尚未形成 EEG load proxy 的完整主指标。应先检查各被试报告是否包含低/中/高三条件以及 EEG 特征。"
+    )
+    supported_metrics = [row for row in summary_rows if len(row) >= 8 and ("支持" in row[7])]
+    unsupported_metrics = [row for row in summary_rows if len(row) >= 8 and ("未支持" in row[7] or "反向" in row[7])]
+
+    return [
+        {
+            "title": "全样本结果解读",
+            "paragraphs": [
+                primary_paragraph,
+                f"当前共有 {len(summary_rows)} 个指标进入 planned contrast 汇总，其中 {len(supported_metrics)} 个指标方向上支持“中等路径确认支持最高”，{len(unsupported_metrics)} 个指标未支持或方向相反。写作时应以预先指定主指标为核心，其他指标作为一致性证据或探索性补充。",
+            ],
+        },
+        {
+            "title": "中文论文写作口径",
+            "paragraphs": [
+                "如果主指标达到显著且方向为正，可以写作：中等路径确认支持条件下，被试表现出高于低支持和高支持平均水平的信息加工负荷。若行为负荷、决策扫描或完成时长也呈同向结果，可进一步说明该效应在神经和行为层面具有一致性。",
+                "如果主指标未显著或方向不一致，应写作：当前数据未能支持中等路径确认支持最高的主假设，并转向解释可能的原因，例如条件操纵不足、样本量不足、个体策略差异、marker 覆盖不足或 EEG 噪声。",
+                "组间结论不能从该汇总自动推出。只有在 subject metadata 中提供分组变量后，才能进一步检验 SupportLevel × Group 交互。",
+            ],
+        },
+    ]
 
 
 def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]], reports: list[dict[str, Any]]) -> dict[str, Any]:
@@ -658,6 +735,7 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
         },
         "densityContrasts": contrast_json,
         "summary": "该报告把同一被试的低/中/高路径确认支持 XDF run 作为一个被试内单元处理：先逐文件完成 EEG + Unity marker QC，再汇总 run-level 行为、EEG 频带和事件窗指标，并计算主 planned contrast（中等支持 - 低/高支持平均）。",
+        "narrativeSections": build_subject_batch_narrative(subject_id, run_rows, contrast_json, complete_density_set),
         "metrics": [
             {"label": "被试编号", "value": str(subject_id)},
             {"label": "XDF run", "value": f"{len(run_rows)}/3"},
@@ -668,58 +746,7 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
             {"label": "附加条件", "value": str(len(audio_levels)), "text": " / ".join(audio_levels) or "-"},
             {"label": "平均时长", "value": fmt_seconds(float(np.mean(durations)) if durations else None)},
         ],
-        "charts": [
-            {
-                "type": "bar",
-                "title": "路径确认支持条件完成时长",
-                "xLabel": "support/run",
-                "yLabel": "seconds",
-                "data": [
-                    {"label": condition_label(row), "value": safe_chart_value(to_float(row.get("duration_s")))}
-                    for row in run_rows
-                ],
-            },
-            {
-                "type": "bar",
-                "title": "导航行为负荷代理指标",
-                "xLabel": "support/run",
-                "yLabel": "count",
-                "data": [
-                    {"label": condition_label(row), "value": safe_chart_value(to_float(row.get("behavior_load_proxy")))}
-                    for row in run_rows
-                ],
-            },
-            {
-                "type": "bar",
-                "title": "决策扫描与回退代理指标",
-                "xLabel": "support/run",
-                "yLabel": "index",
-                "data": [
-                    {"label": condition_label(row), "value": safe_chart_value(to_float(row.get("decision_load_proxy")))}
-                    for row in run_rows
-                ],
-            },
-            {
-                "type": "bar",
-                "title": "EEG load proxy",
-                "xLabel": "support/run",
-                "yLabel": "index",
-                "data": [
-                    {"label": condition_label(row), "value": safe_chart_value(to_float(row.get("eeg_load_proxy")))}
-                    for row in run_rows
-                ],
-            },
-            {
-                "type": "bar",
-                "title": "决策点事件窗 EEG load proxy",
-                "xLabel": "support/run",
-                "yLabel": "event-window index",
-                "data": [
-                    {"label": condition_label(row), "value": safe_chart_value(to_float(row.get("decision_point_enter_eeg_load_proxy")))}
-                    for row in run_rows
-                ],
-            },
-        ],
+        "charts": build_subject_batch_charts(run_rows, contrast_json),
         "tables": [
             {
                 "title": "被试内路径确认支持条件汇总",
@@ -808,6 +835,115 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
         ],
         "notes": notes[:12],
     }
+
+
+def build_subject_batch_charts(run_rows: list[dict[str, str]], contrast_json: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    charts = [
+        build_run_metric_chart(run_rows, "路径确认支持条件完成时长", "duration_s", "seconds", "完成时长用于检查行动迟滞的总体趋势，但正式结论应优先结合决策点停留、扫描和 EEG 事件窗。"),
+        build_run_metric_chart(run_rows, "可读标识覆盖率", "sign_readable_ratio", "ratio", "可读比例越高，通常代表现场线索更容易被确认；若中等支持仍表现出较高迟滞，需要结合连续性和关键决策点覆盖解释。"),
+        build_run_metric_chart(run_rows, "首次可读标识时间", "time_to_first_sign_readable_s", "seconds", "首次可读时间反映官方目标提醒后，个体多久能在环境中获得第一处可确认线索。"),
+        build_run_metric_chart(run_rows, "首次决策点时间", "time_to_first_decision_s", "seconds", "首次决策点时间有助于区分早期路径搜索负担和后续决策确认负担。"),
+        build_run_metric_chart(run_rows, "左右查看总次数", "decision_total_look_count", "count", "左右查看次数用于刻画路径确认过程中的主动扫描行为，是行动迟滞的行为侧证据。"),
+        build_run_metric_chart(run_rows, "双侧扫描次数", "decision_scan_both_count", "count", "双侧扫描次数越多，越可能说明个体在关键节点反复核对方向。"),
+        build_run_metric_chart(run_rows, "回退/掉头/停留低效事件", "navigation_inefficiency_proxy", "count", "该指标汇总停留、掉头和回退，用于描述路径执行中的低效行为，不应单独解释为认知负荷。"),
+        build_run_metric_chart(run_rows, "导航行为负荷代理指标", "behavior_load_proxy", "count", "行为负荷代理指标把停留、扫描、掉头和回退合并，用于与 EEG 指标互相印证。"),
+        build_run_metric_chart(run_rows, "决策扫描与回退代理指标", "decision_load_proxy", "index", "该指标对双侧扫描、停留、掉头和回退赋予更高权重，更贴近行动迟滞的决策过程。"),
+        build_run_metric_chart(run_rows, "EEG load proxy", "eeg_load_proxy", "index", "EEG load proxy 是基于额区 theta、后部 alpha 和 theta/alpha 的探索性负荷指标，正式论文中需说明其代理性质。"),
+        build_run_metric_chart(run_rows, "sign_readable 事件窗 EEG load", "sign_readable_eeg_load_proxy", "event-window index", "该图聚焦看清标识附近的 EEG 负荷，适合解释路径确认线索被读取时的信息加工。"),
+        build_run_metric_chart(run_rows, "decision_point_enter 事件窗 EEG load", "decision_point_enter_eeg_load_proxy", "event-window index", "该图聚焦进入决策点后的 EEG 负荷，最贴近行动迟滞和方向确认。"),
+        build_contrast_estimate_chart(contrast_json),
+    ]
+    return [chart for chart in charts if chart and chart.get("data")]
+
+
+def build_run_metric_chart(run_rows: list[dict[str, str]], title: str, metric: str, y_label: str, caption: str = "") -> dict[str, Any]:
+    data = []
+    for row in run_rows:
+        value = to_float(row.get(metric))
+        if value is None:
+            continue
+        data.append({"label": condition_label(row), "value": safe_chart_value(value)})
+    return {
+        "type": "bar",
+        "title": title,
+        "xLabel": "路径确认支持条件 / run",
+        "yLabel": y_label,
+        "data": data,
+        "caption": caption,
+    }
+
+
+def build_contrast_estimate_chart(contrast_json: list[dict[str, Any]]) -> dict[str, Any]:
+    priority_metrics = {
+        "eeg_load_proxy",
+        "decision_point_enter_eeg_load_proxy",
+        "sign_readable_eeg_load_proxy",
+        "decision_load_proxy",
+        "behavior_load_proxy",
+        "navigation_inefficiency_proxy",
+        "duration_s",
+    }
+    rows = [
+        item
+        for item in contrast_json
+        if isinstance(item, dict) and str(item.get("metric", "")) in priority_metrics and to_float(item.get("estimate")) is not None
+    ]
+    rows = sorted(rows, key=lambda item: metric_priority(str(item.get("metric", ""))))[:10]
+    return {
+        "type": "bar",
+        "title": "主 planned contrast 估计值",
+        "xLabel": "metric",
+        "yLabel": "medium - mean(low, high)",
+        "data": [{"label": str(item.get("metricLabel") or item.get("metric")), "value": safe_chart_value(item.get("estimate"))} for item in rows],
+        "caption": "正值表示中等路径确认支持高于低/高支持平均，符合主假设方向；单被试报告只能看方向，不能报告显著性。",
+    }
+
+
+def build_subject_batch_narrative(subject_id: str, run_rows: list[dict[str, str]], contrast_json: list[dict[str, Any]], complete_density_set: bool) -> list[dict[str, Any]]:
+    eeg_contrast = find_contrast(contrast_json, "eeg_load_proxy")
+    behavior_contrast = find_contrast(contrast_json, "behavior_load_proxy")
+    decision_contrast = find_contrast(contrast_json, "decision_load_proxy")
+    duration_contrast = find_contrast(contrast_json, "duration_s")
+    coverage_text = format_density_coverage(run_rows)
+    condition_count = len({row.get("density", "") for row in run_rows if row.get("density")})
+
+    return [
+        {
+            "title": "主要结果解读",
+            "paragraphs": [
+                f"本报告将 {subject_id} 的 {len(run_rows)} 个 XDF run 作为同一被试的组内数据处理，当前识别到的路径确认支持条件为：{coverage_text}。{'三种条件已完整覆盖，可以计算主 planned contrast。' if complete_density_set else f'当前只覆盖 {condition_count}/3 个条件，因此部分 contrast 只能作为检查结果。'}",
+                f"从 EEG 角度看，主负荷代理指标的中等支持 contrast 为 {contrast_sentence(eeg_contrast)}。该指标不是正式临床或神经诊断结论，而是用于比较路径确认条件下信息加工负荷变化的探索性特征。",
+                f"从行为角度看，导航行为负荷的 contrast 为 {contrast_sentence(behavior_contrast)}，决策扫描与回退代理指标的 contrast 为 {contrast_sentence(decision_contrast)}。如果行为负荷和 EEG 负荷方向一致，后续论文可把它写成多指标一致性证据；如果方向不一致，应优先解释为行为策略与神经负荷分离。",
+            ],
+        },
+        {
+            "title": "论文写作口径",
+            "paragraphs": [
+                "单个被试报告只能用于质控、特征检查和方向性观察，不能直接写成统计显著。正式结果应在 90 名被试层面汇总每人的 medium - mean(low, high) contrast，并进行 one-sample test 或 mixed-effects contrast。",
+                f"完成时长的 contrast 为 {contrast_sentence(duration_contrast)}。完成时长可以作为行动迟滞的总体行为指标，但论文中应同时报告首次可读标识时间、首次决策点时间、左右查看、双侧扫描、掉头和回退等更贴近路径确认过程的指标。",
+                "如果后续加入组间变量，例如 VR 经验、专业背景、性别或保护性行动指令清晰度，应在 subject metadata 中显式记录，再检验 SupportLevel × Group 交互，而不是把不同被试的单个 run 直接横向比较。",
+            ],
+        },
+    ]
+
+
+def find_contrast(contrast_json: list[dict[str, Any]], metric: str) -> dict[str, Any] | None:
+    for item in contrast_json:
+        if isinstance(item, dict) and item.get("metric") == metric:
+            return item
+    return None
+
+
+def contrast_sentence(item: dict[str, Any] | None) -> str:
+    if not item:
+        return "尚未形成，通常是低/中/高条件不完整或该指标缺失"
+    estimate = to_float(item.get("estimate"))
+    direction = str(item.get("direction") or "")
+    means = item.get("means") if isinstance(item.get("means"), dict) else {}
+    mean_text = ""
+    if means:
+        mean_text = f"（低={fmt(means.get('low'))}，中={fmt(means.get('medium'))}，高={fmt(means.get('high'))}）"
+    return f"{fmt(estimate)}，{direction}{mean_text}"
 
 
 def extract_run_summary(document: dict[str, Any], report: dict[str, Any]) -> dict[str, str]:
@@ -1233,6 +1369,7 @@ def analyze_xdf(document: dict[str, Any], path: Path) -> dict[str, Any]:
         tables.append(build_session_table(sessions))
     if primary_rows:
         tables.append(build_behavior_table(primary_rows, trial_window))
+        charts.extend(build_single_behavior_charts(primary_rows, trial_window))
         primary_events = {row.get("event", "") for row in primary_rows}
         if not set(START_EVENTS) & primary_events:
             notes.append("主 trial 缺少 map_start / trial_start / session_start，报告只能用该 session 的第一条 marker 估计开始时间。")
@@ -1263,6 +1400,7 @@ def analyze_xdf(document: dict[str, Any], path: Path) -> dict[str, Any]:
         "title": f"{document['filename']} XDF EEG + Unity marker 分析",
         "kind": "XDF EEG+Marker",
         "summary": summary,
+        "narrativeSections": build_single_xdf_narrative(document, streams, marker_rows, primary_rows, trial_window, eeg_report, notes),
         "metrics": [
             {"label": "stream 数", "value": str(len(streams))},
             {"label": "marker 数", "value": str(len(marker_rows))},
@@ -1271,10 +1409,130 @@ def analyze_xdf(document: dict[str, Any], path: Path) -> dict[str, Any]:
             {"label": "EEG stream", "value": str(len(eeg_streams))},
             {"label": "有效事件窗", "value": str(valid_event_epochs)},
         ],
-        "charts": [chart for chart in charts if chart and chart["data"]][:6],
+        "charts": [chart for chart in charts if chart and chart["data"]][:12],
         "tables": tables[:10],
         "notes": notes[:12],
     }
+
+
+def build_single_behavior_charts(rows: list[dict[str, Any]], window: dict[str, float] | None) -> list[dict[str, Any]]:
+    counts = Counter(row.get("event", "<no_event>") for row in rows)
+    charts = [
+        {
+            "type": "bar",
+            "title": "标识可见/可读事件",
+            "xLabel": "marker",
+            "yLabel": "count",
+            "data": [{"label": event, "value": int(counts.get(event, 0))} for event in SIGNAGE_EVENTS],
+            "caption": "用于检查被试是否经历了足够的现场路径确认线索，以及可见标识是否真正进入可读范围。",
+        },
+        {
+            "type": "bar",
+            "title": "决策点查看与扫描事件",
+            "xLabel": "marker",
+            "yLabel": "count",
+            "data": [{"label": event, "value": int(counts.get(event, 0))} for event in DECISION_EVENTS],
+            "caption": "左右查看和双侧扫描越多，越可能反映关键节点上的方向确认负担。",
+        },
+        {
+            "type": "bar",
+            "title": "停留、掉头与回退事件",
+            "xLabel": "marker",
+            "yLabel": "count",
+            "data": [{"label": event, "value": int(counts.get(event, 0))} for event in INEFFICIENCY_EVENTS],
+            "caption": "这些事件用于辅助描述导航低效和行动迟滞，但不能单独作为认知负荷结论。",
+        },
+        build_event_timeline_chart(rows, window),
+    ]
+    return [chart for chart in charts if chart and chart.get("data")]
+
+
+def build_event_timeline_chart(rows: list[dict[str, Any]], window: dict[str, float] | None) -> dict[str, Any]:
+    start_ts = window.get("start_ts") if window else None
+    if start_ts is None and rows:
+        start_ts = rows[0].get("_xdf_ts")
+    family_y = {
+        "audio": 1,
+        "sign": 2,
+        "decision": 3,
+        "inefficiency": 4,
+        "completion": 5,
+    }
+    data = []
+    for row in rows:
+        event = str(row.get("event", ""))
+        ts = to_float(row.get("_xdf_ts"))
+        if ts is None or start_ts is None:
+            continue
+        family = event_family(event)
+        if not family:
+            continue
+        data.append({"label": event, "x": round(ts - float(start_ts), 3), "y": family_y[family]})
+    return {
+        "type": "scatter",
+        "title": "主 trial 事件时间线",
+        "xLabel": "trial time (s)",
+        "yLabel": "event family: audio/sign/decision/inefficiency/completion",
+        "data": data[:300],
+        "caption": "时间线用于检查音频、标识可读、决策点和低效行为是否出现在合理顺序中；若开始/结束 marker 缺失，时间零点仅为估计。",
+    }
+
+
+def event_family(event: str) -> str:
+    if event == "audio_play":
+        return "audio"
+    if event in SIGNAGE_EVENTS:
+        return "sign"
+    if event in DECISION_EVENTS:
+        return "decision"
+    if event in INEFFICIENCY_EVENTS:
+        return "inefficiency"
+    if event == END_EVENT:
+        return "completion"
+    return ""
+
+
+def build_single_xdf_narrative(
+    document: dict[str, Any],
+    streams: list[dict[str, Any]],
+    marker_rows: list[dict[str, Any]],
+    primary_rows: list[dict[str, Any]],
+    trial_window: dict[str, float] | None,
+    eeg_report: dict[str, Any],
+    notes: list[str],
+) -> list[dict[str, Any]]:
+    counts = Counter(row.get("event", "<no_event>") for row in primary_rows)
+    duration = fmt_seconds(trial_window.get("duration_s") if trial_window else None)
+    readable_count = counts.get("sign_readable", 0)
+    decision_count = counts.get("decision_point_enter", 0)
+    scan_count = counts.get("decision_scan_both_sides", 0)
+    inefficiency_count = sum(counts.get(event, 0) for event in INEFFICIENCY_EVENTS)
+    valid_epochs = eeg_report.get("metrics", {}).get("valid_event_epochs", 0) if isinstance(eeg_report.get("metrics"), dict) else 0
+
+    return [
+        {
+            "title": "本 run 的数据完整性",
+            "paragraphs": [
+                f"文件 {document.get('filename', '')} 中共识别到 {len(streams)} 条 stream、{len(marker_rows)} 条 marker。主 trial 时长为 {duration}，其中 sign_readable 事件 {readable_count} 次，decision_point_enter 事件 {decision_count} 次。",
+                f"EEG 事件窗当前有效数量为 {valid_epochs}。如果该数字较低，应优先检查 EEG stream 覆盖、marker 时间戳是否落在 EEG 范围内，以及 LabRecorder 是否完整记录了任务过程。",
+            ],
+        },
+        {
+            "title": "行为与 EEG 的初步解读",
+            "paragraphs": [
+                f"本 run 中双侧扫描事件为 {scan_count} 次，停留/掉头/回退类低效事件合计 {inefficiency_count} 次。这些指标可以作为行动迟滞和路径确认负担的行为侧证据，但单个 run 不能用于显著性判断。",
+                "EEG 频带和事件窗指标用于描述任务期间的信息加工负荷，尤其应关注 sign_readable 和 decision_point_enter 附近的事件窗。正式论文应在同一被试的低/中/高路径确认支持条件之间比较这些指标，再进入全样本统计。",
+                "如果 marker 序列显示先出现官方提醒或音频，再出现标识可读、决策点、扫描和完成事件，则这份数据可较好支撑“官方目标提醒—现场路径确认—行动执行”的信息链分析。",
+            ],
+        },
+        {
+            "title": "写作时的限制",
+            "paragraphs": [
+                "单文件报告主要用于质控和特征提取。它可以写入方法部分作为数据处理流程示例，也可以用于排查异常 run；但不能直接写成研究假设获得支持。",
+                "如果报告中出现缺少开始/完成 marker、多个 EEG stream、EEG 覆盖不足或事件窗过少，应在正式分析前修正或建立排除规则。",
+            ],
+        },
+    ]
 
 
 def build_stream_table(streams: list[dict[str, Any]], selected_marker: dict[str, Any] | None, selected_eeg: dict[str, Any] | None) -> dict[str, Any]:
@@ -2241,6 +2499,17 @@ p { margin: 8px 0; }
 .metric span { display: block; color: var(--muted); font-size: 12px; font-weight: 800; }
 .metric strong { display: block; margin-top: 6px; font-size: 24px; }
 .metric p { color: var(--muted); font-size: 13px; }
+.narrative-grid { align-items: stretch; }
+.narrative-card p {
+  margin: 10px 0;
+  color: #31403d;
+  text-align: justify;
+}
+.chart-caption {
+  margin-top: 10px;
+  color: #4f625e;
+  font-size: 13px;
+}
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 14px; }
 th, td {

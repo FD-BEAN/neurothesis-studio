@@ -13,13 +13,14 @@ type RequestBody = {
 };
 
 const writingWorkflowProtocol = [
-  "Manuscript first: when the user requests writing, start with the exact paper section text, not advice, brainstorming, or a checklist.",
-  "Section-scale writing is allowed: if the user requests a whole section or chapter, produce a section-length draft with subheadings and connected paragraphs, then provide evidence tracing and caveats.",
-  "Evidence trace second: after the manuscript text, explain which literature cards, project hypotheses, analysis reports, or missing data support each claim.",
-  "Quality gate third: audit unsupported claims, page-number verification needs, missing metadata, and whether the requested section is allowed to state actual results.",
-  "Methods and results must be reproducible: name the XDF streams, Unity marker families, EEG windows/features, route-confirmation support mapping, planned contrasts, and required subject-level metadata when relevant.",
-  "Use the current theory frame: route-confirmation information chain, route-decision hesitation, perceived information reliability, EEG-indexed information-processing load, protective action instruction clarity, and wayfinding decision accuracy.",
-  "Do not smooth over uncertainty. If the literature only gives an analogy, say it is an analogy; if the analysis has not run on the full cohort, say it is a plan or preliminary output.",
+  "中文正文优先：用户要求写论文时，先输出可直接进入中文论文草稿的正文，而不是建议、头脑风暴或清单。",
+  "允许整节写作：如果用户要求整章或整节，输出带小标题、段落衔接和学术语气的中文整节草稿，再补证据追踪和边界。",
+  "英文只作术语保留：变量名、模型名、marker 名、统计式和文献原题可以保留英文；正文解释、论证和过渡句默认中文。",
+  "证据链放在正文之后：正文之后说明哪些文献卡、项目假设、分析报告或缺失数据支撑每一类论断。",
+  "质量门控放在最后：审计不受支持的结论、页码核验需求、缺失 metadata，以及该章节是否允许陈述真实结果。",
+  "方法和结果必须可复现：相关场景下要说明 XDF stream、Unity marker family、EEG 事件窗/特征、路径确认支持映射、planned contrast 和 subject-level metadata。",
+  "使用当前理论框架：路径确认信息链、行动迟滞、感知信息可靠性、EEG 信息加工负荷、保护性行动指令清晰度和路径判断准确率。",
+  "不抹平不确定性：文献只能类比时必须说是类比；全样本分析没完成时只能写计划或初步输出，不能写成结果。",
 ].join("\n- ");
 
 function buildAnswerStructure(outputMode?: string) {
@@ -29,17 +30,17 @@ function buildAnswerStructure(outputMode?: string) {
 
   if (wantsManuscript) {
     return [
-      "1. 论文正文（English manuscript text）：直接给出可进入草稿的连续英文段落或小节；句末用括号标注可追溯的文献代码、文献标题、文件名或分析报告线索。",
-      "2. 中文写作说明：解释段落逻辑、变量口径、组内/组间分析边界，以及哪些句子只是研究假设。",
+      "1. 中文论文正文：直接给出可进入草稿的连续中文段落或小节；必要时在句末用括号标注可追溯的文献代码、文献标题、文件名或分析报告线索。",
+      "2. 写作说明：解释段落逻辑、变量口径、组内/组间分析边界，以及哪些句子只是研究假设。",
       "3. 证据链与引用线索：列出使用到的文献代码、文献标题、文件名、知识卡字段或分析报告标题。",
       "4. 不能声称/待补数据：列出缺少真实结果、缺少页码核验、缺少 subject metadata、缺少统计量或模型输出的内容。",
-      "5. 可继续扩写的位置：说明下一步可以扩展成哪个小节、表格、图注或 Results 段落。",
+      "5. 可继续扩写的位置：说明下一步可以扩展成哪个小节、表格、图注或结果段落。",
     ].join("\n");
   }
 
   if (wantsAudit) {
     return [
-      "1. 改写后正文：先给出可以替换原文的英文段落或中文段落。",
+      "1. 改写后正文：先给出可以替换原文的中文论文段落。",
       "2. 主要修改理由：说明逻辑、证据、措辞和结论边界如何被收紧。",
       "3. 证据链与引用线索：列出使用到的文献代码、文献标题、文件名或分析报告标题。",
       "4. 不能声称/待补数据：列出仍需核验或等待真实分析结果的部分。",
@@ -104,7 +105,7 @@ export async function POST(request: Request) {
       {
         role: "system",
         content:
-          "You are a bilingual thesis manuscript writer for the Metro Rescue project. Your default job is to draft the requested paper section itself, not merely advise the user. Start with polished, conservative academic prose when the task asks for manuscript writing; put planning, evidence tracing, and caveats after the draft. If the user asks for an entire part, write a section-length draft with subheadings and connected paragraphs. Use the current theoretical frame: official target alerts must be connected to on-site route-confirmation cues; medium route-confirmation support can create a reliable-but-unclosed information chain, increasing route-decision hesitation and EEG-indexed information-processing load. Use the project snapshot, literature knowledge base, uploaded-paper cards, and completed analysis-report summaries together. Cite source IDs, paper titles, filenames, or report titles when you rely on them. Distinguish four layers: literature evidence, project-specific hypothesis, actual experimental result, and missing information. Do not invent findings, p-values, effect sizes, sample completion numbers, page numbers, bibliographic details, or causal conclusions. If a quote anchor requires verification, say it needs page verification before final submission. Chinese should be the default for explanations and audit notes; polished English should be the default for manuscript-ready text.",
+          "你是 Metro Rescue 项目的中文论文写作者。你的默认任务是直接写出用户要求的论文章节，而不是只给建议。用户要求写作时，先输出稳健、连续、可以进入中文论文草稿的学术正文；计划、证据链和边界放在正文之后。如果用户要求整节或整章，就写带小标题和段落衔接的中文整节草稿。英文只用于必要的变量名、统计式、marker 名、模型名和文献原题，不要默认输出英文论文段落。使用当前理论框架：官方目标提醒必须与现场路径确认线索衔接；中等路径确认支持可能形成“可靠但未闭合”的信息链，从而增加行动迟滞和 EEG 表征的信息加工负荷。综合使用项目快照、文献知识库、上传论文卡和已完成分析报告摘要。依赖文献或分析时标注文献代码、论文标题、文件名或报告标题。严格区分四层：文献证据、项目特定假设、真实实验结果、缺失信息。不要编造结果、p 值、效应量、样本完成数、页码、书目信息或因果结论。引用锚点未核验时，要说明正式提交前需要回原文核对页码和语境。",
       },
       {
         role: "user",
@@ -196,7 +197,7 @@ function summarizeAnalysisJob(job: AnalysisJobRow) {
     `[Analysis ${job.analysis_type}] ${title}`,
     summary ? `Summary: ${summary}` : "",
     metrics ? `Metrics: ${metrics}` : "",
-    contrasts ? `Density contrasts: ${contrasts}` : "",
+    contrasts ? `Route-confirmation support planned contrasts: ${contrasts}` : "",
     notes ? `Notes: ${notes}` : "",
   ]
     .filter(Boolean)

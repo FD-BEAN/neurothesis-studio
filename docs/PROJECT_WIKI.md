@@ -16,7 +16,7 @@ NeuroThesis Studio 是给中国研究生使用的私人论文研究工作台，�
 - LSL marker
 - LabRecorder `.xdf`
 - Python / MATLAB 分析
-- 英文论文写作，同时保留中文解释
+- 中文论文写作；英文只保留必要变量名、模型名、marker 名和文献原题
 
 产品应该像一个安静、可长期使用的研究桌面，而不是刻意展示功能的 SaaS dashboard。
 
@@ -427,7 +427,7 @@ XDF 命名与分析规则：
 3. XDF 质控：stream 检查、session 切分、marker 完整性、EEG stream 选择
 4. EEG 分析：MNE-Python / EEGLAB 预处理脚本模板和 trial/event-level 特征表
 5. 批量实验数据：支持 90 名被试 × 3 个路径确认支持条件的 XDF 上传、排队和结果汇总
-6. 写作模块：英文 Methods、Introduction 证据链、Discussion 风险点
+6. 写作模块：中文引言、文献综述、研究方法、结果模板、讨论与证据链
 7. 场景与标识配置：当前暂不作为主界面模块，未来确有需要再恢复
 
 ## 给后续开发者或 Codex 的提醒

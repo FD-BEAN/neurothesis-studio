@@ -52,12 +52,12 @@ const workspaceModules = [
   {
     href: "#pipeline",
     title: "数据分析与论文写作",
-    text: "XDF 质量检查、行为数据、EEG 预处理和英文论文段落。",
+    text: "XDF 质量检查、行为数据、EEG 预处理和中文论文正文。",
   },
   {
     href: "#ai",
     title: "文献与写作助手",
-    text: "基于已入库论文知识卡片生成文献矩阵、Methods 草稿和分析计划。",
+    text: "基于已入库论文知识卡片生成文献综述、方法正文、结果模板和分析计划。",
   },
   {
     href: "#files",
@@ -137,7 +137,7 @@ const writingTaskModes = [
   {
     id: "methods-analysis",
     label: "写方法与分析",
-    description: "生成 Methods / Analysis Plan 的正文、模型说明和变量口径。",
+    description: "生成方法、分析计划的中文正文、模型说明和变量口径。",
   },
   {
     id: "evidence-map",
@@ -154,15 +154,15 @@ const writingTaskModes = [
 type WritingTaskModeId = (typeof writingTaskModes)[number]["id"];
 
 const writingTargetSections = [
-  { id: "introduction", label: "Introduction / Related Work" },
-  { id: "literature-review", label: "Literature Review" },
-  { id: "theory-hypotheses", label: "Theory and Hypotheses" },
-  { id: "variables-measures", label: "Variables and Measures" },
-  { id: "methods", label: "Methods" },
-  { id: "analysis-plan", label: "Analysis Plan" },
-  { id: "results", label: "Results" },
-  { id: "discussion", label: "Discussion" },
-  { id: "abstract", label: "Abstract" },
+  { id: "introduction", label: "引言 / 相关研究" },
+  { id: "literature-review", label: "文献综述" },
+  { id: "theory-hypotheses", label: "理论模型与研究假设" },
+  { id: "variables-measures", label: "变量与测量" },
+  { id: "methods", label: "研究方法" },
+  { id: "analysis-plan", label: "统计分析计划" },
+  { id: "results", label: "结果" },
+  { id: "discussion", label: "讨论" },
+  { id: "abstract", label: "摘要" },
 ] as const;
 
 type WritingTargetSectionId = (typeof writingTargetSections)[number]["id"];
@@ -179,7 +179,7 @@ const writingProtocolRules = [
   "引用必须来自文献知识库、已上传文献卡或真实分析报告。",
   "显著性、效应量、样本完成情况和页码不能编造。",
   "区分文献证据、项目假设、真实实验结果和需要补充的信息。",
-  "英文段落要保守、连续、可直接放进论文草稿。",
+  "中文段落要保守、连续、可直接放进论文草稿；英文只保留必要术语和文献原题。",
 ];
 
 const writingWorkflowPresets: Array<{
@@ -190,12 +190,12 @@ const writingWorkflowPresets: Array<{
   prompt: string;
 }> = [
   {
-    label: "Introduction 正文",
+    label: "引言正文",
     mode: "section-draft",
     section: "introduction",
     output: "manuscript",
     prompt:
-      "请直接起草 Introduction 的英文论文正文，形成一个完整小节而不是提纲：从公共空间应急疏散中的官方提醒与现场标识脱节、路径确认信息链、accuracy-effort trade-off，到本研究为什么用 VR 地铁撤离和 EEG 检验行动迟滞。正文后再给出中文证据说明、可引用文献和不能声称的边界。",
+      "请直接起草“引言”的中文论文正文，形成一个完整小节而不是提纲：从公共空间应急疏散中的官方提醒与现场标识脱节、路径确认信息链、准确性-努力权衡，到本研究为什么用 VR 地铁撤离和 EEG 检验行动迟滞。正文后再给出证据说明、可引用文献和不能声称的边界。",
   },
   {
     label: "文献综述整节",
@@ -203,7 +203,7 @@ const writingWorkflowPresets: Array<{
     section: "literature-review",
     output: "manuscript",
     prompt:
-      "请写 Literature Review 的完整英文小节，主题是 route-confirmation information chain in emergency wayfinding。需要整合 emergency wayfinding、signage/route confirmation、warning/protective action instruction、VR evacuation、EEG cognitive load 五类文献。不要只列文献，要写成有逻辑推进的论文段落，并在段落后给出中文证据链和缺口。",
+      "请写“文献综述”的完整中文小节，主题是应急导向中的路径确认信息链。需要整合应急寻路、标识/路径确认、预警与保护性行动指令、VR 疏散实验、EEG 认知负荷五类文献。不要只列文献，要写成有逻辑推进的论文段落，并在段落后给出证据链和研究缺口。",
   },
   {
     label: "理论模型与假设",
@@ -211,7 +211,7 @@ const writingWorkflowPresets: Array<{
     section: "theory-hypotheses",
     output: "manuscript",
     prompt:
-      "请写 Theory and Hypotheses 的完整英文部分。核心模型为：X=route-confirmation support level，Y=route-decision hesitation，M1=perceived information reliability，M2=EEG-indexed information-processing load，W=protective action instruction clarity，辅助因变量=wayfinding decision accuracy。请逐步写出 H1-H5 的理论推导，尤其解释为什么中等支持是“可靠但未闭合”的状态，会导致最高迟滞和最高信息加工负荷。",
+      "请写“理论模型与研究假设”的完整中文部分。核心模型为：X=路径确认支持水平，Y=行动迟滞，M1=感知信息可靠性，M2=EEG 表征的信息加工负荷，W=保护性行动指令清晰度，辅助因变量=路径判断准确率。请逐步写出 H1-H5 的理论推导，尤其解释为什么中等支持是“可靠但未闭合”的状态，会导致最高迟滞和最高信息加工负荷。",
   },
   {
     label: "变量与测量",
@@ -219,15 +219,15 @@ const writingWorkflowPresets: Array<{
     section: "variables-measures",
     output: "manuscript",
     prompt:
-      "请写 Variables and Measures 的英文正文，覆盖：route-confirmation support level 的四个操纵维度（first confirmation cue proximity, chain continuity, decision-point coverage, average cue spacing）；route-decision hesitation 的客观指标；wayfinding decision accuracy；perceived information reliability 的问卷项；information-processing load 的 EEG/事件窗指标；protective action instruction clarity 的操纵。不要编造尚未确认的设备参数、样本完成数或统计结果。",
+      "请写“变量与测量”的中文论文正文，覆盖：路径确认支持水平的四个操纵维度（首次确认线索接近性、确认链连续性、关键决策点覆盖、平均线索间距）；行动迟滞的客观指标；路径判断准确率；感知信息可靠性的问卷项；信息加工负荷的 EEG/事件窗指标；保护性行动指令清晰度的操纵。不要编造尚未确认的设备参数、样本完成数或统计结果。",
   },
   {
-    label: "Methods 正文",
+    label: "研究方法正文",
     mode: "methods-analysis",
     section: "methods",
     output: "manuscript",
     prompt:
-      "请起草 Methods 相关英文正文，覆盖 participants/design、VR metro rescue task、low/medium/high route-confirmation support condition、protective action instruction clarity、Unity marker 与 LabRecorder XDF 同步、EEG 指标和行为指标。不要编造设备参数、实际样本完成数或尚未确认的排除标准。",
+      "请起草“研究方法”的中文论文正文，覆盖被试与设计、VR 地铁撤离任务、低/中/高路径确认支持条件、保护性行动指令清晰度、Unity marker 与 LabRecorder XDF 同步、EEG 指标和行为指标。不要编造设备参数、实际样本完成数或尚未确认的排除标准。",
   },
   {
     label: "统计分析计划",
@@ -235,10 +235,10 @@ const writingWorkflowPresets: Array<{
     section: "analysis-plan",
     output: "structured",
     prompt:
-      "请写一份可放入论文或预注册说明的 Analysis Plan：90 名被试、每人 3 个 route-confirmation support run；sub001/sub002/sub003 归为 P01，sub004/sub005/sub006 归为 P02；Signature1/2/3 分别映射为低/中/高路径确认支持；主检验为 medium - mean(low, high)。请说明组内模型、组间变量需要哪些 metadata、事件窗 EEG 指标、行动迟滞指标、路径判断准确率和多重比较策略。",
+      "请写一份可放入论文或预注册说明的中文统计分析计划：90 名被试、每人 3 个路径确认支持 run；sub001/sub002/sub003 归为 P01，sub004/sub005/sub006 归为 P02；Signature1/2/3 分别映射为低/中/高路径确认支持；主检验为 medium - mean(low, high)。请说明组内模型、组间变量需要哪些 metadata、事件窗 EEG 指标、行动迟滞指标、路径判断准确率和多重比较策略。",
   },
   {
-    label: "Results 模板",
+    label: "结果模板",
     mode: "section-draft",
     section: "results",
     output: "manuscript",
@@ -246,7 +246,7 @@ const writingWorkflowPresets: Array<{
       "请生成 Results 写作模板。只能使用已完成 XDF 或 cohort 报告中的真实统计结果；如果上下文没有真实结果，请用清晰占位符标记需要填入的统计量、置信区间、p 值和图表编号，不要写成已经显著。",
   },
   {
-    label: "Discussion 边界",
+    label: "讨论边界",
     mode: "review-revision",
     section: "discussion",
     output: "audit",
