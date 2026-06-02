@@ -453,7 +453,7 @@ function buildUserLiteratureContext(cards: LiteratureKnowledgeCard[], prompt: st
       card.qualityCaveats?.join(" ") ?? "",
     ].join(" "),
   )
-    .slice(0, 12)
+    .slice(0, 24)
     .map(({ item: card }, index) =>
       [
         `[U${index + 1}] ${card.title || card.filename}`,

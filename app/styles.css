@@ -348,6 +348,7 @@ label {
 }
 
 input,
+select,
 textarea {
   width: 100%;
   border: 1px solid var(--line);
@@ -356,7 +357,8 @@ textarea {
   color: var(--ink);
 }
 
-input {
+input,
+select {
   min-height: 44px;
   padding: 0 12px;
 }
@@ -945,6 +947,68 @@ textarea {
 .assistant-task-panel {
   display: grid;
   gap: 14px;
+}
+
+.writing-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.writing-mode-button {
+  min-height: 96px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--ink);
+  text-align: left;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.writing-mode-button span,
+.writing-protocol span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.writing-mode-button.is-active {
+  border-color: #84b5ac;
+  background: #f1f8f6;
+}
+
+.writing-control-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.writing-protocol {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  display: grid;
+  gap: 8px;
+}
+
+.writing-protocol span {
+  position: relative;
+  padding-left: 16px;
+}
+
+.writing-protocol span::before {
+  content: "";
+  position: absolute;
+  top: 0.62em;
+  left: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
 }
 
 .prompt-preset-grid {
@@ -1701,6 +1765,8 @@ textarea {
   .batch-controls,
   .batch-layout,
   .ai-grid,
+  .writing-mode-grid,
+  .writing-control-grid,
   .seed-review-summary,
   .seed-review-layout,
   .seed-review-controls,

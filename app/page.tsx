@@ -10,7 +10,7 @@ import {
 } from "@/lib/supabase";
 import type { SeedKnowledgeReview, SeedKnowledgeReviewItem, SeedLiteratureMatch } from "@/lib/knowledgeBase";
 import { isLiteratureDocument, parseLiteratureCard, type LiteratureKnowledgeCard } from "@/lib/literature";
-import { metroAiPrompt, researchProject } from "@/lib/researchProject";
+import { researchProject } from "@/lib/researchProject";
 import {
   compareXdfConditionNames,
   densityLabels,
@@ -128,36 +128,111 @@ const jobViewFilters: Array<{ id: JobViewFilter; label: string }> = [
   { id: "stale", label: "疑似卡住" },
 ];
 
-const writingAssistantPresets = [
+const writingTaskModes = [
   {
-    label: "文献综述矩阵",
-    prompt:
-      "请基于文献知识库，整理一份面向 Introduction 的文献综述矩阵：按 VR/地铁撤离、导向标识与 wayfinding、EEG/认知负荷、密度/信息复杂度、统计方法 五类组织。每类给出可写入论文的中文要点、英文句子草稿、证据来源、不能过度声称的边界。",
+    id: "evidence-map",
+    label: "证据矩阵",
+    description: "把论点拆成文献证据、项目假设和待验证结果。",
   },
   {
-    label: "理论逻辑",
-    prompt:
-      "请把本研究的理论逻辑写清楚：为什么低密度可能信息不足、高密度可能冗余或搜索成本高、中密度反而可能认知负荷最高。请区分文献支持、项目假设和需要实验验证的部分，并给出可写入 Introduction 的英文段落。",
+    id: "section-draft",
+    label: "章节草稿",
+    description: "生成可进入论文的连续段落，并保留引用边界。",
   },
   {
-    label: "Methods 草稿",
+    id: "methods-analysis",
+    label: "方法与分析",
+    description: "围绕实验设计、XDF、EEG 指标和统计模型写作。",
+  },
+  {
+    id: "review-revision",
+    label: "审稿式修改",
+    description: "检查逻辑、证据、措辞和过度声称风险。",
+  },
+] as const;
+
+type WritingTaskModeId = (typeof writingTaskModes)[number]["id"];
+
+const writingTargetSections = [
+  { id: "introduction", label: "Introduction / Related Work" },
+  { id: "methods", label: "Methods" },
+  { id: "analysis-plan", label: "Analysis Plan" },
+  { id: "results", label: "Results" },
+  { id: "discussion", label: "Discussion" },
+  { id: "abstract", label: "Abstract" },
+] as const;
+
+type WritingTargetSectionId = (typeof writingTargetSections)[number]["id"];
+
+const writingOutputModes = [
+  { id: "structured", label: "结构化提纲 + 写作要点" },
+  { id: "manuscript", label: "中英双语论文段落" },
+  { id: "audit", label: "证据审计与修改建议" },
+] as const;
+
+type WritingOutputModeId = (typeof writingOutputModes)[number]["id"];
+
+const writingProtocolRules = [
+  "引用必须来自文献知识库、已上传文献卡或真实分析报告。",
+  "显著性、效应量、样本完成情况和页码不能编造。",
+  "区分文献证据、项目假设、真实实验结果和需要补充的信息。",
+  "英文段落要保守、连续、可直接放进论文草稿。",
+];
+
+const writingWorkflowPresets: Array<{
+  label: string;
+  mode: WritingTaskModeId;
+  section: WritingTargetSectionId;
+  output: WritingOutputModeId;
+  prompt: string;
+}> = [
+  {
+    label: "Introduction 证据链",
+    mode: "evidence-map",
+    section: "introduction",
+    output: "structured",
     prompt:
-      "请基于当前项目理解，起草英文 Methods 小节：Participants/Design, VR task and signage-density manipulation, Unity markers and behavioral measures, EEG recording and XDF synchronization, preprocessing and feature extraction。要保守，不编造设备参数或样本完成情况。",
+      "请围绕本研究的 Introduction 建立证据链：从 VR/室内疏散导航、导向标识信息设计、EEG 认知负荷测量，到本研究的密度条件假设。请按“论点-文献依据-可写句子-不能声称”组织，并标出最适合引用的文献代码或文献标题。",
+  },
+  {
+    label: "Methods 正文",
+    mode: "methods-analysis",
+    section: "methods",
+    output: "manuscript",
+    prompt:
+      "请起草 Methods 相关英文正文，覆盖 participants/design、VR metro rescue task、low/medium/high density condition、Unity marker 与 LabRecorder XDF 同步、EEG 指标和行为指标。不要编造设备参数、实际样本完成数或尚未确认的排除标准。",
   },
   {
     label: "统计分析计划",
+    mode: "methods-analysis",
+    section: "analysis-plan",
+    output: "structured",
     prompt:
-      "请写一份 Analysis Plan：说明 90 名被试 × 低/中/高密度的组内设计、主 planned contrast medium - mean(low, high)、EEG 与行为指标、subject-level contrast、mixed-effects model、组间变量需要的 metadata，以及多指标报告策略。",
+      "请写一份可放入论文或预注册说明的 Analysis Plan：90 名被试、每人 3 个 density run；001/002/003 为同一被试，004/005/006 为下一被试；Signature1/2/3 分别映射为低/中/高密度；主检验为 medium - mean(low, high)。请说明组内模型、组间变量需要哪些 metadata、事件窗 EEG 指标、行为指标和多重比较策略。",
   },
   {
-    label: "结果写作模板",
+    label: "Results 模板",
+    mode: "section-draft",
+    section: "results",
+    output: "manuscript",
     prompt:
-      "请基于已完成的 XDF/全样本分析报告摘要，生成 Results 写作模板。如果没有足够结果，请只写占位结构和需要填入的统计量，不要编造显著性。包括中文解释和英文论文段落框架。",
+      "请生成 Results 写作模板。只能使用已完成 XDF 或 cohort 报告中的真实统计结果；如果上下文没有真实结果，请用清晰占位符标记需要填入的统计量、置信区间、p 值和图表编号，不要写成已经显著。",
   },
   {
-    label: "Discussion 风险",
+    label: "Discussion 边界",
+    mode: "review-revision",
+    section: "discussion",
+    output: "audit",
     prompt:
-      "请整理 Discussion 可以讨论的机制、贡献、局限和替代解释，特别关注 VR 生态效度、EEG 指标解释、标识密度操控、组内/组间统计、样本量与多重比较。请列出哪些结论必须等真实结果支持。",
+      "请整理 Discussion 的可讨论机制、替代解释、局限和不能过度声称的边界。重点检查中等密度最高认知负荷这一假设是否有文献类比支持、哪些内容必须等真实 EEG/行为结果支持，以及 VR 生态效度、marker 同步、个体差异和组内/组间分析的风险。",
+  },
+  {
+    label: "审稿式自查",
+    mode: "review-revision",
+    section: "discussion",
+    output: "audit",
+    prompt:
+      "请像审稿人一样检查当前写作思路：研究问题是否清楚、文献证据是否足够、变量定义是否一致、Density condition 与 Signature 命名是否混用、EEG 指标解释是否过度、统计模型是否匹配 90×3 的组内设计。请给出可执行修改清单。",
   },
 ];
 
@@ -321,9 +396,10 @@ function Workspace({
   const [uploadMessage, setUploadMessage] = useState("");
   const [xdfUploadState, setXdfUploadState] = useState<UploadState>("idle");
   const [xdfUploadMessage, setXdfUploadMessage] = useState("");
-  const [researchNote, setResearchNote] = useState(
-    metroAiPrompt,
-  );
+  const [writingMode, setWritingMode] = useState<WritingTaskModeId>("evidence-map");
+  const [writingSection, setWritingSection] = useState<WritingTargetSectionId>("introduction");
+  const [writingOutputMode, setWritingOutputMode] = useState<WritingOutputModeId>("structured");
+  const [researchNote, setResearchNote] = useState(writingWorkflowPresets[0].prompt);
   const [aiState, setAiState] = useState<AiState>({ status: "idle", output: "" });
   const [analysisJobs, setAnalysisJobs] = useState<ResearchAnalysisJob[]>([]);
   const [jobMessage, setJobMessage] = useState("");
@@ -338,6 +414,11 @@ function Workspace({
   const [jobsLastLoadedAt, setJobsLastLoadedAt] = useState<string | null>(null);
   const [selectedBatchIds, setSelectedBatchIds] = useState<string[]>([]);
   const [batchSubjectId, setBatchSubjectId] = useState("");
+  const selectedWritingMode = writingTaskModes.find((mode) => mode.id === writingMode) ?? writingTaskModes[0];
+  const selectedWritingSection =
+    writingTargetSections.find((section) => section.id === writingSection) ?? writingTargetSections[0];
+  const selectedWritingOutput =
+    writingOutputModes.find((outputMode) => outputMode.id === writingOutputMode) ?? writingOutputModes[0];
 
   useEffect(() => {
     void loadDocuments();
@@ -617,6 +698,9 @@ function Workspace({
       body: JSON.stringify({
         prompt: researchNote,
         context,
+        taskMode: selectedWritingMode.label,
+        targetSection: selectedWritingSection.label,
+        outputMode: selectedWritingOutput.label,
       }),
     });
 
@@ -1118,34 +1202,87 @@ function Workspace({
           <div className="section-head">
             <div>
               <p className="eyebrow">文献与写作助手</p>
-              <h2>文献整理、方法撰写与分析计划</h2>
+              <h2>证据驱动写作工作台</h2>
             </div>
             <button className="primary-button" onClick={runAiAssistant} disabled={aiState.status === "loading"}>
-              {aiState.status === "loading" ? "分析中..." : "运行 AI"}
+              {aiState.status === "loading" ? "生成中..." : "生成写作结果"}
             </button>
           </div>
 
           <div className="ai-grid">
             <section className="work-panel assistant-task-panel">
               <h3>写作任务</h3>
+              <div className="writing-mode-grid">
+                {writingTaskModes.map((mode) => (
+                  <button
+                    className={`writing-mode-button ${writingMode === mode.id ? "is-active" : ""}`}
+                    key={mode.id}
+                    type="button"
+                    onClick={() => setWritingMode(mode.id)}
+                  >
+                    <strong>{mode.label}</strong>
+                    <span>{mode.description}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="writing-control-grid">
+                <label>
+                  目标章节
+                  <select value={writingSection} onChange={(event) => setWritingSection(event.target.value as WritingTargetSectionId)}>
+                    {writingTargetSections.map((section) => (
+                      <option key={section.id} value={section.id}>
+                        {section.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  输出形式
+                  <select
+                    value={writingOutputMode}
+                    onChange={(event) => setWritingOutputMode(event.target.value as WritingOutputModeId)}
+                  >
+                    {writingOutputModes.map((outputMode) => (
+                      <option key={outputMode.id} value={outputMode.id}>
+                        {outputMode.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
               <div className="prompt-preset-grid">
-                {writingAssistantPresets.map((preset) => (
-                  <button className="secondary-button" key={preset.label} type="button" onClick={() => setResearchNote(preset.prompt)}>
+                {writingWorkflowPresets.map((preset) => (
+                  <button
+                    className="secondary-button"
+                    key={preset.label}
+                    type="button"
+                    onClick={() => {
+                      setWritingMode(preset.mode);
+                      setWritingSection(preset.section);
+                      setWritingOutputMode(preset.output);
+                      setResearchNote(preset.prompt);
+                    }}
+                  >
                     {preset.label}
                   </button>
                 ))}
               </div>
+              <div className="writing-protocol" aria-label="写作约束">
+                {writingProtocolRules.map((rule) => (
+                  <span key={rule}>{rule}</span>
+                ))}
+              </div>
               <label>
-                给 AI 的任务
-                <textarea value={researchNote} rows={10} onChange={(event) => setResearchNote(event.target.value)} />
+                具体写作要求
+                <textarea value={researchNote} rows={9} onChange={(event) => setResearchNote(event.target.value)} />
               </label>
             </section>
             <section className="work-panel ai-output">
-              <h3>输出</h3>
+              <h3>写作结果</h3>
               <p className="muted">
-                回答会结合项目设计、文献知识库和已完成分析报告；显著性结论只来自真实报告或你明确提供的数据。
+                当前任务：{selectedWritingMode.label} · {selectedWritingSection.label} · {selectedWritingOutput.label}
               </p>
-              <pre>{aiState.output || "运行后，这里会显示整理结果。"}</pre>
+              <pre>{aiState.output || "生成后，这里会显示可审阅、可追溯的写作结果。"}</pre>
             </section>
           </div>
         </section>

@@ -8,6 +8,9 @@ import { projectWritingContext } from "@/lib/researchProject";
 type RequestBody = {
   prompt?: string;
   context?: string;
+  taskMode?: string;
+  targetSection?: string;
+  outputMode?: string;
 };
 
 export async function POST(request: Request) {
@@ -28,7 +31,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid or expired Supabase session." }, { status: 401 });
   }
 
-  const { prompt, context } = (await request.json()) as RequestBody;
+  const { prompt, context, taskMode, targetSection, outputMode } = (await request.json()) as RequestBody;
 
   if (!prompt?.trim()) {
     return NextResponse.json({ error: "Prompt is required." }, { status: 400 });
@@ -58,11 +61,11 @@ export async function POST(request: Request) {
       {
         role: "system",
         content:
-          "You are a bilingual thesis writing and literature-synthesis assistant for the Metro Rescue project. Use the project snapshot, literature knowledge base, and completed analysis-report summaries together. Cite source IDs, paper titles, filenames, or report titles when you rely on them. Distinguish literature evidence, project-specific hypotheses, and the user's own experimental results. Do not invent findings, p-values, page numbers, bibliographic details, or causal conclusions. If a quote anchor says it requires verification, say it needs page verification before final submission. Chinese should be the default for planning and explanation; produce polished English only for manuscript-ready text when asked.",
+          "You are a bilingual thesis writing collaborator for the Metro Rescue project. Work like an evidence-driven academic writing workflow, not a generic chatbot: clarify the task, use traceable evidence, draft conservatively, and audit the boundary of every claim. Use the project snapshot, literature knowledge base, uploaded-paper cards, and completed analysis-report summaries together. Cite source IDs, paper titles, filenames, or report titles when you rely on them. Distinguish four layers: literature evidence, project-specific hypothesis, actual experimental result, and missing information. Do not invent findings, p-values, effect sizes, sample completion numbers, page numbers, bibliographic details, or causal conclusions. If a quote anchor requires verification, say it needs page verification before final submission. Chinese should be the default for planning and explanation; produce polished English only for manuscript-ready text when asked.",
       },
       {
         role: "user",
-        content: `Project snapshot:\n${projectWritingContext}\n\nKnowledge base inventory: ${seedStats.sources + userCards.length} literature source cards, ${seedStats.claims} claims, ${seedStats.mechanisms} mechanisms, ${seedStats.hypotheses} hypotheses, ${seedStats.analysisModels} analysis models.\n\nLiterature knowledge base:\n${knowledgeContext}\n\nCompleted analysis context:\n${analysisContext}\n\nCurrent selected-file context:\n${context || "No file context provided."}\n\nAnswer format guidance:\n- Start from the specific writing task, not a generic project overview.\n- Use clear sections such as 可写入论文, 证据依据, 不能声称, 下一步需要补充.\n- When drafting English manuscript text, keep it conservative and cite the evidence source in brackets.\n\nTask:\n${prompt}`,
+        content: `Project snapshot:\n${projectWritingContext}\n\nWriting task profile:\n- Task mode: ${taskMode || "未指定"}\n- Target section: ${targetSection || "未指定"}\n- Output mode: ${outputMode || "未指定"}\n\nKnowledge base inventory: ${seedStats.sources + userCards.length} literature source cards, ${seedStats.claims} claims, ${seedStats.mechanisms} mechanisms, ${seedStats.hypotheses} hypotheses, ${seedStats.analysisModels} analysis models.\n\nLiterature knowledge base:\n${knowledgeContext}\n\nCompleted analysis context:\n${analysisContext}\n\nCurrent selected-file context:\n${context || "No file context provided."}\n\nRequired answer structure:\n1. 任务理解：只写与当前写作任务直接相关的范围。\n2. 可用于论文的内容：如果是正文草稿，用连续段落；如果是计划或审计，用紧凑结构。\n3. 证据依据：列出使用到的文献代码、文献标题、文件名或分析报告标题。\n4. 不能声称：列出缺少真实数据、缺少页码核验或证据不足的内容。\n5. 需要补充：列出用户下一步应补充的材料、metadata、统计输出或原文核验点。\n6. 英文论文段落：仅在 output mode 要求论文段落时提供，保持保守并在句末用括号标注来源线索。\n\nTask:\n${prompt}`,
       },
     ],
   });
@@ -78,7 +81,7 @@ async function loadLiteratureKnowledgeCards(supabase: ReturnType<typeof getSupab
     .select("id,filename,mime_type,notes")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
-    .limit(40);
+    .limit(120);
 
   const cards = (data ?? [])
     .filter(isLiteratureDocument)
