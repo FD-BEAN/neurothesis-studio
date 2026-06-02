@@ -34,8 +34,11 @@ type LiteratureKnowledgeEntry = {
   seedMatch: SeedLiteratureMatch | null;
 };
 
-type LibraryFilter = "all" | "literature" | "raw-data" | "analysis" | "notes";
+type LibraryFilter = "all" | "literature" | "analysis" | "notes";
 type JobViewFilter = "all" | "active" | "completed" | "failed" | "stale";
+
+const RESEARCH_FILE_ACCEPT = ".pdf,.doc,.docx,.csv,.tsv,.xlsx,.txt,.md,.svg,.png,.jpg,.jpeg,.json,.jsonl,.py,.m,.ipynb";
+const XDF_FILE_ACCEPT = ".xdf";
 
 type HtmlReportArtifact = {
   storagePath: string;
@@ -88,7 +91,7 @@ const documentCategories = [
     id: "materials",
     label: "辅助材料",
     description: "暂存的非主线研究资料；当前不在主界面展示。",
-    extensions: ["svg", "png", "jpg", "jpeg", "md"],
+    extensions: ["svg", "png", "jpg", "jpeg"],
   },
   {
     id: "raw-data",
@@ -106,14 +109,13 @@ const documentCategories = [
     id: "notes",
     label: "研究笔记",
     description: "读书笔记、讨论记录、图表说明和写作备忘。",
-    extensions: ["txt"],
+    extensions: ["txt", "md"],
   },
 ];
 
 const libraryFilters: Array<{ id: LibraryFilter; label: string }> = [
   { id: "all", label: "全部" },
   { id: "literature", label: "文献" },
-  { id: "raw-data", label: "XDF/原始数据" },
   { id: "analysis", label: "分析产物" },
   { id: "notes", label: "笔记" },
 ];
@@ -317,6 +319,8 @@ function Workspace({
   const [selectedDocument, setSelectedDocument] = useState<ResearchDocument | null>(null);
   const [uploadState, setUploadState] = useState<UploadState>("idle");
   const [uploadMessage, setUploadMessage] = useState("");
+  const [xdfUploadState, setXdfUploadState] = useState<UploadState>("idle");
+  const [xdfUploadMessage, setXdfUploadMessage] = useState("");
   const [researchNote, setResearchNote] = useState(
     metroAiPrompt,
   );
@@ -346,14 +350,15 @@ function Workspace({
     return () => window.clearInterval(intervalId);
   }, []);
 
+  const researchDocuments = useMemo(() => documents.filter((document) => !isXdfDocument(document)), [documents]);
   const groupedDocuments = useMemo(
     () => {
       const query = libraryQuery.trim().toLowerCase();
       return documentCategories
-        .filter((category) => category.id !== "materials")
+        .filter((category) => category.id !== "materials" && category.id !== "raw-data")
         .map((category) => ({
           ...category,
-          documents: documents.filter((document) => {
+          documents: researchDocuments.filter((document) => {
             const documentCategory = getDocumentCategory(document);
             const matchesCategory = libraryFilter === "all" || documentCategory.id === libraryFilter;
             const matchesQuery =
@@ -364,13 +369,19 @@ function Workspace({
           }),
         }));
     },
-    [documents, libraryFilter, libraryQuery],
+    [researchDocuments, libraryFilter, libraryQuery],
   );
   const selectedCategory = selectedDocument ? getDocumentCategory(selectedDocument) : null;
   const selectedDocumentIsLiterature = selectedDocument ? isLiteratureDocument(selectedDocument) : false;
   const totalStoredBytes = documents.reduce((total, document) => total + (document.size_bytes ?? 0), 0);
+  const researchStoredBytes = researchDocuments.reduce((total, document) => total + (document.size_bytes ?? 0), 0);
   const filteredDocumentCount = groupedDocuments.reduce((total, group) => total + group.documents.length, 0);
-  const literatureDocuments = useMemo(() => documents.filter(isLiteratureDocument), [documents]);
+  const literatureDocuments = useMemo(() => researchDocuments.filter(isLiteratureDocument), [researchDocuments]);
+  const analysisProductDocuments = useMemo(
+    () => researchDocuments.filter((document) => getDocumentCategory(document).id === "analysis"),
+    [researchDocuments],
+  );
+  const noteDocuments = useMemo(() => researchDocuments.filter((document) => getDocumentCategory(document).id === "notes"), [researchDocuments]);
   const xdfDocuments = useMemo(() => documents.filter(isXdfDocument), [documents]);
   const selectedBatchDocuments = useMemo(
     () => xdfDocuments.filter((document) => selectedBatchIds.includes(document.id)),
@@ -413,7 +424,10 @@ function Workspace({
 
     const nextDocuments = (data ?? []) as ResearchDocument[];
     setDocuments(nextDocuments);
-    setSelectedDocument((current) => current ?? nextDocuments[0] ?? null);
+    setSelectedDocument((current) => {
+      const currentStillVisible = current ? nextDocuments.some((document) => document.id === current.id) && !isXdfDocument(current) : false;
+      return currentStillVisible ? current : nextDocuments.find((document) => !isXdfDocument(document)) ?? null;
+    });
   }
 
   async function loadAnalysisJobs() {
@@ -455,41 +469,28 @@ function Workspace({
     setSeedKnowledgeReview(payload.seedReview ?? null);
   }
 
-  async function handleUpload(event: React.ChangeEvent<HTMLInputElement>) {
+  async function handleResearchUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? []);
     if (!files.length) return;
+    const xdfFiles = files.filter((file) => isXdfUploadFile(file));
+
+    if (xdfFiles.length) {
+      setUploadState("error");
+      setUploadMessage("研究资料库不接收 XDF。请到“数据分析与写作”里的 XDF 上传入口上传实验数据。");
+      event.target.value = "";
+      return;
+    }
 
     setUploadState("uploading");
     setUploadMessage("");
 
     let uploaded = 0;
     for (const file of files) {
-      const storagePath = buildStoragePath(user.id, file.name, getUploadCollection(file.name, file.type));
-      const { error: uploadError } = await supabase.storage.from("research-files").upload(storagePath, file, {
-        cacheControl: "3600",
-        upsert: false,
-      });
-
-      if (uploadError) {
+      try {
+        await uploadDocumentFile(file, getResearchUploadCollection(file.name, file.type));
+      } catch (error) {
         setUploadState("error");
-        setUploadMessage(`已上传 ${uploaded}/${files.length} 个文件；${file.name} 上传失败：${uploadError.message}`);
-        event.target.value = "";
-        await loadDocuments();
-        return;
-      }
-
-      const { error: insertError } = await supabase.from("research_documents").insert({
-        user_id: user.id,
-        filename: file.name,
-        storage_path: storagePath,
-        mime_type: file.type || null,
-        size_bytes: file.size,
-        notes: "",
-      });
-
-      if (insertError) {
-        setUploadState("error");
-        setUploadMessage(`已上传 ${uploaded}/${files.length} 个文件；${file.name} 元数据保存失败：${insertError.message}`);
+        setUploadMessage(`已上传 ${uploaded}/${files.length} 个研究资料；${error instanceof Error ? error.message : "上传失败"}`);
         event.target.value = "";
         await loadDocuments();
         return;
@@ -499,10 +500,71 @@ function Workspace({
     }
 
     setUploadState("done");
-    setUploadMessage(`${uploaded} 个文件已上传到私有存储。文献、XDF 原始数据和分析产物会按类型分区显示。`);
+    setUploadMessage(`${uploaded} 个研究资料已上传到私有存储。文献、笔记、脚本和分析产物会在研究资料库中分区显示。`);
     event.target.value = "";
     await loadDocuments();
     await loadKnowledgeBase();
+  }
+
+  async function handleXdfUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []);
+    if (!files.length) return;
+    const nonXdfFiles = files.filter((file) => !isXdfUploadFile(file));
+
+    if (nonXdfFiles.length) {
+      setXdfUploadState("error");
+      setXdfUploadMessage("XDF 上传入口只接收 LabRecorder .xdf 文件。文献、脚本和笔记请上传到研究资料库。");
+      event.target.value = "";
+      return;
+    }
+
+    setXdfUploadState("uploading");
+    setXdfUploadMessage("");
+
+    let uploaded = 0;
+    for (const file of files) {
+      try {
+        await uploadDocumentFile(file, "xdf-raw");
+      } catch (error) {
+        setXdfUploadState("error");
+        setXdfUploadMessage(`已上传 ${uploaded}/${files.length} 个 XDF；${error instanceof Error ? error.message : "上传失败"}`);
+        event.target.value = "";
+        await loadDocuments();
+        return;
+      }
+
+      uploaded += 1;
+    }
+
+    setXdfUploadState("done");
+    setXdfUploadMessage(`${uploaded} 个 XDF 已上传到实验数据区。系统会按 001/002/003 三连号推断被试，并按 Signature1/2/3 推断低/中/高密度。`);
+    event.target.value = "";
+    await loadDocuments();
+  }
+
+  async function uploadDocumentFile(file: File, collection: string) {
+    const storagePath = buildStoragePath(user.id, file.name, collection);
+    const { error: uploadError } = await supabase.storage.from("research-files").upload(storagePath, file, {
+      cacheControl: "3600",
+      upsert: false,
+    });
+
+    if (uploadError) {
+      throw new Error(`${file.name} 上传失败：${uploadError.message}`);
+    }
+
+    const { error: insertError } = await supabase.from("research_documents").insert({
+      user_id: user.id,
+      filename: file.name,
+      storage_path: storagePath,
+      mime_type: file.type || null,
+      size_bytes: file.size,
+      notes: "",
+    });
+
+    if (insertError) {
+      throw new Error(`${file.name} 元数据保存失败：${insertError.message}`);
+    }
   }
 
   async function openSignedUrl(document: ResearchDocument) {
@@ -814,20 +876,26 @@ function Workspace({
           <div className="section-head">
             <div>
               <p className="eyebrow">研究资料库</p>
-              <h2>文件、XDF 分析任务与结果状态</h2>
+              <h2>文献、笔记、脚本与写作材料</h2>
             </div>
             <div className="top-actions">
-              <button className="secondary-button" onClick={loadAnalysisJobs}>
-                刷新状态
+              <button
+                className="secondary-button"
+                onClick={() => {
+                  void loadDocuments();
+                  void loadKnowledgeBase();
+                }}
+              >
+                刷新资料
               </button>
               <label className="file-button">
                 <input
                   type="file"
                   multiple
-                  accept=".pdf,.doc,.docx,.csv,.tsv,.xlsx,.mat,.set,.edf,.txt,.md,.svg,.png,.jpg,.jpeg,.xdf,.json,.jsonl,.py,.m,.ipynb"
-                  onChange={handleUpload}
+                  accept={RESEARCH_FILE_ACCEPT}
+                  onChange={handleResearchUpload}
                 />
-                {uploadState === "uploading" ? "上传中..." : "批量上传文件"}
+                {uploadState === "uploading" ? "上传资料中..." : "上传研究资料"}
               </label>
             </div>
           </div>
@@ -835,12 +903,10 @@ function Workspace({
           {uploadMessage ? <p className={`notice ${uploadState}`}>{uploadMessage}</p> : null}
 
           <div className="library-status-grid">
-            <StatusMetric label="总文件" value={documents.length} text={formatBytes(totalStoredBytes)} />
+            <StatusMetric label="资料文件" value={researchDocuments.length} text={formatBytes(researchStoredBytes)} />
             <StatusMetric label="文献文件" value={literatureDocuments.length} text="PDF / DOC / TXT / MD" />
-            <StatusMetric label="XDF 文件" value={xdfDocuments.length} text="EEG + Unity marker 原始数据" />
-            <StatusMetric label="进行中" value={xdfJobStats.active} text="pending / queued / running" />
-            <StatusMetric label="已完成" value={xdfJobStats.completed} text="可下载 HTML 报告" />
-            <StatusMetric label="失败/需处理" value={xdfJobStats.failed + xdfJobStats.stale} text="失败或长时间未更新" tone="warn" />
+            <StatusMetric label="分析产物" value={analysisProductDocuments.length} text="脚本、表格与中间结果" />
+            <StatusMetric label="研究笔记" value={noteDocuments.length} text="TXT / MD" />
           </div>
 
           <div className="manager-toolbar">
@@ -849,7 +915,7 @@ function Workspace({
               <input
                 type="search"
                 value={libraryQuery}
-                placeholder="按文件名、subject、run、扩展名搜索"
+                placeholder="按标题、文件名、扩展名搜索"
                 onChange={(event) => setLibraryQuery(event.target.value)}
               />
             </label>
@@ -1005,9 +1071,21 @@ function Workspace({
               <button className="secondary-button" onClick={loadAnalysisJobs}>
                 刷新任务
               </button>
+              <label className="file-button">
+                <input type="file" multiple accept={XDF_FILE_ACCEPT} onChange={handleXdfUpload} />
+                {xdfUploadState === "uploading" ? "上传 XDF 中..." : "上传 XDF"}
+              </label>
             </div>
           </div>
+          {xdfUploadMessage ? <p className={`notice ${xdfUploadState}`}>{xdfUploadMessage}</p> : null}
           {jobMessage ? <p className="notice">{jobMessage}</p> : null}
+          <div className="library-status-grid pipeline-status-grid">
+            <StatusMetric label="XDF 文件" value={xdfDocuments.length} text="LabRecorder EEG + Unity marker" />
+            <StatusMetric label="已选择" value={selectedBatchIds.length} text="准备提交批量分析" />
+            <StatusMetric label="进行中" value={xdfJobStats.active} text="pending / queued / running" />
+            <StatusMetric label="已完成" value={xdfJobStats.completed} text="可下载 HTML 报告" />
+            <StatusMetric label="失败/需处理" value={xdfJobStats.failed + xdfJobStats.stale} text="失败或长时间未更新" tone="warn" />
+          </div>
           <SubjectBatchPanel
             documents={xdfDocuments}
             groups={inferredSubjectGroups}
@@ -1691,12 +1769,15 @@ function buildStoragePath(userId: string, filename: string, collection = "docume
   return `${userId}/${safeCollection}/${uniquePrefix}-${base}${extension ? `.${extension}` : ""}`;
 }
 
-function getUploadCollection(filename: string, mimeType: string) {
+function getResearchUploadCollection(filename: string, mimeType: string) {
   const extension = getDocumentExtension(filename);
   if (["pdf", "doc", "docx"].includes(extension) || mimeType.includes("pdf")) return "literature";
-  if (["xdf", "edf", "set", "mat"].includes(extension)) return "xdf-raw";
   if (["py", "m", "ipynb", "csv", "tsv", "xlsx", "json", "jsonl"].includes(extension)) return "analysis-products";
   return "documents";
+}
+
+function isXdfUploadFile(file: File) {
+  return getDocumentExtension(file.name) === "xdf";
 }
 
 function buildLatestJobByDocumentId(jobs: ResearchAnalysisJob[]) {
