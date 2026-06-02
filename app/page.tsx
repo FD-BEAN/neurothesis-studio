@@ -892,8 +892,7 @@ function Workspace({
                       {group.documents.map((document) => {
                         const knowledgeCard = knowledgeCardByDocumentId.get(document.id) ?? null;
                         const seedMatch = seedMatchByDocumentId.get(document.id) ?? null;
-                        const displayName = getDocumentDisplayName(document, knowledgeCard, seedMatch);
-                        const originalName = displayName !== document.filename ? `${document.filename} · ` : "";
+                        const displayName = getDocumentListTitle(document, knowledgeCard, seedMatch);
 
                         return (
                           <button
@@ -903,11 +902,7 @@ function Workspace({
                           >
                             <div className="document-item-main">
                               <strong>{displayName}</strong>
-                              <span>
-                                {originalName}
-                                {formatDocumentKind(document)} · {formatBytes(document.size_bytes)} ·{" "}
-                                {new Date(document.created_at).toLocaleDateString("zh-CN")}
-                              </span>
+                              <span>{formatDocumentListMeta(document)}</span>
                             </div>
                             <DocumentStatusBadge
                               document={document}
@@ -1728,6 +1723,22 @@ function getDocumentDisplayName(
   return document.filename;
 }
 
+function getDocumentListTitle(
+  document: ResearchDocument,
+  knowledgeCard: LiteratureKnowledgeCard | null,
+  seedMatch?: SeedLiteratureMatch | null,
+) {
+  const displayName = getDocumentDisplayName(document, knowledgeCard, seedMatch).trim();
+
+  if (!isLiteratureDocument(document)) return displayName || document.filename;
+
+  return stripLiteratureExtension(displayName || document.filename).replace(/[_-]+/g, " ").trim() || document.filename;
+}
+
+function stripLiteratureExtension(title: string) {
+  return title.replace(/\.(pdf|docx?|txt|md)$/i, "");
+}
+
 function getDocumentExtension(filename: string) {
   const dotIndex = filename.lastIndexOf(".");
   return dotIndex >= 0 ? filename.slice(dotIndex + 1).toLowerCase() : "";
@@ -1745,6 +1756,10 @@ function isXdfAnalysisJob(job: ResearchAnalysisJob) {
 function formatDocumentKind(document: Pick<ResearchDocument, "filename">) {
   const extension = getDocumentExtension(document.filename);
   return extension ? extension.toUpperCase() : "FILE";
+}
+
+function formatDocumentListMeta(document: ResearchDocument) {
+  return `入库：${new Date(document.created_at).toLocaleDateString("zh-CN")} · ${formatDocumentKind(document)} · ${formatBytes(document.size_bytes)}`;
 }
 
 function formatBytes(size: number | null) {
