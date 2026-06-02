@@ -363,9 +363,10 @@ def render_html_report(report: dict[str, Any], job: dict[str, Any], generated_at
         for chart in charts:
             if not isinstance(chart, dict):
                 continue
-            parts.append("<article class='card'>")
+            article_class = "card chart-wide" if chart.get("wide") else "card"
+            parts.append(f"<article class='{article_class}'>")
             parts.append(f"<h2>{h(chart.get('title', 'Chart'))}</h2>")
-            parts.append(render_scatter_chart(chart) if chart.get("type") == "scatter" else render_bar_chart(chart))
+            parts.append(render_chart(chart))
             x_label = chart.get("xLabel")
             y_label = chart.get("yLabel")
             if x_label or y_label:
@@ -451,6 +452,21 @@ def render_narrative_sections(sections: list[Any]) -> str:
     return "".join(parts)
 
 
+def render_chart(chart: dict[str, Any]) -> str:
+    chart_type = str(chart.get("type") or "bar")
+    if chart_type == "scatter":
+        return render_scatter_chart(chart)
+    if chart_type == "profile":
+        return render_profile_chart(chart)
+    if chart_type == "heatmap":
+        return render_heatmap_chart(chart)
+    if chart_type == "forest":
+        return render_forest_chart(chart)
+    if chart_type == "timeline":
+        return render_timeline_chart(chart)
+    return render_bar_chart(chart)
+
+
 def render_bar_chart(chart: dict[str, Any]) -> str:
     data = chart.get("data") if isinstance(chart.get("data"), list) else []
     rows = []
@@ -499,7 +515,7 @@ def render_scatter_chart(chart: dict[str, Any]) -> str:
         x_value = to_float(item.get("x"))
         y_value = to_float(item.get("y"))
         if x_value is not None and y_value is not None:
-            points.append((str(item.get("label", "")), x_value, y_value))
+            points.append((str(item.get("label", "")), x_value, y_value, str(item.get("group") or "")))
     if not points:
         return "<p class='muted'>没有可绘制数据。</p>"
 
@@ -511,22 +527,284 @@ def render_scatter_chart(chart: dict[str, Any]) -> str:
     y_values = [point[2] for point in points]
     min_x, max_x = min(x_values), max(x_values)
     min_y, max_y = min(y_values), max(y_values)
+    x_pad = max(1e-9, (max_x - min_x) * 0.08)
+    y_pad = max(1e-9, (max_y - min_y) * 0.08)
+    min_x -= x_pad
+    max_x += x_pad
+    min_y -= y_pad
+    max_y += y_pad
 
     def scale(value: float, low: float, high: float, size: float) -> float:
         if abs(high - low) < 1e-12:
             return size / 2
         return (value - low) / (high - low) * size
 
+    group_colors: dict[str, str] = {}
     parts = [f"<svg class='chart' viewBox='0 0 {width} {height}' role='img'>"]
     parts.append(f"<rect x='{left}' y='{top}' width='{plot_w}' height='{plot_h}' fill='#fff' stroke='#d8e1df'/>")
-    for label, x_value, y_value in points:
+    for label, x_value, y_value, group in points:
+        if group and group not in group_colors:
+            group_colors[group] = chart_color(len(group_colors))
+        color = group_colors.get(group, "#3f7f75")
         x = left + scale(x_value, min_x, max_x, plot_w)
         y = top + plot_h - scale(y_value, min_y, max_y, plot_h)
-        parts.append(f"<circle cx='{x:.1f}' cy='{y:.1f}' r='5' fill='#3f7f75'><title>{h(label)}: {h(fmt(x_value))}, {h(fmt(y_value))}</title></circle>")
+        parts.append(f"<circle cx='{x:.1f}' cy='{y:.1f}' r='6' fill='{color}' opacity='0.88'><title>{h(label)}: {h(fmt(x_value))}, {h(fmt(y_value))}</title></circle>")
     parts.append(f"<text x='{left}' y='{height - 18}' class='svg-small'>{h(fmt(min_x))} → {h(fmt(max_x))}</text>")
     parts.append(f"<text x='{left}' y='{top - 8}' class='svg-small'>{h(fmt(min_y))} → {h(fmt(max_y))}</text>")
     parts.append("</svg>")
+    return "".join(parts) + render_legend(group_colors)
+
+
+def render_profile_chart(chart: dict[str, Any]) -> str:
+    conditions = [str(item) for item in chart.get("conditions", []) if str(item)]
+    series = chart.get("series") if isinstance(chart.get("series"), list) else []
+    prepared = []
+    all_values = []
+    for item in series:
+        if not isinstance(item, dict):
+            continue
+        values = [to_float(value) for value in item.get("values", [])]
+        if len(values) != len(conditions):
+            continue
+        if not any(value is not None for value in values):
+            continue
+        prepared.append({"label": str(item.get("label", "")), "values": values})
+        all_values.extend(value for value in values if value is not None and math.isfinite(value))
+    if not conditions or not prepared or not all_values:
+        return "<p class='muted'>没有可绘制数据。</p>"
+
+    width, height = 760, 330
+    left, right, top, bottom = 82, 28, 34, 66
+    plot_w = width - left - right
+    plot_h = height - top - bottom
+    min_value = min(all_values)
+    max_value = max(all_values)
+    if min_value > 0:
+        min_value = 0.0
+    if max_value < 0:
+        max_value = 0.0
+    pad = max(0.2, (max_value - min_value) * 0.12)
+    min_value -= pad
+    max_value += pad
+
+    def scale_y(value: float) -> float:
+        if abs(max_value - min_value) < 1e-12:
+            return top + plot_h / 2
+        return top + plot_h - (value - min_value) / (max_value - min_value) * plot_h
+
+    def scale_x(index: int) -> float:
+        if len(conditions) == 1:
+            return left + plot_w / 2
+        return left + index / (len(conditions) - 1) * plot_w
+
+    parts = [f"<svg class='chart' viewBox='0 0 {width} {height}' role='img'>"]
+    parts.append(f"<rect x='{left}' y='{top}' width='{plot_w}' height='{plot_h}' fill='#fff' stroke='#d8e1df'/>")
+    for tick in range(5):
+        value = min_value + (max_value - min_value) * tick / 4
+        y = scale_y(value)
+        parts.append(f"<line x1='{left}' y1='{y:.1f}' x2='{left + plot_w}' y2='{y:.1f}' stroke='#edf2f1'/>")
+        parts.append(f"<text x='{left - 8}' y='{y + 4:.1f}' class='svg-small' text-anchor='end'>{h(fmt(value))}</text>")
+    zero_y = scale_y(0.0)
+    parts.append(f"<line x1='{left}' y1='{zero_y:.1f}' x2='{left + plot_w}' y2='{zero_y:.1f}' stroke='#9aa8a5' stroke-dasharray='4 4'/>")
+    for index, label in enumerate(conditions):
+        x = scale_x(index)
+        parts.append(f"<line x1='{x:.1f}' y1='{top}' x2='{x:.1f}' y2='{top + plot_h}' stroke='#f0f4f3'/>")
+        parts.append(f"<text x='{x:.1f}' y='{height - 32}' class='svg-label' text-anchor='middle'>{h(short_label(label, 16))}</text>")
+
+    legend: dict[str, str] = {}
+    for series_index, item in enumerate(prepared):
+        color = chart_color(series_index)
+        label = str(item["label"])
+        legend[label] = color
+        points_for_line = []
+        for index, value in enumerate(item["values"]):
+            if value is None:
+                continue
+            points_for_line.append((scale_x(index), scale_y(value), value, conditions[index]))
+        if len(points_for_line) >= 2:
+            path = " ".join(f"{'M' if point_index == 0 else 'L'} {x:.1f} {y:.1f}" for point_index, (x, y, _value, _condition) in enumerate(points_for_line))
+            parts.append(f"<path d='{path}' fill='none' stroke='{color}' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/>")
+        for x, y, value, condition in points_for_line:
+            parts.append(f"<circle cx='{x:.1f}' cy='{y:.1f}' r='5.5' fill='{color}'><title>{h(label)} / {h(condition)}: {h(fmt(value))}</title></circle>")
+    parts.append("</svg>")
+    return "".join(parts) + render_legend(legend)
+
+
+def render_heatmap_chart(chart: dict[str, Any]) -> str:
+    columns = [str(item) for item in chart.get("columns", []) if str(item)]
+    rows = chart.get("rows") if isinstance(chart.get("rows"), list) else []
+    if not columns or not rows:
+        return "<p class='muted'>没有可绘制数据。</p>"
+
+    parts = ["<div class='heatmap-wrap'><table class='heatmap-table'><thead><tr><th>指标</th>"]
+    for column in columns:
+        parts.append(f"<th>{h(column)}</th>")
+    parts.append("</tr></thead><tbody>")
+    has_data = False
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        label = str(row.get("label") or "")
+        values = [to_float(value) for value in row.get("values", [])]
+        if len(values) != len(columns):
+            continue
+        numeric = [value for value in values if value is not None and math.isfinite(value)]
+        row_min = min(numeric) if numeric else None
+        row_max = max(numeric) if numeric else None
+        has_data = has_data or bool(numeric)
+        parts.append(f"<tr><td class='heatmap-label'>{h(label)}</td>")
+        for value in values:
+            if value is None:
+                parts.append("<td class='heatmap-empty'>-</td>")
+                continue
+            intensity = 0.45
+            if row_min is not None and row_max is not None and abs(row_max - row_min) > 1e-12:
+                intensity = (value - row_min) / (row_max - row_min)
+            parts.append(f"<td class='heatmap-cell' style='background:{heat_color(intensity)}'>{h(fmt(value))}</td>")
+        parts.append("</tr>")
+    parts.append("</tbody></table></div>")
+    if not has_data:
+        return "<p class='muted'>没有可绘制数据。</p>"
     return "".join(parts)
+
+
+def render_forest_chart(chart: dict[str, Any]) -> str:
+    data = chart.get("data") if isinstance(chart.get("data"), list) else []
+    rows = []
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+        mean = to_float(item.get("mean"))
+        ci_low = to_float(item.get("ciLow"))
+        ci_high = to_float(item.get("ciHigh"))
+        if mean is None:
+            continue
+        rows.append(
+            {
+                "label": str(item.get("label") or ""),
+                "mean": mean,
+                "ciLow": ci_low if ci_low is not None else mean,
+                "ciHigh": ci_high if ci_high is not None else mean,
+                "p": item.get("p"),
+                "n": item.get("n"),
+            }
+        )
+    if not rows:
+        return "<p class='muted'>没有可绘制数据。</p>"
+
+    width = 900
+    row_h = 42
+    height = 68 + row_h * len(rows)
+    left, right, top = 248, 126, 34
+    plot_w = width - left - right
+    min_value = min(min(row["ciLow"], row["mean"]) for row in rows)
+    max_value = max(max(row["ciHigh"], row["mean"]) for row in rows)
+    min_value = min(min_value, 0.0)
+    max_value = max(max_value, 0.0)
+    pad = max(0.08, (max_value - min_value) * 0.12)
+    min_value -= pad
+    max_value += pad
+
+    def scale_x(value: float) -> float:
+        if abs(max_value - min_value) < 1e-12:
+            return left + plot_w / 2
+        return left + (value - min_value) / (max_value - min_value) * plot_w
+
+    zero_x = scale_x(0.0)
+    parts = [f"<svg class='chart' viewBox='0 0 {width} {height}' role='img'>"]
+    parts.append(f"<line x1='{zero_x:.1f}' y1='{top - 10}' x2='{zero_x:.1f}' y2='{height - 32}' stroke='#9aa8a5' stroke-dasharray='4 4'/>")
+    parts.append(f"<text x='{left}' y='{height - 12}' class='svg-small'>{h(fmt(min_value))}</text>")
+    parts.append(f"<text x='{left + plot_w}' y='{height - 12}' class='svg-small' text-anchor='end'>{h(fmt(max_value))}</text>")
+    for index, row in enumerate(rows):
+        y = top + index * row_h + 18
+        color = "#3f7f75" if row["mean"] >= 0 else "#c95f4a"
+        x_low = scale_x(row["ciLow"])
+        x_high = scale_x(row["ciHigh"])
+        x_mean = scale_x(row["mean"])
+        parts.append(f"<text x='18' y='{y + 4:.1f}' class='svg-label'>{h(short_label(row['label'], 34))}</text>")
+        parts.append(f"<line x1='{left}' y1='{y:.1f}' x2='{left + plot_w}' y2='{y:.1f}' stroke='#f0f4f3'/>")
+        parts.append(f"<line x1='{x_low:.1f}' y1='{y:.1f}' x2='{x_high:.1f}' y2='{y:.1f}' stroke='{color}' stroke-width='3' stroke-linecap='round'/>")
+        parts.append(f"<circle cx='{x_mean:.1f}' cy='{y:.1f}' r='6' fill='{color}'><title>{h(row['label'])}: mean {h(fmt(row['mean']))}, 95% CI [{h(fmt(row['ciLow']))}, {h(fmt(row['ciHigh']))}], p={h(fmt_p(row['p']))}</title></circle>")
+        parts.append(f"<text x='{width - 18}' y='{y + 4:.1f}' class='svg-small' text-anchor='end'>n={h(row['n'])} p={h(fmt_p(row['p']))}</text>")
+    parts.append("</svg>")
+    return "".join(parts)
+
+
+def render_timeline_chart(chart: dict[str, Any]) -> str:
+    data = chart.get("data") if isinstance(chart.get("data"), list) else []
+    lanes = chart.get("lanes") if isinstance(chart.get("lanes"), list) else ["audio", "sign", "decision", "inefficiency", "completion"]
+    lane_labels = chart.get("laneLabels") if isinstance(chart.get("laneLabels"), dict) else {}
+    points = []
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+        x_value = to_float(item.get("x"))
+        lane = str(item.get("lane") or item.get("family") or "")
+        if x_value is None or lane not in lanes:
+            continue
+        points.append({"label": str(item.get("label") or ""), "x": x_value, "lane": lane})
+    if not points:
+        return "<p class='muted'>没有可绘制数据。</p>"
+
+    width, height = 900, max(300, 86 + len(lanes) * 48)
+    left, right, top, bottom = 126, 38, 30, 50
+    plot_w = width - left - right
+    plot_h = height - top - bottom
+    min_x = min(point["x"] for point in points)
+    max_x = max(point["x"] for point in points)
+    min_x = min(0.0, min_x)
+    max_x = max(max_x, 1.0)
+
+    def scale_x(value: float) -> float:
+        if abs(max_x - min_x) < 1e-12:
+            return left + plot_w / 2
+        return left + (value - min_x) / (max_x - min_x) * plot_w
+
+    def lane_y(lane: str) -> float:
+        index = lanes.index(lane)
+        if len(lanes) == 1:
+            return top + plot_h / 2
+        return top + index / (len(lanes) - 1) * plot_h
+
+    lane_colors = {lane: chart_color(index) for index, lane in enumerate(lanes)}
+    parts = [f"<svg class='chart' viewBox='0 0 {width} {height}' role='img'>"]
+    for lane in lanes:
+        y = lane_y(lane)
+        label = str(lane_labels.get(lane) or lane)
+        parts.append(f"<text x='18' y='{y + 4:.1f}' class='svg-label'>{h(label)}</text>")
+        parts.append(f"<line x1='{left}' y1='{y:.1f}' x2='{left + plot_w}' y2='{y:.1f}' stroke='#d8e1df'/>")
+    for point in points:
+        x = scale_x(point["x"])
+        y = lane_y(point["lane"])
+        color = lane_colors[point["lane"]]
+        parts.append(f"<circle cx='{x:.1f}' cy='{y:.1f}' r='5.5' fill='{color}' opacity='0.82'><title>{h(point['label'])}: {h(fmt(point['x']))} s</title></circle>")
+    parts.append(f"<text x='{left}' y='{height - 18}' class='svg-small'>{h(fmt(min_x))} s</text>")
+    parts.append(f"<text x='{left + plot_w}' y='{height - 18}' class='svg-small' text-anchor='end'>{h(fmt(max_x))} s</text>")
+    parts.append("</svg>")
+    return "".join(parts) + render_legend({str(lane_labels.get(lane) or lane): lane_colors[lane] for lane in lanes})
+
+
+def render_legend(items: dict[str, str]) -> str:
+    if not items:
+        return ""
+    parts = ["<div class='chart-legend'>"]
+    for label, color in items.items():
+        parts.append(f"<span><i style='background:{color}'></i>{h(label)}</span>")
+    parts.append("</div>")
+    return "".join(parts)
+
+
+def chart_color(index: int) -> str:
+    palette = ["#3f7f75", "#c95f4a", "#4467a8", "#b8892d", "#6f5aa8", "#3b8a9c", "#9a5b52", "#557a3d"]
+    return palette[index % len(palette)]
+
+
+def heat_color(intensity: float) -> str:
+    intensity = max(0.0, min(1.0, float(intensity)))
+    base = np.array([245, 248, 247], dtype=float)
+    high = np.array([63, 127, 117], dtype=float)
+    rgb = base * (1.0 - intensity) + high * intensity
+    return f"rgb({int(rgb[0])}, {int(rgb[1])}, {int(rgb[2])})"
 
 
 def render_table(table: dict[str, Any]) -> str:
@@ -678,6 +956,7 @@ def analyze_cohort_density(subject_rows: list[dict[str, Any]]) -> dict[str, Any]
     metric_charts = []
     metric_n_charts = []
     metric_p_charts = []
+    forest_data = []
     primary_behavior_result = None
     primary_eeg_result = None
     fallback_eeg_result = None
@@ -709,6 +988,16 @@ def analyze_cohort_density(subject_rows: list[dict[str, Any]]) -> dict[str, Any]
         metric_n_charts.append({"label": metric_label, "value": safe_chart_value(stats["n"])})
         if stats["p"] is not None:
             metric_p_charts.append({"label": metric_label, "value": safe_chart_value(stats["p"])})
+        forest_data.append(
+            {
+                "label": metric_label,
+                "mean": stats["mean"],
+                "ciLow": stats["ci_low"],
+                "ciHigh": stats["ci_high"],
+                "p": stats["p"],
+                "n": stats["n"],
+            }
+        )
 
     subject_table_rows = [
         [
@@ -755,6 +1044,15 @@ def analyze_cohort_density(subject_rows: list[dict[str, Any]]) -> dict[str, Any]
             {"label": "H3 EEG 负荷", "value": primary_eeg_result["conclusion"] if primary_eeg_result else "未形成", "text": eeg_text},
         ],
         "charts": [
+            {
+                "type": "forest",
+                "title": "主 planned contrast 及 95% 置信区间",
+                "xLabel": "medium - mean(low, high)",
+                "yLabel": "metric",
+                "data": forest_data,
+                "wide": True,
+                "caption": "零线右侧表示中等路径确认支持高于低/高支持平均；置信区间跨过零时，方向性结果仍需谨慎解释。",
+            },
             {
                 "type": "bar",
                 "title": "各指标主 contrast 均值",
@@ -1027,8 +1325,114 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
     }
 
 
+def build_subject_core_profile_chart(run_rows: list[dict[str, str]]) -> dict[str, Any]:
+    series_specs = [
+        ("H1 行动迟滞", "route_decision_hesitation_index"),
+        ("M1 确认链不流畅", "route_confirmation_disfluency_index"),
+        ("H3 EEG 加工负荷", "eeg_information_processing_load_index"),
+    ]
+    conditions = [density_display(level) for level in DENSITY_LEVELS]
+    series = []
+    flat_data = []
+    for label, metric in series_specs:
+        values = condition_metric_values(run_rows, metric)
+        if any(value is not None for value in values):
+            series.append({"label": label, "values": values})
+            for condition, value in zip(conditions, values):
+                if value is not None:
+                    flat_data.append({"label": f"{label} / {condition}", "value": safe_chart_value(value)})
+    return {
+        "type": "profile",
+        "title": "低/中/高路径确认支持的核心指标剖面",
+        "conditions": conditions,
+        "series": series,
+        "data": flat_data,
+        "wide": True,
+        "xLabel": "路径确认支持条件",
+        "yLabel": "被试内标准化指数",
+        "caption": "用于直接观察主假设方向：中等支持条件下，行动迟滞和 EEG 加工负荷是否高于低/高支持。该图显示单名被试的方向性模式，全样本显著性需要汇总 90 名被试后检验。",
+    }
+
+
+def build_subject_metric_heatmap(run_rows: list[dict[str, str]]) -> dict[str, Any]:
+    row_specs = [
+        ("首次行动启动", "first_action_latency_s"),
+        ("提示到首次确认", "prompt_to_first_confirmation_s"),
+        ("决策点停留总时长", "decision_dwell_total_s"),
+        ("确认线索最大间隔", "sign_readable_max_gap_s"),
+        ("决策点覆盖代理", "decision_point_coverage_proxy"),
+        ("左右查看总次数", "decision_total_look_count"),
+        ("双侧扫描次数", "decision_scan_both_count"),
+        ("回退/掉头/停留", "navigation_inefficiency_proxy"),
+        ("路径判断准确率", "decision_choice_accuracy_ratio"),
+        ("decision-point EEG load", "decision_point_enter_eeg_load_proxy"),
+    ]
+    columns = [density_display(level) for level in DENSITY_LEVELS]
+    rows = []
+    flat_data = []
+    for label, metric in row_specs:
+        values = condition_metric_values(run_rows, metric)
+        if not any(value is not None for value in values):
+            continue
+        rows.append({"label": label, "values": values})
+        for column, value in zip(columns, values):
+            if value is not None:
+                flat_data.append({"label": f"{label} / {column}", "value": safe_chart_value(value)})
+    return {
+        "type": "heatmap",
+        "title": "路径确认链指标矩阵",
+        "columns": columns,
+        "rows": rows,
+        "data": flat_data,
+        "wide": True,
+        "xLabel": "路径确认支持条件",
+        "yLabel": "行为与 EEG 指标",
+        "caption": "每一行按本指标自身范围着色，便于看出同一被试在三种支持条件中的相对高低。颜色深浅不用于跨指标比较。",
+    }
+
+
+def build_accuracy_effort_scatter(run_rows: list[dict[str, str]]) -> dict[str, Any]:
+    data = []
+    for row in run_rows:
+        x_value = to_float(row.get("route_decision_hesitation_index"))
+        y_value = to_float(row.get("decision_choice_accuracy_ratio"))
+        if y_value is None:
+            y_value = to_float(row.get("sign_readable_ratio"))
+        if x_value is None or y_value is None:
+            continue
+        condition = density_display(row.get("density", ""))
+        data.append(
+            {
+                "label": condition_label(row),
+                "x": safe_chart_value(x_value),
+                "y": safe_chart_value(y_value),
+                "group": condition,
+            }
+        )
+    return {
+        "type": "scatter",
+        "title": "迟滞与准确率/确认线索关系",
+        "xLabel": "H1 行动迟滞指数",
+        "yLabel": "路径判断准确率；缺失时用可读标识覆盖率",
+        "data": data,
+        "caption": "用于检查 accuracy-effort trade-off：较高迟滞是否伴随更高正确率或更充分的路径确认。若准确率字段缺失，图中会退回到可读标识覆盖率。",
+    }
+
+
+def condition_metric_values(run_rows: list[dict[str, str]], metric: str) -> list[float | None]:
+    values = []
+    for level in DENSITY_LEVELS:
+        level_values = [to_float(row.get(metric)) for row in run_rows if row.get("density") == level]
+        clean = [value for value in level_values if value is not None and math.isfinite(value)]
+        values.append(float(np.mean(clean)) if clean else None)
+    return values
+
+
 def build_subject_batch_charts(run_rows: list[dict[str, str]], contrast_json: list[dict[str, Any]]) -> list[dict[str, Any]]:
     charts = [
+        build_subject_core_profile_chart(run_rows),
+        build_subject_metric_heatmap(run_rows),
+        build_accuracy_effort_scatter(run_rows),
         build_run_metric_chart(run_rows, "H1 行动迟滞指数", "route_decision_hesitation_index", "within-subject z index", "该指数整合完成时长、启动延迟、决策点停留、左右查看、双侧扫描、停留、掉头和回退。"),
         build_run_metric_chart(run_rows, "M1 确认链不流畅指数", "route_confirmation_disfluency_index", "within-subject z index", "该指数用于检查官方目标提醒之后，现场确认线索是否连续、及时并覆盖决策点。问卷中的感知可靠性仍需单独收集。"),
         build_run_metric_chart(run_rows, "H3 EEG 信息加工负荷指数", "eeg_information_processing_load_index", "within-subject z index", "该指数整合 trial-level 与事件窗 EEG 负荷指标，用于检验目标—线索—方向匹配负荷。"),
@@ -1663,12 +2067,16 @@ def infer_subject_id(filename: str, fallback_filename: str = "") -> str:
 
     sequence_index = infer_sequence_index(filename, fallback_filename)
     if sequence_index:
-        return f"sub-{math.ceil(sequence_index / 3):03d}"
+        return f"P{math.ceil(sequence_index / 3):02d}"
 
     match = re.search(r"sub-([A-Za-z0-9]+)", f"{filename} {fallback_filename}", re.IGNORECASE)
     if match:
-        return f"sub-{match.group(1)}"
-    return "subject-unknown"
+        token = match.group(1)
+        participant_match = re.search(r"p?0*(\d{1,3})$", token, re.IGNORECASE)
+        if participant_match:
+            return f"P{int(participant_match.group(1)):02d}"
+        return f"P-{token}"
+    return "P-unknown"
 
 
 def infer_run_label(filename: str) -> str:
@@ -1803,13 +2211,6 @@ def build_event_timeline_chart(rows: list[dict[str, Any]], window: dict[str, flo
     start_ts = window.get("start_ts") if window else None
     if start_ts is None and rows:
         start_ts = rows[0].get("_xdf_ts")
-    family_y = {
-        "audio": 1,
-        "sign": 2,
-        "decision": 3,
-        "inefficiency": 4,
-        "completion": 5,
-    }
     data = []
     for row in rows:
         event = str(row.get("event", ""))
@@ -1819,13 +2220,22 @@ def build_event_timeline_chart(rows: list[dict[str, Any]], window: dict[str, flo
         family = event_family(event)
         if not family:
             continue
-        data.append({"label": event, "x": round(ts - float(start_ts), 3), "y": family_y[family]})
+        data.append({"label": event, "x": round(ts - float(start_ts), 3), "lane": family, "family": family})
     return {
-        "type": "scatter",
+        "type": "timeline",
         "title": "主 trial 事件时间线",
         "xLabel": "trial time (s)",
-        "yLabel": "event family: audio/sign/decision/inefficiency/completion",
+        "yLabel": "audio / sign / decision / inefficiency / completion",
+        "lanes": ["audio", "sign", "decision", "inefficiency", "completion"],
+        "laneLabels": {
+            "audio": "官方提醒",
+            "sign": "路径确认线索",
+            "decision": "决策点行为",
+            "inefficiency": "低效行为",
+            "completion": "完成",
+        },
         "data": data[:300],
+        "wide": True,
         "caption": "时间线用于检查音频、标识可读、决策点和低效行为是否出现在合理顺序中；若开始/结束 marker 缺失，时间零点仅为估计。",
     }
 
@@ -3072,6 +3482,7 @@ p { margin: 8px 0; }
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
 }
+.chart-wide { grid-column: 1 / -1; }
 .metric-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -3123,6 +3534,58 @@ code { font-family: Consolas, "SFMono-Regular", monospace; }
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
+}
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 10px;
+  color: #40504c;
+  font-size: 12px;
+  font-weight: 700;
+}
+.chart-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.chart-legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.heatmap-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+.heatmap-table {
+  min-width: 680px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.heatmap-table th,
+.heatmap-table td {
+  border-bottom: 1px solid #e6eeeb;
+  border-right: 1px solid #e6eeeb;
+}
+.heatmap-table tr:last-child td { border-bottom: 0; }
+.heatmap-table th:last-child,
+.heatmap-table td:last-child { border-right: 0; }
+.heatmap-label {
+  width: 220px;
+  background: #fbfdfc;
+  color: #263632;
+  font-weight: 800;
+}
+.heatmap-cell {
+  min-width: 130px;
+  color: #10201d;
+  font-weight: 800;
+  text-align: center;
+}
+.heatmap-empty {
+  color: var(--muted);
+  text-align: center;
+  background: #f6f8f8;
 }
 .svg-label { font: 12px "Segoe UI", Arial, sans-serif; fill: #33423f; font-weight: 800; }
 .svg-small { font: 11px "Segoe UI", Arial, sans-serif; fill: #65736f; }

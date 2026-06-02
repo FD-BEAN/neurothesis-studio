@@ -540,3 +540,11 @@ XDF 分析口径扩展：
 - 旧字段 `densityContrasts` 暂时保留用于兼容旧任务；新增 `supportContrasts` 作为后续主字段。
 - HTML 报告语言应保持中文论文/研究报告口吻，减少系统说明和模板化表达；避免使用“不是……而是……”这类句式。
 - 组内主检验仍是每名被试的 `medium - mean(low, high)`；组间分析仍需要 subject metadata，再检验 `SupportLevel × Group` 交互。
+
+## 2026-06-02 XDF report visualization v3
+
+- 单文件 XDF HTML 报告的事件时间线改为泳道图：官方提醒、路径确认线索、决策点行为、低效行为和完成事件分开显示，便于检查 Unity marker 的先后关系。
+- 被试批量报告优先显示三类总览图：低/中/高路径确认支持的核心指标剖面、路径确认链指标矩阵、迟滞与准确率/确认线索关系图。
+- 全样本汇总报告新增 planned contrast forest plot，显示每个指标的 `medium - mean(low, high)`、95% CI、n 和 p 值。
+- 细节柱状图继续保留，用于追踪具体指标来源；正式写作时优先看剖面图、指标矩阵和全样本 forest plot。
+- 分析层面的被试编号统一为 `P01` 到 `P90`。原始 `sub-001` 到 `sub-270` 仍按三连号推断每名被试的低/中/高支持 run。
