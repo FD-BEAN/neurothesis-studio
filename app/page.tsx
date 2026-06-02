@@ -34,17 +34,6 @@ type LiteratureKnowledgeEntry = {
   seedMatch: SeedLiteratureMatch | null;
 };
 
-type SeedKnowledgeStats = {
-  sources: number;
-  claims: number;
-  mechanisms: number;
-  hypotheses: number;
-  analysisModels: number;
-  risksAndFixes: number;
-  writingBlocks: number;
-  quoteAnchors: number;
-};
-
 type LibraryFilter = "all" | "literature" | "raw-data" | "analysis" | "notes";
 type JobViewFilter = "all" | "active" | "completed" | "failed" | "stale";
 
@@ -81,7 +70,7 @@ const workspaceModules = [
 ];
 
 const knowledgeReviewNotes = [
-  "内置知识库包含结构化、转述后的文献知识与 source anchor，不是 PDF 全文库。",
+  "文献知识库包含结构化、转述后的文献知识与 source anchor，不是 PDF 全文库。",
   "写作时可以使用文献卡和引用锚点辅助定位；正式引用前仍需回到原文核对页码、作者、年份和 DOI。",
   "项目假设、写作块和分析模型是写作与建模辅助；除非明确标记为直接文献证据，不等于已经得到实验结果。",
   "部分历史字段仍使用 Signature1/2/3 命名；当前研究口径应统一映射为低/中/高密度条件，并在论文中使用 Density condition。",
@@ -141,7 +130,7 @@ const writingAssistantPresets = [
   {
     label: "文献综述矩阵",
     prompt:
-      "请基于内置知识库和新增文献卡片，整理一份面向 Introduction 的文献综述矩阵：按 VR/地铁撤离、导向标识与 wayfinding、EEG/认知负荷、密度/信息复杂度、统计方法 五类组织。每类给出可写入论文的中文要点、英文句子草稿、证据来源、不能过度声称的边界。",
+      "请基于文献知识库，整理一份面向 Introduction 的文献综述矩阵：按 VR/地铁撤离、导向标识与 wayfinding、EEG/认知负荷、密度/信息复杂度、统计方法 五类组织。每类给出可写入论文的中文要点、英文句子草稿、证据来源、不能过度声称的边界。",
   },
   {
     label: "理论逻辑",
@@ -336,7 +325,6 @@ function Workspace({
   const [jobMessage, setJobMessage] = useState("");
   const [jobLoading, setJobLoading] = useState(false);
   const [knowledgeEntries, setKnowledgeEntries] = useState<LiteratureKnowledgeEntry[]>([]);
-  const [seedKnowledgeStats, setSeedKnowledgeStats] = useState<SeedKnowledgeStats | null>(null);
   const [seedKnowledgeReview, setSeedKnowledgeReview] = useState<SeedKnowledgeReview | null>(null);
   const [knowledgeLoading, setKnowledgeLoading] = useState(false);
   const [knowledgeMessage, setKnowledgeMessage] = useState("");
@@ -461,11 +449,9 @@ function Workspace({
 
     const payload = (await response.json()) as {
       cards?: LiteratureKnowledgeEntry[];
-      seedStats?: SeedKnowledgeStats;
       seedReview?: SeedKnowledgeReview;
     };
     setKnowledgeEntries(payload.cards ?? []);
-    setSeedKnowledgeStats(payload.seedStats ?? null);
     setSeedKnowledgeReview(payload.seedReview ?? null);
   }
 
@@ -724,7 +710,7 @@ function Workspace({
     setKnowledgeMessage(
       payload.message ??
         (payload.seedMatch
-          ? `这篇文献已在内置知识库中（${payload.seedMatch.sourceId}：${payload.seedMatch.title}），不会重复调用 OpenAI。`
+          ? `这篇文献已入库（${payload.seedMatch.sourceId}：${payload.seedMatch.title}），不会重复调用 OpenAI。`
           : "文献知识卡片已更新，写作助手会优先引用知识库。"),
     );
     await loadDocuments();
@@ -976,12 +962,12 @@ function Workspace({
               ) : null}
               {selectedDocumentIsLiterature && selectedSeedMatch ? (
                 <p className="muted">
-                  已匹配内置知识库 {selectedSeedMatch.sourceId}：{selectedSeedMatch.title}。这篇文献已经可被写作助手引用，点击生成时会直接提示已存在，不会重复调用 OpenAI。
+                  这篇文献已入库并可被写作助手引用。点击生成时会直接提示已存在，不会重复调用 OpenAI。
                 </p>
               ) : null}
               {selectedDocumentIsLiterature ? (
                 <button className="primary-button" disabled={!selectedDocument || knowledgeLoading} onClick={buildLiteratureKnowledgeCard}>
-                  {knowledgeLoading ? "生成知识卡片中..." : selectedSeedMatch && !selectedKnowledgeCard ? "确认内置库匹配" : "生成/更新知识卡片"}
+                  {knowledgeLoading ? "生成知识卡片中..." : "生成/更新知识卡片"}
                 </button>
               ) : null}
               {knowledgeMessage ? <p className="muted">{knowledgeMessage}</p> : null}
@@ -993,14 +979,13 @@ function Workspace({
           <div className="section-head">
             <div>
               <p className="eyebrow">知识库审阅</p>
-              <h2>内置文献知识库与新增论文卡片</h2>
+              <h2>文献知识库</h2>
             </div>
             <button className="secondary-button" onClick={loadKnowledgeBase}>
               刷新知识库
             </button>
           </div>
           <SeedKnowledgeReviewPanel review={seedKnowledgeReview} />
-          <LiteratureKnowledgePanel entries={knowledgeEntries} seedStats={seedKnowledgeStats} onRefresh={loadKnowledgeBase} />
         </section>
 
         <section className="view is-visible" id="pipeline">
@@ -1080,7 +1065,7 @@ function Workspace({
             <section className="work-panel ai-output">
               <h3>输出</h3>
               <p className="muted">
-                回答会结合项目设计、内置知识库、新增文献卡片和已完成分析报告；显著性结论只来自真实报告或你明确提供的数据。
+                回答会结合项目设计、文献知识库和已完成分析报告；显著性结论只来自真实报告或你明确提供的数据。
               </p>
               <pre>{aiState.output || "运行后，这里会显示整理结果。"}</pre>
             </section>
@@ -1152,7 +1137,7 @@ function DocumentStatusBadge({
 
   if (isLiteratureDocument(document)) {
     const isCovered = Boolean(knowledgeCard || seedMatch);
-    const label = knowledgeCard ? "已入库" : seedMatch ? "已在内置库" : "未入库";
+    const label = isCovered ? "已入库" : "未入库";
     return <span className={`state-chip ${isCovered ? "completed" : "muted-state"}`}>{label}</span>;
   }
 
@@ -1407,7 +1392,7 @@ function SeedKnowledgeReviewPanel({ review }: { review: SeedKnowledgeReview | nu
   if (!review) {
     return (
       <section className="work-panel seed-review-panel">
-        <p className="muted">正在读取内置知识库审阅数据。</p>
+        <p className="muted">正在读取文献知识库审阅数据。</p>
       </section>
     );
   }
@@ -1418,8 +1403,8 @@ function SeedKnowledgeReviewPanel({ review }: { review: SeedKnowledgeReview | nu
     <section className="work-panel seed-review-panel">
       <div className="analysis-head">
         <div>
-          <p className="eyebrow">Seed KB</p>
-          <h3>Metro Rescue 初始知识层</h3>
+          <p className="eyebrow">文献知识库</p>
+          <h3>Metro Rescue 结构化知识层</h3>
         </div>
         <span className="status-pill compact">{totalItems} 个条目</span>
       </div>
@@ -1593,99 +1578,6 @@ function splitSourceReferences(value: string | undefined) {
 
 function extractSourceReferenceCodes(value: string) {
   return Array.from(new Set(value.match(SOURCE_REFERENCE_PATTERN) ?? []));
-}
-
-function LiteratureKnowledgePanel({
-  entries,
-  seedStats,
-  onRefresh,
-}: {
-  entries: LiteratureKnowledgeEntry[];
-  seedStats: SeedKnowledgeStats | null;
-  onRefresh: () => void;
-}) {
-  const indexed = entries.filter((entry) => entry.card);
-  const seeded = entries.filter((entry) => !entry.card && entry.seedMatch);
-  const pending = entries.length - indexed.length - seeded.length;
-  const citable = indexed.length + seeded.length;
-
-  return (
-    <section className="work-panel knowledge-panel">
-      <div className="analysis-head">
-        <div>
-          <p className="eyebrow">文献知识库</p>
-          <h3>可引用论文卡片</h3>
-        </div>
-        <div className="top-actions">
-          <span className="status-pill compact">{entries.length} 篇文献文件</span>
-          <span className="status-pill compact">{citable} 篇可引用</span>
-          <button className="secondary-button" onClick={onRefresh}>
-            刷新
-          </button>
-        </div>
-      </div>
-      {seedStats ? (
-        <p className="muted">
-          当前资料库有 {entries.length} 篇文献文件，其中 {seeded.length} 篇匹配内置 Metro Rescue KB、{indexed.length} 篇已有新增知识卡片、{pending} 篇待建卡。
-          内置 KB 本身固定包含 {seedStats.sources} 篇 source card、{seedStats.claims} 条 claims、{seedStats.hypotheses} 个假设和 {seedStats.analysisModels} 个分析模型；新上传论文会作为增量文献叠加，不会改写内置 KB 的固定数量。
-        </p>
-      ) : null}
-      {seeded.length ? (
-        <p className="muted">
-          {seeded.length} 篇已上传 PDF 与内置知识库中的 source card 匹配，写作助手会直接使用内置 KB；这些文献不会重复调用 OpenAI 生成知识卡片。
-        </p>
-      ) : null}
-      {pending ? <p className="muted">{pending} 篇文献还没有知识卡片。请在资料库中选中文献后点击“生成/更新知识卡片”。</p> : null}
-      {indexed.length ? (
-        <div className="knowledge-grid">
-          {indexed.map(({ document, card }) =>
-            card ? (
-              <article className="knowledge-card" key={document.id}>
-                <span>{card.sourceGrade ? `Grade ${card.sourceGrade}` : card.evidenceLevel || "文献证据"}</span>
-                <h4>{card.title || document.filename}</h4>
-                <p>{card.oneSentenceTakeaway || card.researchQuestion}</p>
-                <div className="keyword-row compact quiet">
-                  {(card.themeTags?.length ? card.themeTags : card.keywords).slice(0, 6).map((keyword) => (
-                    <span key={`${document.id}-${keyword}`}>{keyword}</span>
-                  ))}
-                </div>
-                <dl>
-                  <div>
-                    <dt>方法</dt>
-                    <dd>{card.methods}</dd>
-                  </div>
-                  <div>
-                    <dt>可用于</dt>
-                    <dd>{card.usableForSections.join(" / ")}</dd>
-                  </div>
-                  {card.densityHypothesisRelevance?.length ? (
-                    <div>
-                      <dt>密度假设</dt>
-                      <dd>{card.densityHypothesisRelevance.slice(0, 2).join("；")}</dd>
-                    </div>
-                  ) : null}
-                  {card.keyFindings?.length ? (
-                    <div>
-                      <dt>主要发现</dt>
-                      <dd>{card.keyFindings.slice(0, 2).join("；")}</dd>
-                    </div>
-                  ) : null}
-                  {card.doNotClaim?.length ? (
-                    <div>
-                      <dt>边界</dt>
-                      <dd>{card.doNotClaim.slice(0, 2).join("；")}</dd>
-                    </div>
-                  ) : null}
-                </dl>
-              </article>
-            ) : null,
-          )}
-        </div>
-      ) : (
-        <p className="muted">还没有新增文献卡片。写作助手已经可以使用初始知识库；以后上传新论文后，再在文献区生成知识卡片作为增量补充。</p>
-      )}
-    </section>
-  );
 }
 
 function getDocumentCategory(document: Pick<ResearchDocument, "filename" | "mime_type">) {

@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
-import { findSeedLiteratureMatch, getSeedKnowledgeReview, getSeedKnowledgeStats } from "@/lib/knowledgeBase";
+import { findSeedLiteratureMatch, getSeedKnowledgeReview } from "@/lib/knowledgeBase";
 import { encodeLiteratureCard, isLiteratureDocument, parseLiteratureCard, type LiteratureKnowledgeCard } from "@/lib/literature";
 import { getSupabaseServerClient, type ResearchDocument } from "@/lib/supabase";
 
@@ -188,7 +188,6 @@ export async function GET(request: Request) {
   const documents = ((data ?? []) as ResearchDocument[]).filter(isLiteratureDocument);
   return NextResponse.json(
     {
-      seedStats: getSeedKnowledgeStats(),
       seedReview: getSeedKnowledgeReview(),
       cards: documents.map((document) => ({
         document,
@@ -244,7 +243,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       seedMatch,
       status: "seed-existing",
-      message: `这篇文献已在内置知识库中（${seedMatch.sourceId}：${seedMatch.title}），不会重复调用 OpenAI。`,
+      message: `这篇文献已入库（${seedMatch.sourceId}：${seedMatch.title}），不会重复调用 OpenAI。`,
     });
   }
 

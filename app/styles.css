@@ -1189,12 +1189,6 @@ textarea {
   font-size: 0.84rem;
 }
 
-.knowledge-panel {
-  margin-top: 20px;
-  display: grid;
-  gap: 16px;
-}
-
 .seed-review-panel {
   display: grid;
   gap: 16px;

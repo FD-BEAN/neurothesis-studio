@@ -124,13 +124,13 @@ export function buildResearchKnowledgeContext(prompt: string, userCards: Literat
   const userContext = buildUserLiteratureContext(userCards, prompt);
 
   return [
-    "=== Built-in Metro Rescue literature knowledge base ===",
+    "=== Metro Rescue literature knowledge base: existing source cards ===",
     seedContext,
     "",
-    "=== User-added literature cards ===",
+    "=== Metro Rescue literature knowledge base: additional uploaded papers ===",
     userContext,
     "",
-    "Usage rule: distinguish seed literature evidence, user-added literature evidence, and the user's own experimental results. Treat project hypotheses and writing blocks as drafting aids, not proven findings.",
+    "Usage rule: distinguish literature evidence, project-specific hypotheses, and the user's own experimental results. Treat project hypotheses and writing blocks as drafting aids, not proven findings.",
   ].join("\n");
 }
 
@@ -369,7 +369,7 @@ function buildSeedContext(prompt: string) {
   const quoteAnchors = seedKnowledgeBase.quote_anchors.filter((anchor) => sourceIds.has(anchor.Source_ID)).slice(0, 8);
 
   return [
-    `Seed KB: ${seedKnowledgeBase.sources.length} source cards, ${seedKnowledgeBase.claims.length} claims, ${seedKnowledgeBase.mechanisms.length} mechanisms, ${seedKnowledgeBase.hypotheses.length} hypotheses, ${seedKnowledgeBase.analysis_models.length} analysis models.`,
+    `Literature KB: ${seedKnowledgeBase.sources.length} existing source cards, ${seedKnowledgeBase.claims.length} claims, ${seedKnowledgeBase.mechanisms.length} mechanisms, ${seedKnowledgeBase.hypotheses.length} hypotheses, ${seedKnowledgeBase.analysis_models.length} analysis models.`,
     `Integrity notes: ${seedKnowledgeBase.integrity_notes.join(" ")}`,
     formatSeedSection(
       "Relevant claims",
@@ -421,7 +421,7 @@ function buildSeedContext(prompt: string) {
 
 function buildUserLiteratureContext(cards: LiteratureKnowledgeCard[], prompt: string) {
   if (!cards.length) {
-    return "No user-added indexed literature cards yet. Use the built-in seed KB, and ask the user to generate knowledge cards for newly uploaded papers before relying on them.";
+    return "No additional uploaded-paper cards yet. Use the existing literature knowledge base, and ask the user to generate knowledge cards for newly uploaded papers before relying on those new papers.";
   }
 
   return rankItems(cards, prompt, (card) =>

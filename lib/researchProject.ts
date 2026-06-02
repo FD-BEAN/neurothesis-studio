@@ -104,7 +104,7 @@ export const researchProject = {
 };
 
 export const metroAiPrompt =
-  "请作为 Metro Rescue 论文写作助理，基于内置文献知识库、新增文献卡片和已有 XDF 分析结果，整理：1) 研究问题与理论逻辑；2) 低/中/高密度组内设计；3) EEG 与 Unity marker 指标；4) 主假设 medium - mean(low, high) 的统计路线；5) 可写入英文论文的 Methods/Analysis Plan 段落；6) 目前不能过度声称的边界。";
+  "请作为 Metro Rescue 论文写作助理，基于文献知识库和已有 XDF 分析结果，整理：1) 研究问题与理论逻辑；2) 低/中/高密度组内设计；3) EEG 与 Unity marker 指标；4) 主假设 medium - mean(low, high) 的统计路线；5) 可写入英文论文的 Methods/Analysis Plan 段落；6) 目前不能过度声称的边界。";
 
 export const projectWritingContext = [
   "Project: Metro Rescue, a VR subway evacuation wayfinding study with synchronized Unity LSL markers and EEG LabRecorder .xdf files.",

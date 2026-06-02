@@ -280,7 +280,7 @@ XDF worker 目前输出：
 
 写作助手使用规则：
 
-- 默认先检索内置 seed KB，再合并用户新增文献知识卡。
+- 默认检索统一的文献知识库；实现上会自动合并已有知识层和新入库文献。
 - 回答必须区分：文献证据、项目假设、用户真实实验结果。
 - 不得把 H1-H6 当成已经证明的结果；它们是待检验假设或分析计划。
 - 遇到 quote anchor 时，应提醒“最终论文前需要核对页码/原文”。
@@ -289,17 +289,17 @@ XDF worker 目前输出：
 
 1. 用户上传一篇新 PDF 到“文献与论文”。
 2. 系统生成该论文的结构化知识卡片。
-3. 新卡片作为 user-added literature card 参与写作助手检索。
+3. 新卡片作为文献知识库的一部分参与写作助手检索。
 4. 下一阶段再升级为“待审核增量”：自动提出 candidate claims / mechanisms / quote anchors，由用户确认后合并进主知识库。
 
 当前版本先不做用户可见的 KB bundle 导入器；已有 KB 已经内置，新论文只需要按单篇文献逐步补充。
 
 2026-06-01 增加“知识库审阅”主界面入口：
 
-- 用户可以直接查看内置 seed KB 的 source cards、claims、mechanisms、hypotheses、analysis models、分析口径、risks/fixes、writing blocks、defense QA 和 quote anchors。知识库审阅页不再展示 `data_tables` 作为知识内容；数据结构设计留在 wiki/schema/worker 报告中。
+- 用户可以直接查看文献知识库中的 source cards、claims、mechanisms、hypotheses、analysis models、分析口径、risks/fixes、writing blocks、defense QA 和 quote anchors。知识库审阅页不再展示 `data_tables` 作为知识内容；数据结构设计留在 wiki/schema/worker 报告中。
 - 审阅页采用分类切换和当前分类搜索，不把原始 JSON 一次性铺满页面。
-- 审阅页必须提示三条边界：seed KB 不是 PDF 全文库；历史 Signature1/2/3 命名需要统一为低/中/高 density condition；hypotheses / writing blocks / analysis models 不是实验结果。
-- 新增文献知识卡片仍作为 user-added literature card 展示在同一审阅入口下，写作助手可同时读取 seed KB 和新增卡片。
+- 审阅页必须提示三条边界：文献知识库不是 PDF 全文库；历史 Signature1/2/3 命名需要统一为低/中/高 density condition；hypotheses / writing blocks / analysis models 不是实验结果。
+- 主界面不单独展示“新增知识卡片”区域；命中已有知识层和新生成知识卡片的文献，在用户口径里都统一视为“已入库”。
 - `S001` 这类 source code 保留用于检索和引用，但所有 claims / mechanisms / hypotheses / risks / QA / quote anchors 需要在审阅页显示对应的 source title，避免用户必须跳回文献卡手动查表。
 
 PDF 原文入库策略：
@@ -337,7 +337,7 @@ Signature 方案需要补充定义：
 
 - 项目快照：90 名被试 × 低/中/高密度 3 个 run，主 planned contrast 为 `medium - mean(low, high)`。
 - 内置 Metro Rescue 文献知识库：用于已有综述、机制、风险、分析模型和写作块。
-- 用户新增文献卡片：通过后端 OpenAI API 生成，作为增量知识库进入写作助手。
+- 用户新增文献：通过后端 OpenAI API 生成结构化卡片后进入文献知识库；如果已经命中项目已有知识层，则不重复生成。
 - 已完成分析报告摘要：包括被试批量 XDF 报告和全样本密度 contrast 汇总。只有这里或用户明确提供的结果才能支持 Results/Discussion 的统计结论。
 - 当前选中文件上下文：只作为辅助，不替代知识库和真实分析报告。
 
@@ -364,9 +364,9 @@ AI 不应该：
 
 文献知识库：
 
-- 用户上传的新论文如果能匹配内置 Metro Rescue seed KB 的 source card，界面显示“已在内置库”。
-- “生成/更新知识卡片”接口会先检查已有用户卡片，再检查内置 KB 命中；命中时直接返回“已存在”，不读取 PDF、不调用 OpenAI。
-- 真正不在内置 KB 里的新文献才走 PDF 文本抽取和 OpenAI 知识卡片生成流程。
+- 用户上传的新论文如果能匹配 Metro Rescue 既有 source card，界面统一显示“已入库”。
+- “生成/更新知识卡片”接口会先检查已有用户卡片，再检查既有知识层命中；命中时直接返回“已存在”，不读取 PDF、不调用 OpenAI。
+- 真正不在既有知识层里的新文献才走 PDF 文本抽取和 OpenAI 知识卡片生成流程。
 - 知识库审阅页只显示中文说明，不混用 seed bundle 原始英文提示。
 - claims、机制、假设、风险和引用锚点中的来源默认显示 S001 这类文献简写，字段名统一为“来源文献”；完整标题通过展开控件查看，避免列表过长。
 - 知识库审阅不显示 seed `data_tables` 分类；数据结构设计属于 schema/wiki/worker 报告，不作为文献知识内容展示。
@@ -435,6 +435,6 @@ XDF 命名与分析规则：
 
 - `seedStats.sources` 是内置 Metro Rescue seed KB 的固定 source card 数量，例如 47；它不等于用户当前资料库里的 PDF 文献总数。
 - 用户资料库文献数量来自 `research_documents` 中被 `isLiteratureDocument` 识别的文件，例如当前可为 49。
-- 页面应同时显示：当前资料库文献数、已匹配内置 KB 数、已有新增知识卡片数、待建卡数。
-- “新增上传论文”会作为用户文献叠加；如果命中内置 KB，不重复调用 OpenAI；如果未命中，生成 `NT_KB_V1::` 知识卡后作为新增可引用文献。
+- 页面主状态统一显示当前资料库文献数和“已入库/未入库”，不在主界面区分“内置命中”和“新增卡片”。
+- “新增上传论文”会作为用户文献叠加；如果命中既有知识层，不重复调用 OpenAI；如果未命中，生成 `NT_KB_V1::` 知识卡后作为可引用文献。
 - `/api/literature/knowledge` 和前端刷新请求应使用 `no-store`，避免刷新按钮拿到旧的知识库统计。
