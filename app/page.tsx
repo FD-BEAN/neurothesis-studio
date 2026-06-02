@@ -8,7 +8,7 @@ import {
   type ResearchAnalysisJob,
   type ResearchDocument,
 } from "@/lib/supabase";
-import type { SeedKnowledgeReview } from "@/lib/knowledgeBase";
+import type { SeedKnowledgeReview, SeedLiteratureMatch } from "@/lib/knowledgeBase";
 import { isLiteratureDocument, parseLiteratureCard, type LiteratureKnowledgeCard } from "@/lib/literature";
 import { metroAiPrompt, researchProject } from "@/lib/researchProject";
 
@@ -22,6 +22,7 @@ type AiState = {
 type LiteratureKnowledgeEntry = {
   document: ResearchDocument;
   card: LiteratureKnowledgeCard | null;
+  seedMatch: SeedLiteratureMatch | null;
 };
 
 type SeedKnowledgeStats = {
@@ -384,10 +385,15 @@ function Workspace({
     () => new Map(knowledgeEntries.map((entry) => [entry.document.id, entry.card])),
     [knowledgeEntries],
   );
+  const seedMatchByDocumentId = useMemo(
+    () => new Map(knowledgeEntries.map((entry) => [entry.document.id, entry.seedMatch])),
+    [knowledgeEntries],
+  );
   const xdfJobStats = useMemo(() => getXdfJobStats(analysisJobs), [analysisJobs]);
   const completedSubjectBatchCount = useMemo(() => countCompletedSubjectBatchJobs(analysisJobs), [analysisJobs]);
   const selectedKnowledgeCard = selectedDocument ? knowledgeCardByDocumentId.get(selectedDocument.id) ?? null : null;
-  const selectedDisplayName = selectedDocument ? getDocumentDisplayName(selectedDocument, selectedKnowledgeCard) : "";
+  const selectedSeedMatch = selectedDocument ? seedMatchByDocumentId.get(selectedDocument.id) ?? null : null;
+  const selectedDisplayName = selectedDocument ? getDocumentDisplayName(selectedDocument, selectedKnowledgeCard, selectedSeedMatch) : "";
   const filteredXdfJobs = useMemo(
     () =>
       analysisJobs
@@ -691,14 +697,25 @@ function Workspace({
       }),
     });
 
-    const payload = (await response.json()) as { card?: LiteratureKnowledgeCard; error?: string };
-    if (!response.ok || !payload.card) {
+    const payload = (await response.json()) as {
+      card?: LiteratureKnowledgeCard;
+      seedMatch?: SeedLiteratureMatch;
+      status?: "created-card" | "existing-card" | "seed-existing";
+      message?: string;
+      error?: string;
+    };
+    if (!response.ok || (!payload.card && !payload.seedMatch)) {
       setKnowledgeMessage(payload.error ?? "文献知识卡片生成失败。");
       setKnowledgeLoading(false);
       return;
     }
 
-    setKnowledgeMessage("文献知识卡片已更新，写作助手会优先引用知识库。");
+    setKnowledgeMessage(
+      payload.message ??
+        (payload.seedMatch
+          ? `这篇文献已在内置知识库中（${payload.seedMatch.sourceId}：${payload.seedMatch.title}），不会重复调用 OpenAI。`
+          : "文献知识卡片已更新，写作助手会优先引用知识库。"),
+    );
     await loadDocuments();
     await loadKnowledgeBase();
     setKnowledgeLoading(false);
@@ -866,7 +883,8 @@ function Workspace({
                       </div>
                       {group.documents.map((document) => {
                         const knowledgeCard = knowledgeCardByDocumentId.get(document.id) ?? null;
-                        const displayName = getDocumentDisplayName(document, knowledgeCard);
+                        const seedMatch = seedMatchByDocumentId.get(document.id) ?? null;
+                        const displayName = getDocumentDisplayName(document, knowledgeCard, seedMatch);
                         const originalName = displayName !== document.filename ? `${document.filename} · ` : "";
 
                         return (
@@ -887,6 +905,7 @@ function Workspace({
                               document={document}
                               job={latestJobByDocumentId.get(document.id) ?? null}
                               knowledgeCard={knowledgeCard}
+                              seedMatch={seedMatch}
                             />
                           </button>
                         );
@@ -944,9 +963,14 @@ function Workspace({
                   文献入库会抽取论文目的、方法、EEG/行为指标、主要发现、局限和可引用章节，生成结构化知识卡片供写作助手引用。
                 </p>
               ) : null}
+              {selectedDocumentIsLiterature && selectedSeedMatch ? (
+                <p className="muted">
+                  已匹配内置知识库 {selectedSeedMatch.sourceId}：{selectedSeedMatch.title}。这篇文献已经可被写作助手引用，点击生成时会直接提示已存在，不会重复调用 OpenAI。
+                </p>
+              ) : null}
               {selectedDocumentIsLiterature ? (
                 <button className="primary-button" disabled={!selectedDocument || knowledgeLoading} onClick={buildLiteratureKnowledgeCard}>
-                  {knowledgeLoading ? "生成知识卡片中..." : "生成/更新知识卡片"}
+                  {knowledgeLoading ? "生成知识卡片中..." : selectedSeedMatch && !selectedKnowledgeCard ? "确认内置库匹配" : "生成/更新知识卡片"}
                 </button>
               ) : null}
               {knowledgeMessage ? <p className="muted">{knowledgeMessage}</p> : null}
@@ -1103,10 +1127,12 @@ function DocumentStatusBadge({
   document,
   job,
   knowledgeCard,
+  seedMatch,
 }: {
   document: ResearchDocument;
   job: ResearchAnalysisJob | null;
   knowledgeCard: LiteratureKnowledgeCard | null;
+  seedMatch: SeedLiteratureMatch | null;
 }) {
   if (isXdfDocument(document)) {
     if (!job) return <span className="state-chip muted-state">未提交</span>;
@@ -1114,7 +1140,9 @@ function DocumentStatusBadge({
   }
 
   if (isLiteratureDocument(document)) {
-    return <span className={`state-chip ${knowledgeCard ? "completed" : "muted-state"}`}>{knowledgeCard ? "已入库" : "未入库"}</span>;
+    const isCovered = Boolean(knowledgeCard || seedMatch);
+    const label = knowledgeCard ? "已入库" : seedMatch ? "已在内置库" : "未入库";
+    return <span className={`state-chip ${isCovered ? "completed" : "muted-state"}`}>{label}</span>;
   }
 
   return <span className="state-chip muted-state">资料</span>;
@@ -1497,7 +1525,8 @@ function LiteratureKnowledgePanel({
   onRefresh: () => void;
 }) {
   const indexed = entries.filter((entry) => entry.card);
-  const pending = entries.length - indexed.length;
+  const seeded = entries.filter((entry) => !entry.card && entry.seedMatch);
+  const pending = entries.length - indexed.length - seeded.length;
 
   return (
     <section className="work-panel knowledge-panel">
@@ -1507,7 +1536,7 @@ function LiteratureKnowledgePanel({
           <h3>可引用论文卡片</h3>
         </div>
         <div className="top-actions">
-          <span className="status-pill compact">{indexed.length} 篇已入库</span>
+          <span className="status-pill compact">{indexed.length + seeded.length} 篇可引用</span>
           <button className="secondary-button" onClick={onRefresh}>
             刷新
           </button>
@@ -1517,6 +1546,11 @@ function LiteratureKnowledgePanel({
         <p className="muted">
           系统已接入 Metro Rescue 初始知识库：{seedStats.sources} 篇文献卡、{seedStats.claims} 条 claims、{seedStats.hypotheses} 个假设、
           {seedStats.analysisModels} 个分析模型。新上传论文生成知识卡片后，会作为增量文献加入写作助手。
+        </p>
+      ) : null}
+      {seeded.length ? (
+        <p className="muted">
+          {seeded.length} 篇已上传 PDF 与内置知识库中的 source card 匹配，写作助手会直接使用内置 KB；这些文献不会重复调用 OpenAI 生成知识卡片。
         </p>
       ) : null}
       {pending ? <p className="muted">{pending} 篇文献还没有知识卡片。请在资料库中选中文献后点击“生成/更新知识卡片”。</p> : null}
@@ -1603,10 +1637,15 @@ function getDocumentCategory(document: Pick<ResearchDocument, "filename" | "mime
   return documentCategories[4];
 }
 
-function getDocumentDisplayName(document: ResearchDocument, knowledgeCard: LiteratureKnowledgeCard | null) {
+function getDocumentDisplayName(
+  document: ResearchDocument,
+  knowledgeCard: LiteratureKnowledgeCard | null,
+  seedMatch?: SeedLiteratureMatch | null,
+) {
   if (isLiteratureDocument(document)) {
     const title = knowledgeCard?.title?.trim();
     if (title && title !== "未识别") return title;
+    if (seedMatch?.title) return seedMatch.title;
   }
 
   return document.filename;

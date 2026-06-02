@@ -1,6 +1,15 @@
 import type { ResearchDocument } from "@/lib/supabase";
 
 export const LITERATURE_CARD_PREFIX = "NT_KB_V1::";
+export const IMPORTED_PDF_PREFIX = "IMPORTED_PDF_V1::";
+
+export type ImportedPdfMetadata = {
+  originalFilename?: string;
+  extractedTitle?: string;
+  titleSource?: string;
+  sha256?: string;
+  importedAt?: string;
+};
 
 export type LiteratureKnowledgeCard = {
   version: 1 | 2 | 3;
@@ -51,6 +60,22 @@ export function parseLiteratureCard(notes: string | null | undefined): Literatur
   try {
     const parsed = JSON.parse(notes.slice(LITERATURE_CARD_PREFIX.length)) as LiteratureKnowledgeCard;
     return parsed?.version === 1 || parsed?.version === 2 || parsed?.version === 3 ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+export function parseImportedPdfMetadata(notes: string | null | undefined): ImportedPdfMetadata | null {
+  if (!notes?.startsWith(IMPORTED_PDF_PREFIX)) return null;
+  try {
+    const parsed = JSON.parse(notes.slice(IMPORTED_PDF_PREFIX.length)) as Record<string, unknown>;
+    return {
+      originalFilename: typeof parsed.originalFilename === "string" ? parsed.originalFilename : undefined,
+      extractedTitle: typeof parsed.extractedTitle === "string" ? parsed.extractedTitle : undefined,
+      titleSource: typeof parsed.titleSource === "string" ? parsed.titleSource : undefined,
+      sha256: typeof parsed.sha256 === "string" ? parsed.sha256 : undefined,
+      importedAt: typeof parsed.importedAt === "string" ? parsed.importedAt : undefined,
+    };
   } catch {
     return null;
   }

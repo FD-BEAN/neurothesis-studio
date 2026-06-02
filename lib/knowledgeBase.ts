@@ -1,5 +1,5 @@
 import seedKnowledgeBase from "@/lib/metro_rescue_seed_kb.json";
-import type { LiteratureKnowledgeCard } from "@/lib/literature";
+import { parseImportedPdfMetadata, type LiteratureKnowledgeCard } from "@/lib/literature";
 
 type SeedKnowledgeBase = typeof seedKnowledgeBase;
 type SeedSource = SeedKnowledgeBase["sources"][number];
@@ -34,8 +34,31 @@ type ScoredItem<T> = {
   score: number;
 };
 
+type SeedMatchableDocument = {
+  filename: string;
+  storage_path?: string | null;
+  notes?: string | null;
+};
+
+export type SeedLiteratureMatch = {
+  sourceId: string;
+  title: string;
+  filename: string;
+  grade: string;
+  depth: string;
+  keyTakeaway: string;
+  methodOrEvidence: string;
+  howToUse: string;
+  doNotClaim: string;
+  thesisSection: string;
+  themeTags: string[];
+  matchedKey: string;
+  matchedBy: "document-title" | "import-title" | "import-filename" | "storage-path";
+};
+
 const SOURCE_ID_PATTERN = /S\d{3}/g;
 const sourceTitleById = new Map(seedKnowledgeBase.sources.map((source) => [source.Source_ID, source.Title]));
+const seedSourceByNormalizedKey = buildSeedSourceKeyMap();
 
 export function buildResearchKnowledgeContext(prompt: string, userCards: LiteratureKnowledgeCard[]) {
   const seedContext = buildSeedContext(prompt);
@@ -64,6 +87,25 @@ export function getSeedKnowledgeStats() {
     writingBlocks: seedKnowledgeBase.writing_blocks.length,
     quoteAnchors: seedKnowledgeBase.quote_anchors.length,
   };
+}
+
+export function findSeedLiteratureMatch(document: SeedMatchableDocument): SeedLiteratureMatch | null {
+  const imported = parseImportedPdfMetadata(document.notes);
+  const candidates: Array<{ value?: string | null; matchedBy: SeedLiteratureMatch["matchedBy"] }> = [
+    { value: imported?.extractedTitle, matchedBy: "import-title" },
+    { value: document.filename, matchedBy: "document-title" },
+    { value: imported?.originalFilename, matchedBy: "import-filename" },
+    { value: getStorageBasename(document.storage_path), matchedBy: "storage-path" },
+  ];
+
+  for (const candidate of candidates) {
+    const key = normalizeLiteratureKey(candidate.value ?? "");
+    if (!isUsefulLiteratureKey(key)) continue;
+    const source = seedSourceByNormalizedKey.get(key);
+    if (source) return toSeedLiteratureMatch(source, key, candidate.matchedBy);
+  }
+
+  return null;
 }
 
 export function getSeedKnowledgeReview(): SeedKnowledgeReview {
@@ -497,6 +539,63 @@ function formatSourceReferences(value: string) {
   if (!ids.length) return value;
 
   return ids.map((id) => `${id} — ${sourceTitleById.get(id) ?? "未找到对应文献卡"}`).join("\n");
+}
+
+function buildSeedSourceKeyMap() {
+  const map = new Map<string, SeedSource>();
+  for (const source of seedKnowledgeBase.sources) {
+    addSeedSourceKey(map, source.Title, source, true);
+    addSeedSourceKey(map, source.Filename, source, false);
+  }
+  return map;
+}
+
+function addSeedSourceKey(map: Map<string, SeedSource>, value: string, source: SeedSource, allowShortKey: boolean) {
+  const key = normalizeLiteratureKey(value);
+  if (!key || (!allowShortKey && !isUsefulLiteratureKey(key))) return;
+  if (!map.has(key)) map.set(key, source);
+}
+
+function toSeedLiteratureMatch(
+  source: SeedSource,
+  matchedKey: string,
+  matchedBy: SeedLiteratureMatch["matchedBy"],
+): SeedLiteratureMatch {
+  return {
+    sourceId: source.Source_ID,
+    title: source.Title,
+    filename: source.Filename,
+    grade: source.Grade,
+    depth: source.Depth,
+    keyTakeaway: source.Key_Takeaway_PDF_Free,
+    methodOrEvidence: source.Method_or_Evidence,
+    howToUse: source.How_to_use_in_Metro_Rescue,
+    doNotClaim: source.Do_not_claim,
+    thesisSection: source.Thesis_Section,
+    themeTags: splitTags(source.Theme_Tags),
+    matchedKey,
+    matchedBy,
+  };
+}
+
+function normalizeLiteratureKey(value: string) {
+  return getStorageBasename(value)
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/\.(pdf|docx?|md|txt)$/i, "")
+    .replace(/\(\d+\)/g, "")
+    .replace(/[（(]\s*科研通-ablesci\.com\s*[）)]/gi, "")
+    .replace(/科研通-ablesci\.com/gi, "")
+    .replace(/ablesci\.com/gi, "")
+    .replace(/[^a-z0-9\u4e00-\u9fff]+/g, "");
+}
+
+function isUsefulLiteratureKey(key: string) {
+  return key.length >= 8 || /[\u4e00-\u9fff]{4,}/.test(key);
+}
+
+function getStorageBasename(value: string | null | undefined) {
+  return String(value ?? "").split(/[\\/]/).pop() ?? "";
 }
 
 function splitTags(value: string) {

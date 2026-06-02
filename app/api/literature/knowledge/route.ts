@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
-import { getSeedKnowledgeReview, getSeedKnowledgeStats } from "@/lib/knowledgeBase";
+import { findSeedLiteratureMatch, getSeedKnowledgeReview, getSeedKnowledgeStats } from "@/lib/knowledgeBase";
 import { encodeLiteratureCard, isLiteratureDocument, parseLiteratureCard, type LiteratureKnowledgeCard } from "@/lib/literature";
 import { getSupabaseServerClient, type ResearchDocument } from "@/lib/supabase";
 
@@ -46,6 +46,7 @@ export async function GET(request: Request) {
     cards: documents.map((document) => ({
       document,
       card: parseLiteratureCard(document.notes),
+      seedMatch: findSeedLiteratureMatch(document),
     })),
   });
 }
@@ -80,6 +81,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Only literature documents can be indexed into the knowledge base." }, { status: 400 });
   }
 
+  const existingCard = parseLiteratureCard(researchDocument.notes);
+  if (existingCard) {
+    return NextResponse.json({
+      card: existingCard,
+      status: "existing-card",
+      message: "这篇文献已经有知识卡片，不会重复调用 OpenAI。",
+    });
+  }
+
+  const seedMatch = findSeedLiteratureMatch(researchDocument);
+  if (seedMatch) {
+    return NextResponse.json({
+      seedMatch,
+      status: "seed-existing",
+      message: `这篇文献已在内置知识库中（${seedMatch.sourceId}：${seedMatch.title}），不会重复调用 OpenAI。`,
+    });
+  }
+
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: "OPENAI_API_KEY is not configured." }, { status: 503 });
@@ -105,7 +124,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
 
-  return NextResponse.json({ card });
+  return NextResponse.json({
+    card,
+    status: "created-card",
+    message: "文献知识卡片已更新，写作助手会优先引用知识库。",
+  });
 }
 
 async function authenticate(request: Request) {
