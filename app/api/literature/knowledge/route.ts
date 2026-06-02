@@ -140,10 +140,19 @@ async function extractDocumentText(supabase: ReturnType<typeof getSupabaseServer
 
   if (extension === "pdf" || document.mime_type?.includes("pdf")) {
     const buffer = Buffer.from(await fileBlob.arrayBuffer());
-    const pdfParseModule = (await import("pdf-parse")) as unknown as { default?: (input: Buffer) => Promise<{ text?: string }> };
-    const pdfParse = pdfParseModule.default ?? (pdfParseModule as unknown as (input: Buffer) => Promise<{ text?: string }>);
-    const parsed = await pdfParse(buffer);
-    return sanitizeExtractedText(parsed.text ?? "");
+    const { PDFParse } = (await import("pdf-parse")) as unknown as {
+      PDFParse: new (options: { data: Buffer }) => {
+        getText(options?: { first?: number; last?: number }): Promise<{ text?: string }>;
+        destroy(): Promise<void>;
+      };
+    };
+    const parser = new PDFParse({ data: buffer });
+    try {
+      const parsed = await parser.getText();
+      return sanitizeExtractedText(parsed.text ?? "");
+    } finally {
+      await parser.destroy();
+    }
   }
 
   if (["txt", "md"].includes(extension)) {

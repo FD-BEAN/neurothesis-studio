@@ -302,6 +302,15 @@ XDF worker 目前输出：
 - 审阅页必须提示三条边界：seed KB 不是 PDF 全文库；历史 Signature1/2/3 命名需要统一为低/中/高 density condition；hypotheses / writing blocks / analysis models 不是实验结果。
 - 新增文献知识卡片仍作为 user-added literature card 展示在同一审阅入口下，写作助手可同时读取 seed KB 和新增卡片。
 - `S001` 这类 source code 保留用于检索和引用，但所有 claims / mechanisms / hypotheses / risks / QA / quote anchors 需要在审阅页显示对应的 source title，避免用户必须跳回文献卡手动查表。
+
+PDF 原文入库策略：
+
+- 用户提供的 48 篇相关文献 PDF 不提交到 GitHub；只进入 Supabase private Storage。
+- 本地脚本 `scripts/import_literature_pdfs.mjs` 负责批量导入 PDF。它先生成 `work/literature_pdf_import/import_plan.json`，再在 `--commit` 模式下上传。
+- 标题优先级：内置 seed KB 的 source title > PDF metadata > PDF 首页标题推断 > 原始文件名。
+- storage path 使用 `user_id/literature/{sha256}-{ascii-slug}.pdf`，避免中文和特殊字符导致 Supabase object key 错误；网页显示名可以使用论文真实标题。
+- 前端资料库显示文献时，若已有知识卡片，主标题使用 `card.title`，原始文件名保留在副信息和文件详情里。
+- 当前本地 `.env.local` 没有 service role，也没有可复用 Supabase 登录态；真正批量上传需要临时提供 `SUPABASE_SERVICE_ROLE_KEY + IMPORT_USER_EMAIL/ID` 或 `IMPORT_EMAIL + IMPORT_PASSWORD`。
 - 当前 GitHub Actions worker 已吸收其中的核心思路：只处理 `.xdf`，输出 stream/session/behavior/EEG QC、trial-level 频带特征和事件锁定 EEG 表；后续可继续把 HTML 报告渲染与跨被试汇总页面接入前端。
 
 限制：

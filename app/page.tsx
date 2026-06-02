@@ -380,8 +380,14 @@ function Workspace({
   );
   const inferredSubjectGroups = useMemo(() => groupXdfDocumentsBySubject(xdfDocuments), [xdfDocuments]);
   const latestJobByDocumentId = useMemo(() => buildLatestJobByDocumentId(analysisJobs), [analysisJobs]);
+  const knowledgeCardByDocumentId = useMemo(
+    () => new Map(knowledgeEntries.map((entry) => [entry.document.id, entry.card])),
+    [knowledgeEntries],
+  );
   const xdfJobStats = useMemo(() => getXdfJobStats(analysisJobs), [analysisJobs]);
   const completedSubjectBatchCount = useMemo(() => countCompletedSubjectBatchJobs(analysisJobs), [analysisJobs]);
+  const selectedKnowledgeCard = selectedDocument ? knowledgeCardByDocumentId.get(selectedDocument.id) ?? null : null;
+  const selectedDisplayName = selectedDocument ? getDocumentDisplayName(selectedDocument, selectedKnowledgeCard) : "";
   const filteredXdfJobs = useMemo(
     () =>
       analysisJobs
@@ -858,26 +864,33 @@ function Workspace({
                         <strong>{group.label}</strong>
                         <span>{group.documents.length} 个文件</span>
                       </div>
-                      {group.documents.map((document) => (
-                        <button
-                          className={`document-item ${selectedDocument?.id === document.id ? "is-active" : ""}`}
-                          key={document.id}
-                          onClick={() => setSelectedDocument(document)}
-                        >
-                          <div className="document-item-main">
-                            <strong>{document.filename}</strong>
-                            <span>
-                              {formatDocumentKind(document)} · {formatBytes(document.size_bytes)} ·{" "}
-                              {new Date(document.created_at).toLocaleDateString("zh-CN")}
-                            </span>
-                          </div>
-                          <DocumentStatusBadge
-                            document={document}
-                            job={latestJobByDocumentId.get(document.id) ?? null}
-                            knowledgeCard={knowledgeEntries.find((entry) => entry.document.id === document.id)?.card ?? null}
-                          />
-                        </button>
-                      ))}
+                      {group.documents.map((document) => {
+                        const knowledgeCard = knowledgeCardByDocumentId.get(document.id) ?? null;
+                        const displayName = getDocumentDisplayName(document, knowledgeCard);
+                        const originalName = displayName !== document.filename ? `${document.filename} · ` : "";
+
+                        return (
+                          <button
+                            className={`document-item ${selectedDocument?.id === document.id ? "is-active" : ""}`}
+                            key={document.id}
+                            onClick={() => setSelectedDocument(document)}
+                          >
+                            <div className="document-item-main">
+                              <strong>{displayName}</strong>
+                              <span>
+                                {originalName}
+                                {formatDocumentKind(document)} · {formatBytes(document.size_bytes)} ·{" "}
+                                {new Date(document.created_at).toLocaleDateString("zh-CN")}
+                              </span>
+                            </div>
+                            <DocumentStatusBadge
+                              document={document}
+                              job={latestJobByDocumentId.get(document.id) ?? null}
+                              knowledgeCard={knowledgeCard}
+                            />
+                          </button>
+                        );
+                      })}
                     </div>
                   ) : null,
                 )
@@ -894,11 +907,15 @@ function Workspace({
               <div className="analysis-head">
                 <div>
                   <p className="eyebrow">当前选中</p>
-                  <h3>{selectedDocument?.filename ?? "尚未选择文件"}</h3>
+                  <h3>{selectedDocument ? selectedDisplayName : "尚未选择文件"}</h3>
                 </div>
                 {selectedCategory ? <span className="category-badge">{selectedCategory.label}</span> : null}
               </div>
               <dl className="file-meta">
+                <div>
+                  <dt>原始文件名</dt>
+                  <dd>{selectedDocument ? selectedDocument.filename : "未选择"}</dd>
+                </div>
                 <div>
                   <dt>文件类型</dt>
                   <dd>{selectedDocument ? formatDocumentKind(selectedDocument) : "未选择"}</dd>
@@ -1584,6 +1601,15 @@ function getDocumentCategory(document: Pick<ResearchDocument, "filename" | "mime
   }
 
   return documentCategories[4];
+}
+
+function getDocumentDisplayName(document: ResearchDocument, knowledgeCard: LiteratureKnowledgeCard | null) {
+  if (isLiteratureDocument(document)) {
+    const title = knowledgeCard?.title?.trim();
+    if (title && title !== "未识别") return title;
+  }
+
+  return document.filename;
 }
 
 function getDocumentExtension(filename: string) {

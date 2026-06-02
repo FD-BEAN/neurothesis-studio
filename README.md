@@ -70,6 +70,48 @@ python scripts\xdf_qc.py C:\path\to\file.xdf
 - PDF：提示建立文献知识卡片，不进入 XDF 分析。
 - XDF：即时摘要只给出质控入口；正式实验数据分析请使用 `运行 XDF 高级分析`。
 
+## 批量导入已有 PDF 文献
+
+真实 PDF 不提交到 GitHub；它们应进入 Supabase private Storage，并在 `research_documents` 中保存元数据。批量导入脚本会优先使用内置 seed KB 中的论文标题修正文献显示名，匹配不到时再从 PDF metadata / 首页文字推断标题。
+
+先把 zip 解到本地临时目录，例如：
+
+```powershell
+$env:PYTHONIOENCODING='utf-8'
+@'
+from pathlib import Path
+import zipfile
+source = Path(r"C:\path\to\相关文献.zip")
+target = Path("work/literature_pdf_import/extracted")
+target.mkdir(parents=True, exist_ok=True)
+with zipfile.ZipFile(source) as zipf:
+    for info in zipf.infolist():
+        if info.filename.lower().endswith(".pdf"):
+            out = target / Path(info.filename).name
+            with zipf.open(info) as src, out.open("wb") as dst:
+                dst.write(src.read())
+'@ | python -
+```
+
+生成导入清单，不上传：
+
+```powershell
+node scripts/import_literature_pdfs.mjs --source work/literature_pdf_import/extracted
+```
+
+真正上传需要本地有 Supabase 权限。二选一：
+
+- 设置 `SUPABASE_SERVICE_ROLE_KEY`，并设置 `IMPORT_USER_EMAIL` 或 `IMPORT_USER_ID`。
+- 或设置普通登录账号 `IMPORT_EMAIL` / `IMPORT_PASSWORD`。
+
+然后执行：
+
+```powershell
+node scripts/import_literature_pdfs.mjs --source work/literature_pdf_import/extracted --commit
+```
+
+脚本会用稳定 hash 生成 storage path，重复运行会跳过已入库文件。导入后，网页中可以通过“打开文件”生成短时有效链接阅读原 PDF；后续再逐篇点击“生成/更新知识卡片”即可把新论文加入写作助手。
+
 ## XDF 高级分析
 
 点击 `运行 XDF 高级分析` 会创建 `research_analysis_jobs` 任务，并触发 GitHub Actions 中的 Python worker。worker 只处理 LabRecorder `.xdf`，下载 Supabase private Storage 中的文件，使用 `pyxdf / numpy` 解析 EEG stream 与 Unity marker stream，再把 JSON 报告写回 Supabase。
