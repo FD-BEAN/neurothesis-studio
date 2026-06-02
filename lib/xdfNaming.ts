@@ -3,9 +3,9 @@ export type DensityLevel = "low" | "medium" | "high";
 export const densityLevels: DensityLevel[] = ["low", "medium", "high"];
 
 export const densityLabels: Record<DensityLevel, string> = {
-  low: "低密度",
-  medium: "中密度",
-  high: "高密度",
+  low: "低路径确认支持",
+  medium: "中路径确认支持",
+  high: "高路径确认支持",
 };
 
 const tripletDensityByPosition: Record<number, DensityLevel> = {

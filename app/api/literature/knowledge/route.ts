@@ -424,7 +424,7 @@ async function buildChunkDigests(
         },
         {
           role: "user",
-          content: `Paper filename: ${document.filename}\nChunk ${index + 1}/${chunks.length}.\n\nProject lens: VR subway evacuation wayfinding, signage density, EEG cognitive load, Unity/LabRecorder markers, within-subject density contrast medium vs low/high.\n\nExtract evidence from this chunk only. Prefer Chinese summaries with English technical terms preserved.\n\nChunk text:\n${chunk}`,
+          content: `Paper filename: ${document.filename}\nChunk ${index + 1}/${chunks.length}.\n\nProject lens: VR subway evacuation wayfinding, route-confirmation information chain, official target alert, on-site route-confirmation cues, route-decision hesitation, perceived information reliability, EEG-indexed information-processing load, protective action instruction clarity, wayfinding decision accuracy, Unity/LabRecorder markers, within-subject medium vs low/high support contrast.\n\nExtract evidence from this chunk only. Prefer Chinese summaries with English technical terms preserved.\n\nChunk text:\n${chunk}`,
         },
       ],
       text: {
@@ -471,9 +471,11 @@ function buildFinalLiteratureInput(document: ResearchDocument, extractedText: st
   return `Create a Chinese-first, bilingual-friendly knowledge card for this paper, following the Metro Rescue source-card logic: extract what the paper can support, where it can be used, what must not be overclaimed, and which quote/page anchors need later verification.
 
 Thesis project context:
-- Topic: VR subway evacuation wayfinding, signage density/design, EEG cognitive load, Unity marker streams, LabRecorder .xdf synchronization.
-- Current primary hypothesis: medium signage/scene density may create the highest cognitive load; formal contrast is medium - mean(low, high).
-- Analysis route: within-subject density factor, subject-level contrasts, and later mixed-effects models with possible between-subject metadata.
+- Topic: VR subway evacuation wayfinding, official target alerts, on-site route-confirmation cues, route-confirmation information chain, route-decision hesitation, EEG information-processing load, Unity marker streams, LabRecorder .xdf synchronization.
+- Current theoretical frame: after an official target reminder, individuals judge whether the subsequent official on-site cues form a continuous, traceable, and confirmable path. Medium route-confirmation support may be reliable enough to keep checking but not closed enough to resolve the decision quickly.
+- Current primary hypothesis: medium route-confirmation support may create the highest route-decision hesitation and EEG-indexed information-processing load; formal contrast is medium - mean(low, high).
+- Main constructs: X route-confirmation support level; Y route-decision hesitation; auxiliary Y wayfinding decision accuracy; M1 perceived information reliability; M2 information-processing load; W protective action instruction clarity.
+- Analysis route: within-subject support-level factor, subject-level contrasts, and later mixed-effects models with possible between-subject metadata.
 
 Evidence rules:
 - Do not turn this thesis hypothesis into a finding from the paper unless the paper directly tested it.
@@ -481,6 +483,7 @@ Evidence rules:
 - Use concise Chinese for dashboard display.
 - If bibliographic details, sample size, measures, or results are unclear, write 未识别.
 - candidateClaims must be claims that can be cautiously supported by this paper for the thesis, not invented conclusions.
+- densityHypothesisRelevance should be interpreted broadly as relevance to the low/medium/high route-confirmation support hypothesis.
 - quoteAnchorsToVerify should be short source phrases or section/page targets that the human should verify before final citation.
 
 Filename: ${document.filename}

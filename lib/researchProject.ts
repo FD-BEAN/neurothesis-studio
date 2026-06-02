@@ -1,16 +1,73 @@
 export const researchProject = {
   name: "Metro Rescue",
-  subtitle: "VR 地铁撤离任务中的标识密度、导向决策与 EEG 认知负荷研究",
-  keywords: ["Metro Rescue", "VR 地铁撤离", "标识密度", "导向标识", "认知负荷", "LSL marker", "EEG .xdf"],
+  subtitle: "VR 地铁撤离任务中的路径确认信息链、行动迟滞与 EEG 信息加工负荷研究",
+  keywords: ["Metro Rescue", "VR 地铁撤离", "路径确认信息链", "路径确认支持", "行动迟滞", "导向标识", "EEG 信息加工负荷", "LSL marker", "EEG .xdf"],
   design: {
     maps: ["Metro1", "Metro2", "Metro3"],
-    densityLevels: ["低密度", "中密度", "高密度"],
+    densityLevels: ["低路径确认支持", "中路径确认支持", "高路径确认支持"],
     expectedSubjects: 90,
     runsPerSubject: 3,
     expectedRuns: 270,
-    withinSubjectFactor: "Density",
-    primaryHypothesis: "中等密度场景可能产生最高认知负荷。",
+    withinSubjectFactor: "Route-confirmation support level",
+    primaryHypothesis: "中等路径确认支持可能产生最高行动迟滞和最高信息加工负荷。",
     primaryContrast: "medium - mean(low, high)",
+  },
+  routeConfirmationFramework: {
+    coreProblem:
+      "在公共空间应急疏散中，官方目标提醒和现场路径标识的关键问题不是信息是否存在，而是能否形成一条让人持续确认、快速理解、顺畅行动的路径确认信息链。",
+    scientificQuestion:
+      "个体接收到官方目标提醒后，如何依据后续官方路径确认线索进行路径判断；为什么不同水平的路径确认支持会导致不同程度的行动迟滞。",
+    constructs: [
+      {
+        id: "X",
+        name: "路径确认支持水平",
+        english: "Route-confirmation support level",
+        role: "实验操纵变量",
+        dimensions: ["首次确认线索接近性", "确认链连续性", "关键决策点覆盖", "平均间距"],
+      },
+      {
+        id: "Y",
+        name: "行动迟滞",
+        english: "Route-decision hesitation",
+        role: "主要客观因变量",
+        dimensions: ["首次行动启动时间", "决策点停顿时间", "重复核对次数"],
+      },
+      {
+        id: "auxY",
+        name: "路径判断准确率",
+        english: "Wayfinding decision accuracy",
+        role: "辅助因变量",
+        dimensions: ["首次方向选择是否正确", "决策点选择正确率", "最终是否到达正确目标"],
+      },
+      {
+        id: "M1",
+        name: "感知信息可靠性",
+        english: "Perceived information reliability",
+        role: "中介变量，accuracy side",
+        dimensions: ["官方路径确认线索是否一致", "稳定", "可追踪", "值得继续依赖"],
+      },
+      {
+        id: "M2",
+        name: "信息加工负荷",
+        english: "Information-processing load",
+        role: "中介变量，effort side；EEG 表征",
+        dimensions: ["信息断裂", "不连贯", "目标-线索-方向匹配负担", "确认过程负荷"],
+      },
+      {
+        id: "W",
+        name: "保护性行动指令清晰度",
+        english: "Protective action instruction clarity",
+        role: "调节变量",
+        dimensions: ["目标明确", "应依据的现场线索明确", "关键决策点确认规则明确"],
+      },
+    ],
+    hypotheses: [
+      "H1: 路径确认支持水平对行动迟滞具有倒 U 型影响，中等支持高于低支持和高支持。",
+      "H2: 从低支持到中等支持会增强感知信息可靠性，使个体更愿意继续参考和核对官方线索，从而提高行动迟滞。",
+      "H3: 中等支持下官方信息链处于可依赖但未闭合状态，个体需要更多目标-线索-方向匹配资源，表现为更高 EEG 信息加工负荷，并进一步导致更高行动迟滞。",
+      "H4: 保护性行动指令清晰度调节路径确认支持对感知信息可靠性和 EEG 信息加工负荷的影响。",
+      "H5: 路径确认支持水平正向影响路径判断准确率；高支持应在较低行动迟滞下实现较高准确率。",
+    ],
   },
   figures: [
     {
@@ -18,13 +75,13 @@ export const researchProject = {
       title: "实验流程图",
       use: "研究设计总览、方法部分第一张图",
       caption:
-        "被试依次完成信息输入和密度条件对应的 VR 地铁撤离任务。Unity 同时保存连续行为日志，并通过 LSL 输出 marker stream，用于与 EEG 数据同步。",
+        "被试依次接收保护性行动指令，并完成不同路径确认支持条件下的 VR 地铁撤离任务。Unity 同时保存连续行为日志，并通过 LSL 输出 marker stream，用于与 EEG 数据同步。",
     },
     {
       id: "fig-2",
       title: "实验条件结构",
-      use: "说明 90 名被试 × 3 个密度条件的组内设计",
-      caption: "每名被试完成低密度、中密度和高密度 3 个 VR 地铁撤离 run；正式统计以 Density 为组内因素，主检验为中密度相对低/高密度平均的 planned contrast。",
+      use: "说明 90 名被试 × 3 个路径确认支持条件的组内设计",
+      caption: "每名被试完成低、中、高路径确认支持 3 个 VR 地铁撤离 run；正式统计以 Route-confirmation support level 为组内因素，主检验为中等支持相对低/高支持平均的 planned contrast。",
     },
     {
       id: "fig-3-5",
@@ -91,9 +148,9 @@ export const researchProject = {
   ],
   qualityAlerts: [
     {
-      title: "密度条件需要稳定记录",
+      title: "路径确认支持条件需要稳定记录",
       detail:
-        "正式 XDF 文件名或 Unity marker 需要稳定写入 density=low/medium/high，或另建 subject-run 条件表。否则 worker 无法自动计算中密度 planned contrast。",
+        "正式 XDF 文件名或 Unity marker 需要稳定写入 support_level=low/medium/high，或另建 subject-run 条件表。否则 worker 无法自动计算中等支持 planned contrast。",
     },
     {
       title: "XDF 文件需要先做会话级质量检查",
@@ -104,14 +161,19 @@ export const researchProject = {
 };
 
 export const metroAiPrompt =
-  "请作为 Metro Rescue 论文写作助理，基于文献知识库和已有 XDF 分析结果，整理：1) 研究问题与理论逻辑；2) 低/中/高密度组内设计；3) EEG 与 Unity marker 指标；4) 主假设 medium - mean(low, high) 的统计路线；5) 可写入英文论文的 Methods/Analysis Plan 段落；6) 目前不能过度声称的边界。";
+  "请作为 Metro Rescue 论文写作者，基于文献知识库和已有 XDF 分析结果，直接写出论文正文：1) 路径确认信息链的研究问题与理论逻辑；2) 低/中/高路径确认支持的组内设计；3) 行动迟滞、路径判断准确率、感知信息可靠性、EEG 信息加工负荷与保护性行动指令清晰度的变量定义；4) 主假设 medium - mean(low, high) 的统计路线；5) Methods / Theory / Hypotheses / Results template 的英文正文；6) 目前不能过度声称的边界。";
 
 export const projectWritingContext = [
   "Project: Metro Rescue, a VR subway evacuation wayfinding study with synchronized Unity LSL markers and EEG LabRecorder .xdf files.",
-  "Participants/runs: target 90 subjects, each with 3 density-condition runs: low, medium, high; expected 270 XDF files.",
-  "Main hypothesis: medium signage/scene density may produce the highest cognitive load, not a simple monotonic higher-density effect.",
+  "Current theoretical framing: the core construct is a route-confirmation information chain after an official target alert. The question is not whether signage exists, but whether official target reminders and subsequent on-site confirmation cues form a continuous, traceable, and confirmable chain for action.",
+  "Participants/runs: target 90 subjects, each with 3 route-confirmation support runs: low, medium, high; expected 270 XDF files.",
+  "Manipulated X: route-confirmation support level, operationalized through first confirmation cue proximity, chain continuity, decision-point coverage, and cue spacing. Signature1/2/3 currently map to low/medium/high support unless a later condition table says otherwise.",
+  "Primary Y: route-decision hesitation, measured by initial action onset time, decision-point dwell time, repeated checking, stopping, scanning, U-turns, and backtracking. Auxiliary Y: wayfinding decision accuracy.",
+  "M1: perceived information reliability, the subjective belief that the official route-confirmation cues are consistent, stable, traceable, and worth relying on. M2: information-processing load, represented by EEG/event-window load features during target-cue-direction matching.",
+  "Moderator W: protective action instruction clarity, comparing vague target-only instruction versus clear instruction that links the target, official on-site cues, and decision-point confirmation rules.",
+  "Main hypothesis: medium route-confirmation support may produce the highest route-decision hesitation and EEG information-processing load, because the official information chain is reliable enough to keep checking but not closed enough to resolve the decision quickly.",
   "Primary planned contrast: medium - mean(low, high), weights low:-1, medium:2, high:-1.",
-  "Primary data products: subject-level density table, EEG load proxy, theta/alpha ratio, frontal theta, posterior alpha, behavior load proxy, completion time, event-window features around sign_readable and decision_point_enter.",
-  "Statistics: within-subject Density model first; between-subject conclusions require subject metadata and Density x Group interaction. Do not claim significance unless cohort summary or user-provided results support it.",
-  "Writing rule: distinguish literature evidence, project hypotheses, and actual experimental results. Use Chinese for planning; provide polished English only for manuscript-ready paragraphs.",
+  "Primary data products: subject-level support-level table, EEG load proxy, theta/alpha ratio, frontal theta, posterior alpha, behavior hesitation proxy, completion time, decision accuracy, and event-window features around sign_readable and decision_point_enter.",
+  "Statistics: within-subject route-confirmation support model first; between-subject conclusions require subject metadata and Support x Group interaction. Do not claim significance unless cohort summary or user-provided results support it.",
+  "Writing rule: produce manuscript-ready English paragraphs when asked for writing; put Chinese explanation, evidence trace, and limitations after the draft. Distinguish literature evidence, project hypotheses, and actual experimental results.",
 ].join("\n");

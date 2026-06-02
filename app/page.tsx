@@ -75,7 +75,8 @@ const knowledgeReviewNotes = [
   "这里保存的是逐篇整理后的文献知识卡，不替代 PDF 原文。",
   "正式写入论文前仍需回到原文核对页码、作者、年份、DOI 和原句语境。",
   "每篇文献下的关联论点、机制、假设和风险只用于组织写作与建模，不等于已经得到实验结果。",
-  "历史字段中的 Signature1/2/3 在当前研究中统一映射为低/中/高密度条件，论文正文使用 Density condition。",
+  "历史字段中的 Signature1/2/3 在当前研究中统一映射为低/中/高路径确认支持条件，论文正文使用 Route-confirmation support level。",
+  "当前论文主框架进一步表述为路径确认支持水平：低/中/高条件用于检验路径确认信息链对行动迟滞、准确率和 EEG 信息加工负荷的影响。",
   "S001 这类编号只是文献索引，正式引用仍以文章标题和原文信息为准。",
 ];
 
@@ -154,6 +155,9 @@ type WritingTaskModeId = (typeof writingTaskModes)[number]["id"];
 
 const writingTargetSections = [
   { id: "introduction", label: "Introduction / Related Work" },
+  { id: "literature-review", label: "Literature Review" },
+  { id: "theory-hypotheses", label: "Theory and Hypotheses" },
+  { id: "variables-measures", label: "Variables and Measures" },
   { id: "methods", label: "Methods" },
   { id: "analysis-plan", label: "Analysis Plan" },
   { id: "results", label: "Results" },
@@ -191,7 +195,31 @@ const writingWorkflowPresets: Array<{
     section: "introduction",
     output: "manuscript",
     prompt:
-      "请直接起草 Introduction / Related Work 的英文论文正文，形成 4-6 个连续段落：从 VR/室内疏散导航、导向标识信息设计、EEG 认知负荷测量，到本研究的 density condition 假设。正文后再给出中文证据说明、可引用文献和不能声称的边界。",
+      "请直接起草 Introduction 的英文论文正文，形成一个完整小节而不是提纲：从公共空间应急疏散中的官方提醒与现场标识脱节、路径确认信息链、accuracy-effort trade-off，到本研究为什么用 VR 地铁撤离和 EEG 检验行动迟滞。正文后再给出中文证据说明、可引用文献和不能声称的边界。",
+  },
+  {
+    label: "文献综述整节",
+    mode: "section-draft",
+    section: "literature-review",
+    output: "manuscript",
+    prompt:
+      "请写 Literature Review 的完整英文小节，主题是 route-confirmation information chain in emergency wayfinding。需要整合 emergency wayfinding、signage/route confirmation、warning/protective action instruction、VR evacuation、EEG cognitive load 五类文献。不要只列文献，要写成有逻辑推进的论文段落，并在段落后给出中文证据链和缺口。",
+  },
+  {
+    label: "理论模型与假设",
+    mode: "section-draft",
+    section: "theory-hypotheses",
+    output: "manuscript",
+    prompt:
+      "请写 Theory and Hypotheses 的完整英文部分。核心模型为：X=route-confirmation support level，Y=route-decision hesitation，M1=perceived information reliability，M2=EEG-indexed information-processing load，W=protective action instruction clarity，辅助因变量=wayfinding decision accuracy。请逐步写出 H1-H5 的理论推导，尤其解释为什么中等支持是“可靠但未闭合”的状态，会导致最高迟滞和最高信息加工负荷。",
+  },
+  {
+    label: "变量与测量",
+    mode: "methods-analysis",
+    section: "variables-measures",
+    output: "manuscript",
+    prompt:
+      "请写 Variables and Measures 的英文正文，覆盖：route-confirmation support level 的四个操纵维度（first confirmation cue proximity, chain continuity, decision-point coverage, average cue spacing）；route-decision hesitation 的客观指标；wayfinding decision accuracy；perceived information reliability 的问卷项；information-processing load 的 EEG/事件窗指标；protective action instruction clarity 的操纵。不要编造尚未确认的设备参数、样本完成数或统计结果。",
   },
   {
     label: "Methods 正文",
@@ -199,7 +227,7 @@ const writingWorkflowPresets: Array<{
     section: "methods",
     output: "manuscript",
     prompt:
-      "请起草 Methods 相关英文正文，覆盖 participants/design、VR metro rescue task、low/medium/high density condition、Unity marker 与 LabRecorder XDF 同步、EEG 指标和行为指标。不要编造设备参数、实际样本完成数或尚未确认的排除标准。",
+      "请起草 Methods 相关英文正文，覆盖 participants/design、VR metro rescue task、low/medium/high route-confirmation support condition、protective action instruction clarity、Unity marker 与 LabRecorder XDF 同步、EEG 指标和行为指标。不要编造设备参数、实际样本完成数或尚未确认的排除标准。",
   },
   {
     label: "统计分析计划",
@@ -207,7 +235,7 @@ const writingWorkflowPresets: Array<{
     section: "analysis-plan",
     output: "structured",
     prompt:
-      "请写一份可放入论文或预注册说明的 Analysis Plan：90 名被试、每人 3 个 density run；001/002/003 为同一被试，004/005/006 为下一被试；Signature1/2/3 分别映射为低/中/高密度；主检验为 medium - mean(low, high)。请说明组内模型、组间变量需要哪些 metadata、事件窗 EEG 指标、行为指标和多重比较策略。",
+      "请写一份可放入论文或预注册说明的 Analysis Plan：90 名被试、每人 3 个 route-confirmation support run；sub001/sub002/sub003 归为 P01，sub004/sub005/sub006 归为 P02；Signature1/2/3 分别映射为低/中/高路径确认支持；主检验为 medium - mean(low, high)。请说明组内模型、组间变量需要哪些 metadata、事件窗 EEG 指标、行动迟滞指标、路径判断准确率和多重比较策略。",
   },
   {
     label: "Results 模板",
@@ -223,7 +251,7 @@ const writingWorkflowPresets: Array<{
     section: "discussion",
     output: "audit",
     prompt:
-      "请整理 Discussion 的可讨论机制、替代解释、局限和不能过度声称的边界。重点检查中等密度最高认知负荷这一假设是否有文献类比支持、哪些内容必须等真实 EEG/行为结果支持，以及 VR 生态效度、marker 同步、个体差异和组内/组间分析的风险。",
+      "请整理 Discussion 的可讨论机制、替代解释、局限和不能过度声称的边界。重点检查中等路径确认支持最高行动迟滞/信息加工负荷这一假设是否有文献类比支持、哪些内容必须等真实 EEG/行为结果支持，以及 VR 生态效度、marker 同步、个体差异、保护性行动指令清晰度和组内/组间分析的风险。",
   },
   {
     label: "审稿式自查",
@@ -231,7 +259,7 @@ const writingWorkflowPresets: Array<{
     section: "discussion",
     output: "audit",
     prompt:
-      "请像审稿人一样检查当前写作思路：研究问题是否清楚、文献证据是否足够、变量定义是否一致、Density condition 与 Signature 命名是否混用、EEG 指标解释是否过度、统计模型是否匹配 90×3 的组内设计。请给出可执行修改清单。",
+      "请像审稿人一样检查当前写作思路：研究问题是否清楚、文献证据是否足够、变量定义是否一致、route-confirmation support 与 Signature 命名是否混用、EEG 指标解释是否过度、行动迟滞和准确率是否被区分、统计模型是否匹配 90×3 的组内设计。请给出可执行修改清单。",
   },
 ];
 
@@ -614,7 +642,7 @@ function Workspace({
     }
 
     setXdfUploadState("done");
-    setXdfUploadMessage(`${uploaded} 个 XDF 已上传到实验数据区。系统会按 001/002/003 三连号推断被试，并按 Signature1/2/3 推断低/中/高密度。`);
+    setXdfUploadMessage(`${uploaded} 个 XDF 已上传到实验数据区。系统会按 001/002/003 三连号推断被试，并按 Signature1/2/3 推断低/中/高路径确认支持。`);
     event.target.value = "";
     await loadDocuments();
   }
@@ -713,7 +741,7 @@ function Workspace({
   async function runSubjectBatchAnalysis(documentIds = selectedBatchIds, subjectId = batchSubjectId) {
     const uniqueDocumentIds = Array.from(new Set(documentIds));
     if (uniqueDocumentIds.length < 2) {
-      setJobMessage("被试批量分析至少需要选择 2 个 XDF；正式数据建议同一被试的低/中/高密度 3 个 run 一起提交。");
+      setJobMessage("被试批量分析至少需要选择 2 个 XDF；正式数据建议同一被试的低/中/高路径确认支持 3 个 run 一起提交。");
       return;
     }
 
@@ -740,7 +768,7 @@ function Workspace({
       return;
     }
 
-    setJobMessage(payload.warning ?? `已提交 ${uniqueDocumentIds.length} 个 XDF 的被试密度条件批量分析任务。`);
+    setJobMessage(payload.warning ?? `已提交 ${uniqueDocumentIds.length} 个 XDF 的被试路径确认支持条件批量分析任务。`);
     await loadAnalysisJobs();
     setJobLoading(false);
   }
@@ -751,7 +779,7 @@ function Workspace({
       return;
     }
     if (!completedSubjectBatchCount) {
-      setJobMessage("还没有已完成的被试批量报告。请先按被试提交低/中/高密度 XDF 分析。");
+      setJobMessage("还没有已完成的被试批量报告。请先按被试提交低/中/高路径确认支持 XDF 分析。");
       return;
     }
 
@@ -772,12 +800,12 @@ function Workspace({
 
     const payload = (await response.json()) as { job?: ResearchAnalysisJob; error?: string; warning?: string };
     if (!response.ok && !payload.job) {
-      setJobMessage(payload.error ?? "全样本密度统计汇总任务创建失败。");
+      setJobMessage(payload.error ?? "全样本路径确认支持统计汇总任务创建失败。");
       setJobLoading(false);
       return;
     }
 
-    setJobMessage(payload.warning ?? `已提交全样本密度统计汇总任务，将汇总 ${completedSubjectBatchCount} 个已完成被试报告。`);
+    setJobMessage(payload.warning ?? `已提交全样本路径确认支持统计汇总任务，将汇总 ${completedSubjectBatchCount} 个已完成被试报告。`);
     await loadAnalysisJobs();
     setJobLoading(false);
   }
@@ -1449,21 +1477,21 @@ function SubjectBatchPanel({
       <div className="analysis-head">
         <div>
           <p className="eyebrow">被试批量分析</p>
-          <h3>同一被试的低 / 中 / 高密度 XDF 一起分析</h3>
+          <h3>同一被试的低 / 中 / 高路径确认支持 XDF 一起分析</h3>
         </div>
         <span className="status-pill compact">
           {selectedIds.length} 个已选{selectedIds.length ? ` · ${selectedCoverage.label}` : ""}
         </span>
       </div>
       <p className="muted">
-        正式数据按 90 名被试 × 3 个密度条件组织。实验文件 sub001/sub002/sub003 归为 P01，sub004/sub005/sub006 归为 P02，以此类推；Signature1/2/3 分别对应低/中/高密度。报告会输出被试内密度表和主 planned contrast：中密度 - 低/高密度平均。
+        正式数据按 90 名被试 × 3 个路径确认支持条件组织。实验文件 sub001/sub002/sub003 归为 P01，sub004/sub005/sub006 归为 P02，以此类推；Signature1/2/3 分别对应低/中/高路径确认支持。报告会输出被试内条件表和主 planned contrast：中等支持 - 低/高支持平均。
       </p>
       <div className="design-strip" aria-label="分析设计">
         <span>90 被试</span>
-        <span>3 密度条件</span>
+        <span>3 路径确认支持条件</span>
         <span>270 个 XDF</span>
-        <span>组内因素：density</span>
-        <span>主假设：中密度最高</span>
+        <span>组内因素：support level</span>
+        <span>主假设：中等支持迟滞最高</span>
       </div>
       <div className="batch-controls">
         <label>
@@ -1510,7 +1538,7 @@ function SubjectBatchPanel({
                 <article className="subject-group-card" key={group.subjectId}>
                   <div>
                     <span className={coverage.complete && group.documents.length === 3 ? "state-chip completed" : "state-chip warning"}>
-                      {coverage.complete ? "密度完整" : `${group.documents.length}/3 XDF`}
+                      {coverage.complete ? "条件完整" : `${group.documents.length}/3 XDF`}
                     </span>
                     <h4>{group.subjectId}</h4>
                     <p>条件：{coverage.label}</p>
@@ -1523,7 +1551,7 @@ function SubjectBatchPanel({
               );
             })
           ) : (
-            <p className="muted">还没有 XDF 文件。上传后会按文件编号三连组推断被试，并按 Signature 或编号位置推断低/中/高密度条件。</p>
+            <p className="muted">还没有 XDF 文件。上传后会按文件编号三连组推断被试，并按 Signature 或编号位置推断低/中/高路径确认支持条件。</p>
           )}
         </div>
       </div>
@@ -1832,6 +1860,13 @@ type LocalArticleReadingNote = {
   writingAngles?: string[];
   followUpQuestions?: string[];
 };
+type LocalArticleTaskLens = {
+  frameworkRole?: string;
+  constructSupport?: Array<{ construct?: string; use?: string; strength?: string }>;
+  measurementUse?: string[];
+  manuscriptUse?: string[];
+  caveats?: string[];
+};
 
 function buildArticleKnowledgeViews(entries: LiteratureKnowledgeEntry[]): ArticleKnowledgeView[] {
   const entryBySourceId = new Map<string, LiteratureKnowledgeEntry>();
@@ -1865,6 +1900,7 @@ function buildArticleKnowledgeViews(entries: LiteratureKnowledgeEntry[]): Articl
     const libraryMeta = entry?.document ? formatDocumentListMeta(entry.document) : sourceFile ? `文件：${sourceFile}` : "";
     const evidenceSnippets = article.evidenceSnippets ?? {};
     const readingNote = (article as LocalArticleKnowledgeCard & { readingNote?: LocalArticleReadingNote }).readingNote;
+    const taskLens = (article as LocalArticleKnowledgeCard & { taskLens?: LocalArticleTaskLens }).taskLens;
 
     return {
       id: article.id,
@@ -1886,6 +1922,22 @@ function buildArticleKnowledgeViews(entries: LiteratureKnowledgeEntry[]): Articl
             { label: "入库信息", value: entry?.document ? formatDocumentListMeta(entry.document) : "" },
           ]),
           points: [],
+          linkedItems: [],
+        },
+        {
+          id: "task-lens",
+          title: "研究任务映射",
+          body: taskLens?.frameworkRole,
+          rows: compactRows([
+            { label: "论文正文用途", value: joinArticleValues(taskLens?.manuscriptUse ?? []) },
+            { label: "测量与指标用途", value: joinArticleValues(taskLens?.measurementUse ?? []) },
+          ]),
+          points: compactStrings([
+            ...(taskLens?.constructSupport ?? []).map((item) =>
+              `${item.construct ?? "相关构念"}：${item.use ?? ""}${item.strength ? `（相关强度：${item.strength}）` : ""}`,
+            ),
+            ...(taskLens?.caveats ?? []).map((item) => `边界：${item}`),
+          ]),
           linkedItems: [],
         },
         {
@@ -1939,7 +1991,7 @@ function buildArticleKnowledgeViews(entries: LiteratureKnowledgeEntry[]): Articl
           title: "对本研究的用途",
           rows: compactRows([
             { label: "写作用途", value: joinArticleValues(article.writingUse) },
-            { label: "密度假设关联", value: joinArticleValues(article.densityHypothesisRelevance) },
+            { label: "路径确认支持假设关联", value: joinArticleValues(article.densityHypothesisRelevance) },
           ]),
           points: compactStrings([
             ...article.metroRescueUse,
@@ -2003,6 +2055,7 @@ function buildDynamicArticleView(entry: LiteratureKnowledgeEntry, id: string): A
   const card = entry.card;
   if (!card) return null;
   const title = card.title || stripLiteratureExtension(entry.document.filename);
+  const taskLens = buildDynamicTaskLens(card);
   return {
     id,
     title,
@@ -2020,6 +2073,20 @@ function buildDynamicArticleView(entry: LiteratureKnowledgeEntry, id: string): A
           { label: "入库信息", value: formatDocumentListMeta(entry.document) },
         ]),
         points: [],
+        linkedItems: [],
+      },
+      {
+        id: "task-lens",
+        title: "研究任务映射",
+        body: taskLens.frameworkRole,
+        rows: compactRows([
+          { label: "论文正文用途", value: joinArticleValues(taskLens.manuscriptUse) },
+          { label: "测量与指标用途", value: joinArticleValues(taskLens.measurementUse) },
+        ]),
+        points: compactStrings([
+          ...taskLens.constructSupport.map((item) => `${item.construct}：${item.use}${item.strength ? `（相关强度：${item.strength}）` : ""}`),
+          ...taskLens.caveats.map((item) => `边界：${item}`),
+        ]),
         linkedItems: [],
       },
       {
@@ -2081,6 +2148,89 @@ function buildDynamicArticleView(entry: LiteratureKnowledgeEntry, id: string): A
         linkedItems: [],
       },
     ],
+  };
+}
+
+function buildDynamicTaskLens(card: LiteratureKnowledgeCard): Required<LocalArticleTaskLens> {
+  const text = [
+    card.title,
+    card.paperType,
+    card.oneSentenceTakeaway,
+    card.researchQuestion,
+    card.methods,
+    card.eegOrMeasures,
+    card.keyFindings.join(" "),
+    card.relevanceToMetroRescue.join(" "),
+    card.candidateClaims?.join(" ") ?? "",
+    card.themeTags?.join(" ") ?? "",
+    card.keywords.join(" "),
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  const constructSupport: Required<LocalArticleTaskLens>["constructSupport"] = [];
+  if (/(sign|signage|wayfinding|route|landmark|direction|guidance|visibility|decision)/.test(text)) {
+    constructSupport.push({
+      construct: "X 路径确认支持水平",
+      use: "可用于定义现场官方线索、路径确认链、关键决策点覆盖或路线选择机制。",
+      strength: "medium",
+    });
+  }
+  if (/(hesitation|delay|dwell|pause|stop|response|pre-evacuation|decision|choice)/.test(text)) {
+    constructSupport.push({
+      construct: "Y 行动迟滞",
+      use: "可用于定义行动启动延迟、停留、犹豫、核对或选择迟滞。",
+      strength: "medium",
+    });
+  }
+  if (/(reliability|trust|confidence|consistent|dependable|validity)/.test(text)) {
+    constructSupport.push({
+      construct: "M1 感知信息可靠性",
+      use: "可用于解释个体为什么继续依赖官方路径确认线索。",
+      strength: "medium",
+    });
+  }
+  if (/(eeg|fnirs|cognitive load|workload|uncertainty|theta|alpha|attention)/.test(text)) {
+    constructSupport.push({
+      construct: "M2 信息加工负荷",
+      use: "可用于解释目标-线索-方向匹配负担及 EEG/生理指标。",
+      strength: text.includes("eeg") ? "high" : "medium",
+    });
+  }
+  if (/(warning|protective|broadcast|message|audio|modality|mobile|text)/.test(text)) {
+    constructSupport.push({
+      construct: "W 保护性行动指令清晰度",
+      use: "可用于解释官方提醒通道和行动指令清晰度如何影响路径确认。",
+      strength: "medium",
+    });
+  }
+  if (!constructSupport.length) {
+    constructSupport.push({
+      construct: "背景/边界",
+      use: card.relevanceToMetroRescue[0] || card.oneSentenceTakeaway || "仅作为补充背景。",
+      strength: "low",
+    });
+  }
+
+  const measurementUse = compactStrings([
+    text.match(/sign|signage|wayfinding|route|decision/) ? "Unity marker：sign_readable、decision_point_enter、route choice、confirmation event。" : "",
+    text.match(/hesitation|delay|dwell|pause|stop|decision/) ? "行动迟滞：启动时间、决策点停顿、重复核对、扫描、掉头和回退。" : "",
+    text.match(/eeg|theta|alpha|fnirs|cognitive load|attention/) ? "EEG/生理：事件窗 theta、alpha、theta/alpha 或信息加工负荷代理指标。" : "",
+    text.match(/accuracy|correct|exit|choice|compliance/) ? "准确率：首次方向选择、决策点正确率和最终到达目标。" : "",
+  ]);
+
+  return {
+    frameworkRole: constructSupport[0]?.construct
+      ? `该文主要支持 ${constructSupport[0].construct} 相关写作。`
+      : "该文主要作为背景或边界材料。",
+    constructSupport,
+    measurementUse,
+    manuscriptUse: compactStrings([
+      ...card.usableForSections.map((section) => `适合章节：${section}`),
+      ...(card.methodsWritingUse ?? []),
+      ...(card.resultsDiscussionUse ?? []),
+    ]).slice(0, 6),
+    caveats: compactStrings([...(card.doNotClaim ?? []), ...(card.qualityCaveats ?? [])]).slice(0, 5),
   };
 }
 
@@ -2382,7 +2532,7 @@ function getJobDisplayTitle(job: ResearchAnalysisJob) {
   const batch = result?.batch;
 
   if (job.analysis_type === "cohort_density_summary" || result?.cohort?.kind === "cohort_density_summary") {
-    return "全样本密度统计汇总";
+    return "全样本路径确认支持统计汇总";
   }
 
   if (job.analysis_type === "subject_batch" || batch || result?.sourceDocumentIds?.length) {
@@ -2533,13 +2683,13 @@ function inferDensityLevelFromFilename(filename: string): DensityLevel | null {
 }
 
 function formatDensityLabel(level: DensityLevel | null) {
-  return level ? densityLabels[level] : "密度待标注";
+  return level ? densityLabels[level] : "条件待标注";
 }
 
 function summarizeDensityCoverage(documents: ResearchDocument[]) {
   const levels = documents.map((document) => inferDensityLevelFromFilename(document.filename)).filter((level): level is DensityLevel => Boolean(level));
   const uniqueLevels = Array.from(new Set(levels)).sort((a, b) => densityLevels.indexOf(a) - densityLevels.indexOf(b));
-  const label = uniqueLevels.length ? uniqueLevels.map((level) => densityLabels[level]).join(" / ") : "密度待标注";
+  const label = uniqueLevels.length ? uniqueLevels.map((level) => densityLabels[level]).join(" / ") : "条件待标注";
   return {
     levels: uniqueLevels,
     label,

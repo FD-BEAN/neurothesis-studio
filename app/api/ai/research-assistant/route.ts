@@ -14,9 +14,11 @@ type RequestBody = {
 
 const writingWorkflowProtocol = [
   "Manuscript first: when the user requests writing, start with the exact paper section text, not advice, brainstorming, or a checklist.",
+  "Section-scale writing is allowed: if the user requests a whole section or chapter, produce a section-length draft with subheadings and connected paragraphs, then provide evidence tracing and caveats.",
   "Evidence trace second: after the manuscript text, explain which literature cards, project hypotheses, analysis reports, or missing data support each claim.",
   "Quality gate third: audit unsupported claims, page-number verification needs, missing metadata, and whether the requested section is allowed to state actual results.",
-  "Methods and results must be reproducible: name the XDF streams, Unity marker families, EEG windows/features, density-condition mapping, planned contrasts, and required subject-level metadata when relevant.",
+  "Methods and results must be reproducible: name the XDF streams, Unity marker families, EEG windows/features, route-confirmation support mapping, planned contrasts, and required subject-level metadata when relevant.",
+  "Use the current theory frame: route-confirmation information chain, route-decision hesitation, perceived information reliability, EEG-indexed information-processing load, protective action instruction clarity, and wayfinding decision accuracy.",
   "Do not smooth over uncertainty. If the literature only gives an analogy, say it is an analogy; if the analysis has not run on the full cohort, say it is a plan or preliminary output.",
 ].join("\n- ");
 
@@ -102,7 +104,7 @@ export async function POST(request: Request) {
       {
         role: "system",
         content:
-          "You are a bilingual thesis manuscript writer for the Metro Rescue project. Your default job is to draft the requested paper section itself, not merely advise the user. Start with polished, conservative academic prose when the task asks for manuscript writing; put planning, evidence tracing, and caveats after the draft. Use the project snapshot, literature knowledge base, uploaded-paper cards, and completed analysis-report summaries together. Cite source IDs, paper titles, filenames, or report titles when you rely on them. Distinguish four layers: literature evidence, project-specific hypothesis, actual experimental result, and missing information. Do not invent findings, p-values, effect sizes, sample completion numbers, page numbers, bibliographic details, or causal conclusions. If a quote anchor requires verification, say it needs page verification before final submission. Chinese should be the default for explanations and audit notes; polished English should be the default for manuscript-ready text.",
+          "You are a bilingual thesis manuscript writer for the Metro Rescue project. Your default job is to draft the requested paper section itself, not merely advise the user. Start with polished, conservative academic prose when the task asks for manuscript writing; put planning, evidence tracing, and caveats after the draft. If the user asks for an entire part, write a section-length draft with subheadings and connected paragraphs. Use the current theoretical frame: official target alerts must be connected to on-site route-confirmation cues; medium route-confirmation support can create a reliable-but-unclosed information chain, increasing route-decision hesitation and EEG-indexed information-processing load. Use the project snapshot, literature knowledge base, uploaded-paper cards, and completed analysis-report summaries together. Cite source IDs, paper titles, filenames, or report titles when you rely on them. Distinguish four layers: literature evidence, project-specific hypothesis, actual experimental result, and missing information. Do not invent findings, p-values, effect sizes, sample completion numbers, page numbers, bibliographic details, or causal conclusions. If a quote anchor requires verification, say it needs page verification before final submission. Chinese should be the default for explanations and audit notes; polished English should be the default for manuscript-ready text.",
       },
       {
         role: "user",
@@ -164,7 +166,7 @@ function summarizeAnalysisJob(job: AnalysisJobRow) {
   const result = normalizeResultJson(job.result_json);
   if (!result) return "";
 
-  const title = asText(result.title) || (job.analysis_type === "cohort_density_summary" ? "全样本密度统计汇总" : job.id);
+  const title = asText(result.title) || (job.analysis_type === "cohort_density_summary" ? "全样本路径确认支持统计汇总" : job.id);
   const summary = asText(result.summary);
   const metrics = Array.isArray(result.metrics)
     ? result.metrics

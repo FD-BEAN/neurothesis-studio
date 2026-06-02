@@ -72,9 +72,9 @@ BEHAVIOR_EVENTS = [
 ]
 DENSITY_LEVELS = ("low", "medium", "high")
 DENSITY_LABELS = {
-    "low": "低密度",
-    "medium": "中密度",
-    "high": "高密度",
+    "low": "低路径确认支持",
+    "medium": "中路径确认支持",
+    "high": "高路径确认支持",
 }
 PRIMARY_CONTRAST_WEIGHTS = {"low": -1.0, "medium": 2.0, "high": -1.0}
 
@@ -307,7 +307,7 @@ def render_html_report(report: dict[str, Any], job: dict[str, Any], generated_at
     parts.extend(
         [
             "<section class='card'><h2>后续统计建模提醒</h2>",
-            "<p>该 HTML 是 QC 与特征提取报告，适合检查 XDF、Unity marker、EEG 覆盖和 run-level 指标。正式论文结论需要把所有被试汇总为 subject-level / trial-level 表，再检验密度条件的组内主效应、主 planned contrast：中密度 - 低/高密度平均，以及必要的组间交互。</p>",
+            "<p>该 HTML 是 QC 与特征提取报告，适合检查 XDF、Unity marker、EEG 覆盖和 run-level 指标。正式论文结论需要把所有被试汇总为 subject-level / trial-level 表，再检验路径确认支持条件的组内主效应、主 planned contrast：中等支持 - 低/高支持平均，以及必要的组间交互。</p>",
             "</section>",
             "<details class='card'><summary>机器可读 JSON 摘要</summary>",
             f"<pre>{h(json.dumps(to_jsonable(report), ensure_ascii=False, indent=2))}</pre>",
@@ -418,7 +418,7 @@ def run_subject_batch_job(client: SupabaseRest, job: dict[str, Any], run_url: st
     batch = extract_batch_payload(job)
     document_ids = batch.get("documentIds", [])
     if len(document_ids) < 2:
-        raise RuntimeError("subject_batch 任务缺少 documentIds；至少需要 2 个 XDF，正式数据推荐低/中/高密度 3 个 run。")
+        raise RuntimeError("subject_batch 任务缺少 documentIds；至少需要 2 个 XDF，正式数据推荐低/中/高路径确认支持 3 个 run。")
 
     id_filter = ",".join(document_ids)
     documents = client.select_many("research_documents", f"id=in.({id_filter})&select=*")
@@ -438,7 +438,7 @@ def run_subject_batch_job(client: SupabaseRest, job: dict[str, Any], run_url: st
                 job["id"],
                 {
                     "status": "running",
-                    "status_message": f"正在分析被试 {batch.get('subjectId', 'unknown')} 的密度条件 run：{index}/{len(ordered_documents)} {document['filename']}",
+                    "status_message": f"正在分析被试 {batch.get('subjectId', 'unknown')} 的路径确认支持条件 run：{index}/{len(ordered_documents)} {document['filename']}",
                     "github_run_url": run_url,
                 },
             )
@@ -468,7 +468,7 @@ def run_cohort_density_job(client: SupabaseRest, job: dict[str, Any]) -> dict[st
     )
     subject_rows = extract_subject_contrast_rows(rows)
     if not subject_rows:
-        raise RuntimeError("还没有可汇总的已完成被试批量报告；请先为若干被试运行低/中/高密度 XDF 批量分析。")
+        raise RuntimeError("还没有可汇总的已完成被试批量报告；请先为若干被试运行低/中/高路径确认支持 XDF 批量分析。")
     return analyze_cohort_density(subject_rows)
 
 
@@ -551,27 +551,27 @@ def analyze_cohort_density(subject_rows: list[dict[str, Any]]) -> dict[str, Any]
     primary_text = (
         f"{primary_result['metricLabel']}：n={primary_result['n']}，mean contrast={fmt(primary_result['mean'])}，p={fmt_p(primary_result['p'])}，{primary_result['conclusion']}"
         if primary_result
-        else "尚未形成 EEG load proxy 主指标汇总；请确认每个被试报告里都有低/中/高密度完整 contrast。"
+        else "尚未形成 EEG load proxy 主指标汇总；请确认每个被试报告里都有低/中/高路径确认支持完整 contrast。"
     )
 
     notes = [
-        "该报告只汇总已经完成的被试批量 XDF HTML/JSON 结果；未完成、失败或密度条件缺失的被试不会进入统计。",
+        "该报告只汇总已经完成的被试批量 XDF HTML/JSON 结果；未完成、失败或路径确认支持条件缺失的被试不会进入统计。",
         "主检验是每名被试的 medium - mean(low, high) contrast 是否显著大于 0；这是组内设计最直接的检验。",
-        "如果存在组间变量，需要上传 subject metadata 后再检验 Density × Group 交互；当前汇总不自动推断组别。",
+        "如果存在组间变量，需要上传 subject metadata 后再检验 Support Level × Group 交互；当前汇总不自动推断组别。",
         "结论写作应优先报告预先指定的主指标，再把行为和其他 EEG 指标作为一致性证据或探索性结果。",
     ]
 
     return {
-        "title": "全样本密度条件统计汇总",
-        "kind": "Cohort Density Summary",
+        "title": "全样本路径确认支持统计汇总",
+        "kind": "Cohort Route-confirmation Support Summary",
         "subjectId": "cohort-density-summary",
-        "summary": f"从 {len(unique_subjects)} 名被试的已完成批量报告中汇总低/中/高密度 planned contrast。主结论口径：{primary_text}",
+        "summary": f"从 {len(unique_subjects)} 名被试的已完成批量报告中汇总低/中/高路径确认支持 planned contrast。主结论口径：{primary_text}",
         "design": {
             "expected_subjects": 90,
             "runs_per_subject": 3,
             "expected_total_runs": 270,
-            "file_coding_rule": "001/002/003 = subject 1; 004/005/006 = subject 2; each triplet is one within-subject density set",
-            "within_subject_factor": "density",
+            "file_coding_rule": "001/002/003 = participant P01; 004/005/006 = P02; each triplet is one within-subject route-confirmation support set",
+            "within_subject_factor": "route-confirmation support level",
             "signature_mapping": {"Signature1": "low", "Signature2": "medium", "Signature3": "high"},
             "primary_contrast": "medium - mean(low, high)",
         },
@@ -604,8 +604,8 @@ def analyze_cohort_density(subject_rows: list[dict[str, Any]]) -> dict[str, Any]
                 "title": "下一步组间模型",
                 "columns": ["需要字段", "模型", "用途"],
                 "rows": [
-                    ["subject_id, group", "Load ~ Density * Group + RunOrder + Map + (1 + Density | Subject)", "检验不同组别是否有不同密度效应"],
-                    ["order/counterbalance", "Load ~ Density + Order + Density:Order + (1 + Density | Subject)", "控制顺序、练习和疲劳效应"],
+                    ["subject_id, group", "Load ~ SupportLevel * Group + RunOrder + Map + (1 + SupportLevel | Subject)", "检验不同组别是否有不同路径确认支持效应"],
+                    ["order/counterbalance", "Load ~ SupportLevel + Order + SupportLevel:Order + (1 + SupportLevel | Subject)", "控制顺序、练习和疲劳效应"],
                     ["trial_features/event_features", "event-level 或 trial-level mixed model", "把 sign_readable、decision_point_enter 等事件窗指标纳入更细粒度模型"],
                 ],
             },
@@ -629,16 +629,16 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
     notes = []
 
     if len(run_rows) != 3:
-        notes.append(f"当前被试批次包含 {len(run_rows)} 个 XDF；正式设计预期每名被试 3 个密度条件 run：低密度、中密度、高密度。")
+        notes.append(f"当前被试批次包含 {len(run_rows)} 个 XDF；正式设计预期每名被试 3 个路径确认支持条件 run：低、中、高支持。")
     if not complete_density_set:
-        notes.append(f"当前批次密度条件覆盖为 {format_density_coverage(run_rows)}；如果文件名或 Unity marker 没写 density/condition，需要补 subject-run 条件表。")
+        notes.append(f"当前批次路径确认支持条件覆盖为 {format_density_coverage(run_rows)}；如果文件名或 Unity marker 没写 support_level/condition，需要补 subject-run 条件表。")
     if completed_runs != len(run_rows):
         notes.append("部分 run 缺少可识别的完成时长；正式统计前需要确认 map_start/trial_start 到 evacuation_complete 的窗口。")
     if not contrast_rows:
-        notes.append("未能计算中密度 planned contrast；通常是低/中/高密度没有全部识别，或对应指标缺失。")
+        notes.append("未能计算中等支持 planned contrast；通常是低/中/高路径确认支持没有全部识别，或对应指标缺失。")
     notes.append("单个被试报告只计算方向性 contrast，不报告显著性；显著性需要 90 名被试的 subject-level contrast 或 trial-level mixed-effects model。")
-    notes.append("组内因素主轴为 density；组间因素需要额外上传 subject metadata，例如 group、sex、age、VR experience、专业背景、实验顺序或 counterbalance。")
-    notes.append("正式主检验建议预注册为：中密度认知负荷高于低密度与高密度平均，contrast weights = low:-1, medium:2, high:-1。")
+    notes.append("组内因素主轴为 route-confirmation support level；组间因素需要额外上传 subject metadata，例如 group、sex、age、VR experience、专业背景、实验顺序或 counterbalance。")
+    notes.append("正式主检验建议预注册为：中等路径确认支持下行动迟滞和信息加工负荷高于低/高支持平均，contrast weights = low:-1, medium:2, high:-1。")
 
     return {
         "title": f"{subject_id} 被试批量 XDF 分析",
@@ -649,20 +649,20 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
             "expected_subjects": 90,
             "runs_per_subject": 3,
             "expected_total_runs": 270,
-            "file_coding_rule": "001/002/003 = subject 1; 004/005/006 = subject 2; each triplet is one within-subject density set",
-            "within_subject_factor": "density",
+            "file_coding_rule": "001/002/003 = participant P01; 004/005/006 = P02; each triplet is one within-subject route-confirmation support set",
+            "within_subject_factor": "route-confirmation support level",
             "density_levels": list(DENSITY_LEVELS),
             "signature_mapping": {"Signature1": "low", "Signature2": "medium", "Signature3": "high"},
-            "primary_hypothesis": "medium density produces the highest cognitive load",
+            "primary_hypothesis": "medium route-confirmation support produces the highest route-decision hesitation and information-processing load",
             "primary_contrast_weights": PRIMARY_CONTRAST_WEIGHTS,
         },
         "densityContrasts": contrast_json,
-        "summary": "该报告把同一被试的低/中/高密度 XDF run 作为一个被试内单元处理：先逐文件完成 EEG + Unity marker QC，再汇总 run-level 行为、EEG 频带和事件窗指标，并计算主 planned contrast（中密度 - 低/高密度平均）。",
+        "summary": "该报告把同一被试的低/中/高路径确认支持 XDF run 作为一个被试内单元处理：先逐文件完成 EEG + Unity marker QC，再汇总 run-level 行为、EEG 频带和事件窗指标，并计算主 planned contrast（中等支持 - 低/高支持平均）。",
         "metrics": [
             {"label": "被试编号", "value": str(subject_id)},
             {"label": "XDF run", "value": f"{len(run_rows)}/3"},
             {"label": "完整 run", "value": f"{completed_runs}/{len(run_rows)}"},
-            {"label": "密度条件", "value": f"{len(density_levels)}/3", "text": format_density_coverage(run_rows)},
+            {"label": "路径确认支持条件", "value": f"{len(density_levels)}/3", "text": format_density_coverage(run_rows)},
             {"label": "地图条件", "value": str(len(maps)), "text": " / ".join(maps) or "-"},
             {"label": "标识版本", "value": str(len(signatures)), "text": " / ".join(signatures) or "-"},
             {"label": "附加条件", "value": str(len(audio_levels)), "text": " / ".join(audio_levels) or "-"},
@@ -671,8 +671,8 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
         "charts": [
             {
                 "type": "bar",
-                "title": "密度条件完成时长",
-                "xLabel": "density/run",
+                "title": "路径确认支持条件完成时长",
+                "xLabel": "support/run",
                 "yLabel": "seconds",
                 "data": [
                     {"label": condition_label(row), "value": safe_chart_value(to_float(row.get("duration_s")))}
@@ -682,7 +682,7 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
             {
                 "type": "bar",
                 "title": "导航行为负荷代理指标",
-                "xLabel": "density/run",
+                "xLabel": "support/run",
                 "yLabel": "count",
                 "data": [
                     {"label": condition_label(row), "value": safe_chart_value(to_float(row.get("behavior_load_proxy")))}
@@ -692,7 +692,7 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
             {
                 "type": "bar",
                 "title": "决策扫描与回退代理指标",
-                "xLabel": "density/run",
+                "xLabel": "support/run",
                 "yLabel": "index",
                 "data": [
                     {"label": condition_label(row), "value": safe_chart_value(to_float(row.get("decision_load_proxy")))}
@@ -702,7 +702,7 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
             {
                 "type": "bar",
                 "title": "EEG load proxy",
-                "xLabel": "density/run",
+                "xLabel": "support/run",
                 "yLabel": "index",
                 "data": [
                     {"label": condition_label(row), "value": safe_chart_value(to_float(row.get("eeg_load_proxy")))}
@@ -712,7 +712,7 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
             {
                 "type": "bar",
                 "title": "决策点事件窗 EEG load proxy",
-                "xLabel": "density/run",
+                "xLabel": "support/run",
                 "yLabel": "event-window index",
                 "data": [
                     {"label": condition_label(row), "value": safe_chart_value(to_float(row.get("decision_point_enter_eeg_load_proxy")))}
@@ -722,10 +722,10 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
         ],
         "tables": [
             {
-                "title": "被试内密度条件汇总",
+                "title": "被试内路径确认支持条件汇总",
                 "columns": [
                     "file",
-                    "density",
+                    "support_level",
                     "subject",
                     "session",
                     "map",
@@ -790,17 +790,17 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
                 ],
             },
             {
-                "title": "主 planned contrast：中密度是否最高",
+                "title": "主 planned contrast：中等支持是否最高",
                 "columns": ["contrast", "metric", "low", "medium", "high", "estimate", "direction"],
-                "rows": contrast_rows or [["medium - mean(low, high)", "-", "-", "-", "-", "-", "缺少完整密度条件或指标"]],
+                "rows": contrast_rows or [["medium - mean(low, high)", "-", "-", "-", "-", "-", "缺少完整路径确认支持条件或指标"]],
             },
             {
                 "title": "90 被试全样本统计模型建议",
                 "columns": ["分析层级", "模型/检验", "解释口径"],
                 "rows": [
-                    ["被试内主检验", "对每名被试计算 contrast = medium - (low + high) / 2，再对 90 个 contrast 做 one-sample test 或等价 mixed model contrast", "直接回答中密度是否显著高于低/高平均"],
-                    ["trial/run-level mixed model", "Load ~ Density + RunOrder + Map + (1 + Density | Subject)", "Density 是组内固定效应；Subject 是随机效应"],
-                    ["组间差异", "Load ~ Density * Group + RunOrder + Map + (1 + Density | Subject)", "Group 需要来自被试元数据；重点看 Density:Group 交互"],
+                    ["被试内主检验", "对每名被试计算 contrast = medium - (low + high) / 2，再对 90 个 contrast 做 one-sample test 或等价 mixed model contrast", "直接回答中等支持是否显著高于低/高支持平均"],
+                    ["trial/run-level mixed model", "Load ~ SupportLevel + RunOrder + Map + (1 + SupportLevel | Subject)", "SupportLevel 是组内固定效应；Subject 是随机效应"],
+                    ["组间差异", "Load ~ SupportLevel * Group + RunOrder + Map + (1 + SupportLevel | Subject)", "Group 需要来自被试元数据；重点看 SupportLevel:Group 交互"],
                     ["多指标控制", "EEG load proxy、theta/alpha、frontal theta、posterior alpha、completion time、behavior_load_proxy 分开报告；主指标优先，其他作为 convergent evidence", "避免把多个探索性指标都写成主结论"],
                     ["结论判定", "先看主 contrast 的方向、置信区间和 p 值；再看 low vs medium、medium vs high 成对比较", "只有全样本显著后才能写成结果支持假设"],
                 ],
@@ -1115,7 +1115,7 @@ def contrast_conclusion(stats: dict[str, Any]) -> str:
     if mean is None or p_value is None:
         return "统计量不足"
     if mean > 0 and p_value < 0.05:
-        return "显著支持中密度最高"
+        return "显著支持中等路径确认支持最高"
     if mean < 0 and p_value < 0.05:
         return "显著反向"
     if mean > 0:

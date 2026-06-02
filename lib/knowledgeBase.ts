@@ -17,6 +17,13 @@ type CuratedPaperReadingNote = {
   writingAngles?: string[];
   followUpQuestions?: string[];
 };
+type CuratedArticleTaskLens = {
+  frameworkRole?: string;
+  constructSupport?: Array<{ construct?: string; use?: string; strength?: string }>;
+  measurementUse?: string[];
+  manuscriptUse?: string[];
+  caveats?: string[];
+};
 
 export type SeedKnowledgeReviewItem = {
   id: string;
@@ -81,27 +88,27 @@ const projectAnalysisDesignReviewItems: SeedKnowledgeReviewItem[] = [
     body: "正式 XDF 数据按三连号归并被试：实验文件 sub001/sub002/sub003 属于 P01，sub004/sub005/sub006 属于 P02，sub007/sub008/sub009 属于 P03，以此类推。文件中的 sub007 这类编号代表实验文件序号，不应直接解释为第 7 名被试。",
     tags: ["XDF", "subject", "coding-rule"],
     meta: [
-      { label: "组内单位", value: "同一被试的 3 个密度条件 run" },
+      { label: "组内单位", value: "同一被试的 3 个路径确认支持条件 run" },
       { label: "页面与 worker 规则", value: "按三连号自动生成 P01, P02, P03..." },
     ],
     boundary: "如果未来文件名改为真正的被试编号，需要同步更新命名规则，避免把 run 序号和 participant ID 混用。",
   },
   {
     id: "DESIGN-002",
-    title: "Signature 到 Density condition 的映射",
-    body: "当前研究口径统一为 Density condition：Signature1 = 低密度，Signature2 = 中密度，Signature3 = 高密度。论文正文优先使用 low / medium / high density condition；Signature 只作为实验素材或 Unity/文件命名的历史字段。",
-    tags: ["density", "signature", "methods"],
+    title: "Signature 到 Route-confirmation support level 的映射",
+    body: "当前研究口径统一为 Route-confirmation support level：Signature1 = 低路径确认支持，Signature2 = 中路径确认支持，Signature3 = 高路径确认支持。论文正文优先使用 low / medium / high route-confirmation support；Signature 只作为实验素材或 Unity/文件命名的历史字段。",
+    tags: ["route-confirmation", "signature", "methods"],
     meta: [
-      { label: "低密度", value: "Signature1" },
-      { label: "中密度", value: "Signature2" },
-      { label: "高密度", value: "Signature3" },
+      { label: "低路径确认支持", value: "Signature1" },
+      { label: "中路径确认支持", value: "Signature2" },
+      { label: "高路径确认支持", value: "Signature3" },
     ],
-    boundary: "如果 Signature 实际还包含颜色、图形或朝向等非密度差异，Methods 需要单独列出操控定义，不能只写成密度。",
+    boundary: "如果 Signature 实际还包含颜色、图形或朝向等差异，Methods 需要单独列出操控定义，不能只写成单一数量差异。",
   },
   {
     id: "DESIGN-003",
     title: "组内主检验",
-    body: "主假设不是线性“越密越高负荷”，而是中等密度最高。每名被试先形成 low、medium、high 三个 run-level 指标，再计算 planned contrast：medium - mean(low, high)，权重为 low:-1, medium:2, high:-1。",
+    body: "主假设不是线性“支持越高负荷越高”，而是中等路径确认支持最高。每名被试先形成 low、medium、high 三个 run-level 指标，再计算 planned contrast：medium - mean(low, high)，权重为 low:-1, medium:2, high:-1。",
     tags: ["within-subject", "planned-contrast", "hypothesis"],
     meta: [
       { label: "主指标候选", value: "EEG load proxy、theta/alpha、frontal theta、posterior alpha、completion time、behavior load proxy" },
@@ -112,13 +119,13 @@ const projectAnalysisDesignReviewItems: SeedKnowledgeReviewItem[] = [
   {
     id: "DESIGN-004",
     title: "组间分析",
-    body: "组间问题应建立在被试元数据上，例如组别、年龄、性别、VR 经验、专业背景、实验顺序或 counterbalance。统计上关注 Density × Group 交互，而不是把不同被试的单个 XDF 文件直接混在一起比较。",
+    body: "组间问题应建立在被试元数据上，例如组别、年龄、性别、VR 经验、专业背景、实验顺序或 counterbalance。统计上关注 Support Level × Group 交互，而不是把不同被试的单个 XDF 文件直接混在一起比较。",
     tags: ["between-subject", "metadata", "mixed-effects"],
     meta: [
-      { label: "建议模型", value: "Load ~ Density * Group + RunOrder + Map + (1 + Density | Subject)" },
+      { label: "建议模型", value: "Load ~ SupportLevel * Group + RunOrder + Map + (1 + SupportLevel | Subject)" },
       { label: "需要补充", value: "subject metadata / counterbalance / exclusion log" },
     ],
-    boundary: "没有 subject-level metadata 时，只能报告总体组内密度效应，不能声称某类人群之间存在差异。",
+    boundary: "没有 subject-level metadata 时，只能报告总体组内路径确认支持效应，不能声称某类人群之间存在差异。",
   },
   {
     id: "DESIGN-005",
@@ -191,7 +198,7 @@ export function getSeedKnowledgeReview(): SeedKnowledgeReview {
     integrityNotes: seedKnowledgeBase.integrity_notes,
     reviewNotes: [
       "这是一层结构化、可审阅的文献知识库，不是 PDF 全文库；正式引用前仍要回到原文核对页码、作者、年份和 DOI。",
-      "KB 中部分历史字段仍使用 Signature1/2/3 命名；当前研究口径应统一映射为低/中/高密度条件，并在论文中使用 Density condition。",
+      "KB 中部分历史字段仍使用 Signature1/2/3 命名；当前研究口径应统一映射为低/中/高路径确认支持条件，并在论文中使用 Route-confirmation support level。",
       "Hypotheses、writing blocks 和 analysis models 是写作与建模辅助，不等于已经得到实验结果。",
     ],
     sections: [
@@ -279,7 +286,7 @@ export function getSeedKnowledgeReview(): SeedKnowledgeReview {
       {
         id: "analysis_design",
         label: "分析口径",
-        description: "把当前实验的文件编码、密度条件、组内主检验和组间建模边界固定下来。",
+        description: "把当前实验的文件编码、路径确认支持条件、组内主检验和组间建模边界固定下来。",
         items: projectAnalysisDesignReviewItems,
       },
       {
@@ -466,6 +473,7 @@ function buildCuratedArticleContext(prompt: string) {
       article.writingUse.join(" "),
       article.keywords.join(" "),
       article.themeTags.join(" "),
+      JSON.stringify((article as CuratedArticleKnowledgeCard & { taskLens?: CuratedArticleTaskLens }).taskLens ?? {}),
     ].join(" "),
   ).slice(0, 16);
 
@@ -481,6 +489,7 @@ function buildCuratedArticleContext(prompt: string) {
 
 function formatCuratedArticleForWriting(article: CuratedArticleKnowledgeCard) {
   const readingNote = (article as CuratedArticleKnowledgeCard & { readingNote?: CuratedPaperReadingNote }).readingNote;
+  const taskLens = (article as CuratedArticleKnowledgeCard & { taskLens?: CuratedArticleTaskLens }).taskLens;
 
   return [
     `[${article.id}] ${article.title}`,
@@ -493,7 +502,10 @@ function formatCuratedArticleForWriting(article: CuratedArticleKnowledgeCard) {
     `Measures: ${joinKnowledgeValues([...article.variablesAndMeasures, ...article.eegOrPhysioMeasures, ...article.behavioralMeasures])}`,
     `Findings: ${readingNote?.resultSummary || joinKnowledgeValues(article.keyFindings)}`,
     `Use for Metro Rescue thesis: ${joinKnowledgeValues(readingNote?.writingAngles ?? [...article.metroRescueUse, ...article.methodTransfer])}`,
-    `Density hypothesis relevance: ${joinKnowledgeValues(article.densityHypothesisRelevance)}`,
+    `Route-confirmation task lens: ${taskLens?.frameworkRole ?? "未生成"}`,
+    `Construct support: ${joinKnowledgeValues((taskLens?.constructSupport ?? []).map((item) => `${item.construct}: ${item.use}`))}`,
+    `Measurement use: ${joinKnowledgeValues(taskLens?.measurementUse)}`,
+    `Route-confirmation support hypothesis relevance: ${joinKnowledgeValues(article.densityHypothesisRelevance)}`,
     `Transferable concepts: ${joinKnowledgeValues(readingNote?.transferableConcepts ?? article.keywords)}`,
     `Do not claim / limitations: ${joinKnowledgeValues(readingNote?.weaknesses ?? [...article.doNotClaim, ...article.limitations, ...article.boundaries])}`,
     `Quote anchors requiring verification: ${joinKnowledgeValues(article.quoteAnchorsToVerify)}`,
@@ -554,7 +566,7 @@ function buildUserLiteratureContext(cards: LiteratureKnowledgeCard[], prompt: st
         `Key findings: ${card.keyFindings.join("；")}`,
         `Limitations: ${card.limitations.join("；")}`,
         `Use for Metro Rescue: ${card.relevanceToMetroRescue.join("；")}`,
-        `Density hypothesis relevance: ${card.densityHypothesisRelevance?.join("；") ?? "未生成"}`,
+        `Route-confirmation support hypothesis relevance: ${card.densityHypothesisRelevance?.join("；") ?? "未生成"}`,
         `Variables/measures: ${card.variablesAndMeasures?.join("；") ?? "未生成"}`,
         `Methods writing use: ${card.methodsWritingUse?.join("；") ?? "未生成"}`,
         `Results/discussion use: ${card.resultsDiscussionUse?.join("；") ?? "未生成"}`,

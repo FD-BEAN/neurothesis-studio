@@ -426,13 +426,14 @@ async function main() {
   }
 
   const output = {
-    version: "literature-article-kb-v4-paper-notes",
+    version: "literature-article-kb-v5-route-confirmation-task-lens",
     generatedBy: "Codex local PDF evidence extraction plus dailypaper-style single-article notes; no website API and no OpenAI key usage",
     generatedAt: new Date().toISOString(),
     source: "Uploaded related-literature PDFs matched to Metro Rescue source cards",
     schema: [
       "文献身份",
       "一句话贡献",
+      "研究任务映射",
       "研究问题与定位",
       "研究动机",
       "方法与数据",
@@ -471,7 +472,7 @@ function buildExtractiveArticleCard(source, matchedPdfFilename, extractedText) {
     extractedText,
   });
 
-  return {
+  const card = {
     id: source.Source_ID,
     title: source.Title,
     extractedTitleCandidate,
@@ -506,6 +507,7 @@ function buildExtractiveArticleCard(source, matchedPdfFilename, extractedText) {
     ]).slice(0, 8),
     keywords: uniqueCompact([...splitTags(source.Theme_Tags), ...extractKeywords(extractedText)]).slice(0, 12),
     writingUse: curated.writingUse,
+    taskLens: buildRouteConfirmationTaskLens(source, curated, linkedEvidence),
     readingNote: buildPaperReadingNote(source, curated, linkedEvidence, extractedTitleCandidate),
     linkedEvidence,
     confidence: abstractText || methodText || resultText ? "medium" : "low",
@@ -522,6 +524,41 @@ function buildExtractiveArticleCard(source, matchedPdfFilename, extractedText) {
       resultsDiscussion: truncate(findingEvidence, 2600),
     },
   };
+
+  return normalizeRouteConfirmationLanguage(card);
+}
+
+function normalizeRouteConfirmationLanguage(value) {
+  if (typeof value === "string") {
+    return normalizeRouteConfirmationText(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeRouteConfirmationLanguage(item));
+  }
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, normalizeRouteConfirmationLanguage(item)]));
+  }
+  return value;
+}
+
+function normalizeRouteConfirmationText(text) {
+  return text
+    .replace(/低\/中\/高密度/g, "低/中/高路径确认支持")
+    .replace(/低密度/g, "低路径确认支持")
+    .replace(/中等密度/g, "中等路径确认支持")
+    .replace(/中密度/g, "中等路径确认支持")
+    .replace(/高密度/g, "高路径确认支持")
+    .replace(/标识密度/g, "路径确认支持/信息链完整性")
+    .replace(/密度条件/g, "路径确认支持条件")
+    .replace(/密度效应/g, "路径确认支持效应")
+    .replace(/密度主效应/g, "路径确认支持主效应")
+    .replace(/Density condition/g, "Route-confirmation support level")
+    .replace(/density condition/g, "route-confirmation support level")
+    .replace(/medium density/g, "medium route-confirmation support")
+    .replace(/low density/g, "low route-confirmation support")
+    .replace(/high density/g, "high route-confirmation support")
+    .replace(/中等路径确认支持最高假设/g, "中等路径确认支持最高假设")
+    .replace(/中等路径确认支持负荷最高假设/g, "中等路径确认支持负荷最高假设");
 }
 
 async function extractPdfText(pdfPath) {
@@ -691,6 +728,141 @@ function formatQualityTier(grade, depth) {
   };
 
   return `Grade ${grade}，${depth}；${meaningByGrade[grade] ?? "相关性待人工复核"}。该等级是 Metro Rescue 知识库的项目相关性标记，不是正式文献质量评价，引用前仍需核对原文。`;
+}
+
+function buildRouteConfirmationTaskLens(source, curated, linkedEvidence) {
+  const text = [
+    source.Title,
+    source.Theme_Tags,
+    source.Method_or_Evidence,
+    source.Key_Takeaway_PDF_Free,
+    source.How_to_use_in_Metro_Rescue,
+    curated.oneSentenceSummary,
+    curated.researchQuestion,
+    curated.studyDesign,
+    curated.keyFindings.join(" "),
+    curated.metroRescueUse.join(" "),
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  return {
+    frameworkRole: inferFrameworkRole(source, curated),
+    constructSupport: buildConstructSupport(text, source, curated),
+    measurementUse: buildMeasurementUse(text, curated),
+    manuscriptUse: buildManuscriptUse(source, curated, linkedEvidence),
+    caveats: uniqueCompact([
+      ...curated.doNotClaim,
+      text.includes("density") || text.includes("signage") || text.includes("wayfinding")
+        ? ""
+        : "该文不直接研究路径确认支持水平；写作时应作为类比或背景，而不是主效应证据。",
+    ]).slice(0, 5),
+  };
+}
+
+function inferFrameworkRole(source, curated) {
+  const text = [source.Title, source.Theme_Tags, source.Method_or_Evidence, curated.studyDesign, curated.oneSentenceSummary]
+    .join(" ")
+    .toLowerCase();
+
+  if (text.includes("warning") || text.includes("protective") || text.includes("broadcast") || text.includes("message") || text.includes("modality")) {
+    return "提醒呈现方式与保护性行动指令清晰度文献：用于解释官方目标提醒如何改变后续路径确认。";
+  }
+  if (text.includes("eeg") || text.includes("fnirs") || text.includes("cognitive load") || text.includes("uncertainty")) {
+    return "认知负荷与神经/生理表征文献：用于解释目标-线索-方向匹配的 effort side。";
+  }
+  if (text.includes("sign") || text.includes("wayfinding") || text.includes("landmark") || text.includes("route")) {
+    return "路径确认信息链文献：用于定义现场线索、决策点覆盖、路线选择和准确率。";
+  }
+  if (text.includes("vr") || text.includes("virtual")) {
+    return "VR 应急疏散方法文献：用于支撑实验范式和生态效度边界。";
+  }
+  return "背景或边界文献：用于补充理论背景、方法限制或未来工作。";
+}
+
+function buildConstructSupport(text, source, curated) {
+  const support = [];
+
+  if (/(sign|signage|wayfinding|route|landmark|direction|guidance|visibility|branch|decision point)/.test(text)) {
+    support.push({
+      construct: "X 路径确认支持水平",
+      use: "用于操作化首次确认线索接近性、确认链连续性、关键决策点覆盖、线索间距或现场官方线索质量。",
+      strength: source.Grade === "A" ? "high" : "medium",
+    });
+  }
+  if (/(hesitation|delay|dwell|pause|stop|response|pre-evacuation|decision|route choice|exit choice|compliance)/.test(text)) {
+    support.push({
+      construct: "Y 行动迟滞",
+      use: "用于定义行动启动延迟、决策点停留、重复核对、路线选择延迟或疏散行为迟滞。",
+      strength: text.includes("hesitation") || text.includes("pre-evacuation") ? "high" : "medium",
+    });
+  }
+  if (/(reliability|trust|dependable|confidence|validity|consistent|halo)/.test(text)) {
+    support.push({
+      construct: "M1 感知信息可靠性",
+      use: "用于解释个体为什么会继续依赖官方线索、相信确认链或把现场线索纳入路径判断。",
+      strength: "medium",
+    });
+  }
+  if (/(eeg|fnirs|cognitive load|uncertainty|attention|mental workload|theta|alpha|pupil)/.test(text)) {
+    support.push({
+      construct: "M2 信息加工负荷",
+      use: "用于解释目标-线索-方向匹配带来的认知努力，并连接 EEG theta/alpha、事件窗负荷或不确定状态分类。",
+      strength: text.includes("eeg") ? "high" : "medium",
+    });
+  }
+  if (/(warning|protective action|broadcast|message|audio|modality|handheld|mobile|text)/.test(text)) {
+    support.push({
+      construct: "W 保护性行动指令清晰度",
+      use: "用于解释官方目标提醒的通道和清晰度如何影响后续路径确认、注意转移和匹配负担。",
+      strength: "medium",
+    });
+  }
+  if (/(accuracy|correct|choice|destination|exit|route|compliance|error)/.test(text)) {
+    support.push({
+      construct: "辅助因变量 路径判断准确率",
+      use: "用于区分低迟滞是否伴随低准确率，以及高支持是否同时带来低迟滞和高准确率。",
+      strength: "medium",
+    });
+  }
+
+  if (!support.length) {
+    support.push({
+      construct: "背景/方法边界",
+      use: curated.metroRescueUse[0] || source.How_to_use_in_Metro_Rescue,
+      strength: "low",
+    });
+  }
+
+  return support.slice(0, 6);
+}
+
+function buildMeasurementUse(text, curated) {
+  const uses = [];
+
+  if (/(sign|signage|visibility|readable|decision point|wayfinding|route)/.test(text)) {
+    uses.push("可帮助定义 Unity marker：sign_visible_enter、sign_readable、decision_point_enter、direction choice 和 route confirmation event。");
+  }
+  if (/(pause|dwell|delay|hesitation|response|pre-evacuation|decision)/.test(text)) {
+    uses.push("可帮助定义行动迟滞指标：首次行动启动时间、决策点停顿时间、重复核对次数、停留、扫描、掉头和回退。");
+  }
+  if (/(eeg|theta|alpha|fnirs|cognitive load|attention|uncertainty)/.test(text)) {
+    uses.push("可帮助定义 EEG/生理指标：事件窗 theta、alpha、theta/alpha、frontal theta、posterior alpha 或不确定状态分类。");
+  }
+  if (/(accuracy|correct|exit|route choice|destination|compliance)/.test(text)) {
+    uses.push("可帮助定义准确率指标：首次方向选择是否正确、决策点正确率和最终是否到达正确目标。");
+  }
+
+  return uniqueCompact([...uses, ...curated.behavioralMeasures.slice(0, 2)]).slice(0, 6);
+}
+
+function buildManuscriptUse(source, curated, linkedEvidence) {
+  return uniqueCompact([
+    source.Grade === "A" ? "可优先用于正文主证据链。" : "",
+    ...curated.writingUse.map((item) => `适合章节：${item}`),
+    linkedEvidence.claims[0]?.use ? `可支撑论点：${linkedEvidence.claims[0].use}` : "",
+    curated.densityHypothesisRelevance[0] ? `可转写为路径确认支持假设：${curated.densityHypothesisRelevance[0]}` : "",
+  ]).slice(0, 6);
 }
 
 function buildPaperReadingNote(source, curated, linkedEvidence, extractedTitleCandidate) {

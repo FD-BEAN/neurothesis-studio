@@ -168,14 +168,14 @@ git push origin main
 
 研究假设与统计口径：
 
-- 当前核心假设更新为密度条件假设：中等密度场景可能带来最高认知负荷，而不是简单的线性“越密越高”。
-- 论文里不要直接写成已经证明中密度更高；应写成 planned contrast，并等待 EEG/行为数据支持。
-- 正式实验结构：90 名被试 × 3 个密度条件（低密度 / 中密度 / 高密度）= 270 个 LabRecorder XDF run。
-- 组内因素：`Density`。每名被试应尽量同时提交 3 个 XDF，使 worker 能生成被试内密度条件表。
+- 当前核心假设应表述为路径确认支持假设：中等路径确认支持可能带来最高行动迟滞和 EEG 信息加工负荷，而不是简单的线性“支持越高越顺畅”。
+- 论文里不要直接写成已经证明中等支持更高；应写成 planned contrast，并等待 EEG/行为数据支持。
+- 正式实验结构：90 名被试 × 3 个路径确认支持条件（低 / 中 / 高）= 270 个 LabRecorder XDF run。
+- 组内因素：`Route-confirmation support level`。每名被试应尽量同时提交 3 个 XDF，使 worker 能生成被试内条件表。
 - 主 planned contrast：`medium - mean(low, high)`，权重为 `low:-1, medium:2, high:-1`。同时报告 medium-low 与 medium-high 的方向和置信区间。
-- 建议 trial/run-level mixed model：`Load ~ Density + RunOrder + Map + (1 + Density | Subject)`。
-- 如有组间变量，建议模型：`Load ~ Density * Group + RunOrder + Map + (1 + Density | Subject)`。Group 必须来自 subject metadata，例如组别、年龄、性别、VR 经验、专业背景、实验顺序或 counterbalance。
-- 需要另建 `density_condition_table.csv` 或在 Unity marker 中稳定写入 `density=low|medium|high`，记录每个 run 的密度条件、场景编号、标识数量、文字信息量、箭头数量、决策相关性、冗余度、歧义度和呈现顺序。
+- 建议 trial/run-level mixed model：`Load ~ SupportLevel + RunOrder + Map + (1 + SupportLevel | Subject)`。
+- 如有组间变量，建议模型：`Load ~ SupportLevel * Group + RunOrder + Map + (1 + SupportLevel | Subject)`。Group 必须来自 subject metadata，例如组别、年龄、性别、VR 经验、专业背景、实验顺序或 counterbalance。
+- 需要另建 `support_condition_table.csv` 或在 Unity marker 中稳定写入 `support_level=low|medium|high`，记录每个 run 的路径确认支持条件、场景编号、标识数量、文字信息量、箭头数量、决策相关性、冗余度、歧义度和呈现顺序。
 
 XDF 测试数据：
 
@@ -244,15 +244,15 @@ XDF worker 目前输出：
 2026-06-01 后的产品边界：
 
 - 文献与论文：只做文献知识库。上传 PDF 后生成/更新“知识卡片”，卡片包含研究问题、方法、EEG/行为指标、主要发现、局限、可用于论文哪个章节等。AI 写作助手必须优先读取这些卡片，并用论文标题或文件名引用来源。
-- 新增文献知识卡片必须走后端 OpenAI API，不把 key 暴露到前端。长 PDF 不应只截取开头；先按 chunk 生成 evidence digest，再生成最终知识卡片。卡片需要包含中文摘要、英文摘要、one-sentence takeaway、方法/指标、主要发现、局限、与中密度假设的关系、可写入 Methods/Results/Discussion 的用法、不可过度声称的边界和待核对 quote anchors。
+- 新增文献知识卡片必须走后端 OpenAI API，不把 key 暴露到前端。长 PDF 不应只截取开头；先按 chunk 生成 evidence digest，再生成最终知识卡片。卡片需要包含中文摘要、英文摘要、one-sentence takeaway、方法/指标、主要发现、局限、与路径确认支持假设的关系、可写入 Methods/Results/Discussion 的用法、不可过度声称的边界和待核对 quote anchors。
 - XDF 原始数据：只放 LabRecorder `.xdf`、EEG 原始文件和正式实验数据。XDF 高级分析只处理这里的 EEG stream + Unity marker stream。
-- 分析脚本与输出：放 Python/MATLAB/notebook、trial_features、event_features、中间统计表和写作产物。后续 90 名被试 × 3 个密度条件 = 270 个实验文件，应走批量上传和批量提交 XDF 队列。
+- 分析脚本与输出：放 Python/MATLAB/notebook、trial_features、event_features、中间统计表和写作产物。后续 90 名被试 × 3 个路径确认支持条件 = 270 个实验文件，应走批量上传和批量提交 XDF 队列。
 - 场景平面图与导向标识配置暂时不作为主要界面模块展示，避免干扰当前文献库和 XDF 分析主线。
 - 不把真实论文 PDF、XDF、EEG 原始数据或被试数据提交到公开 GitHub repo 的 `data` 目录。公开 GitHub 只保存代码、schema、wiki 和可公开的模板；私有数据优先放 Supabase private Storage。
 - GitHub Actions 的 `SUPABASE_SERVICE_ROLE_KEY` 可以使用新版 `sb_secret_...` 或旧版 JWT `service_role`。worker 请求头需要区分两者：新版 secret key 只放 `apikey`，旧版 JWT 才放 `Authorization: Bearer ...`。
 - 文件管理界面必须以“文件为中心”呈现分析状态：XDF 文件旁边直接显示未提交、排队、运行、完成、失败、疑似卡住；任务队列支持状态筛选和进度条。270 个实验文件不能只靠一串卡片堆叠。
-- XDF 正式分析必须支持“被试批量任务”：同一被试的低/中/高密度 3 个 XDF run 一起提交，先逐 run 做 QC，再汇总成 subject-level density table。当前文件编码规则为 001/002/003 = 第 1 名被试，004/005/006 = 第 2 名被试，007/008/009 = 第 3 名被试，以此类推；Signature1/2/3 分别映射为低/中/高密度。核心组内因素是 Density；Metro/map、run order、signage version 可作为控制变量或辅助解释字段。组间因素需要用户额外提供 subject metadata 表，例如 subject_id、group、age、sex、VR experience、专业背景、实验顺序/分组等。
-- “数据分析与论文写作”还需要一个全样本汇总任务：读取已完成的被试批量报告，提取每名被试的 `medium - mean(low, high)` contrast，输出 n、均值、95% CI、t/p、Cohen dz 和结论口径。该汇总只能回答组内主假设；组间显著性需要额外 subject metadata 后再做 Density × Group 交互模型。
+- XDF 正式分析必须支持“被试批量任务”：同一被试的低/中/高路径确认支持 3 个 XDF run 一起提交，先逐 run 做 QC，再汇总成 subject-level support table。当前文件编码规则为 001/002/003 = P01，004/005/006 = P02，007/008/009 = P03，以此类推；Signature1/2/3 分别映射为低/中/高路径确认支持。核心组内因素是 SupportLevel；Metro/map、run order、signage version 可作为控制变量或辅助解释字段。组间因素需要用户额外提供 subject metadata 表，例如 subject_id、group、age、sex、VR experience、专业背景、实验顺序/分组等。
+- “数据分析与论文写作”还需要一个全样本汇总任务：读取已完成的被试批量报告，提取每名被试的 `medium - mean(low, high)` contrast，输出 n、均值、95% CI、t/p、Cohen dz 和结论口径。该汇总只能回答组内主假设；组间显著性需要额外 subject metadata 后再做 SupportLevel × Group 交互模型。
 - 运行完成、失败、配置错误、疑似卡住的任务应该能从界面删除，避免历史错误任务堆积影响判断。
 - XDF worker 的正式输出不要在 dashboard 内长篇展示；生成自包含 HTML report，存入 Supabase private Storage，并在任务列表中提供下载入口。页面只显示队列状态、进度和下载按钮。
 - 信息架构：研究资料库只做文件管理、打开文件和文献知识卡片；XDF 被试批量分析、任务队列、HTML 报告下载应集中放在“数据分析与论文写作”，避免同一分析入口在两个模块重复出现。
@@ -304,7 +304,7 @@ XDF worker 目前输出：
 
 - 用户可以直接查看文献知识库中的 source cards、claims、mechanisms、hypotheses、analysis models、分析口径、risks/fixes、writing blocks、defense QA 和 quote anchors。知识库审阅页不再展示 `data_tables` 作为知识内容；数据结构设计留在 wiki/schema/worker 报告中。
 - 审阅页采用分类切换和当前分类搜索，不把原始 JSON 一次性铺满页面。
-- 审阅页必须提示三条边界：文献知识库不是 PDF 全文库；历史 Signature1/2/3 命名需要统一为低/中/高 density condition；hypotheses / writing blocks / analysis models 不是实验结果。
+- 审阅页必须提示三条边界：文献知识库不是 PDF 全文库；历史 Signature1/2/3 命名需要统一为低/中/高 route-confirmation support level；hypotheses / writing blocks / analysis models 不是实验结果。
 - 主界面不单独展示“新增知识卡片”区域；命中已有知识层和新生成知识卡片的文献，在用户口径里都统一视为“已入库”。
 - `S001` 这类 source code 保留用于检索和引用，但所有 claims / mechanisms / hypotheses / risks / QA / quote anchors 需要在审阅页显示对应的 source title，避免用户必须跳回文献卡手动查表。
 
@@ -341,10 +341,10 @@ Signature 方案需要补充定义：
 
 文献与写作助手的上下文来源：
 
-- 项目快照：90 名被试 × 低/中/高密度 3 个 run，主 planned contrast 为 `medium - mean(low, high)`。
+- 项目快照：90 名被试 × 低/中/高路径确认支持 3 个 run，主 planned contrast 为 `medium - mean(low, high)`。
 - 内置 Metro Rescue 文献知识库：用于已有综述、机制、风险、分析模型和写作块。
 - 用户新增文献：通过后端 OpenAI API 生成结构化卡片后进入文献知识库；如果已经命中项目已有知识层，则不重复生成。
-- 已完成分析报告摘要：包括被试批量 XDF 报告和全样本密度 contrast 汇总。只有这里或用户明确提供的结果才能支持 Results/Discussion 的统计结论。
+- 已完成分析报告摘要：包括被试批量 XDF 报告和全样本路径确认支持 contrast 汇总。只有这里或用户明确提供的结果才能支持 Results/Discussion 的统计结论。
 
 AI 可以协助：
 
@@ -390,7 +390,7 @@ AI 不应该：
 XDF 命名与分析规则：
 
 - `lib/xdfNaming.ts` 是前端和 API 共用的 XDF 命名推断规则。实验文件 `sub001/sub002/sub003` 自动归为被试组 `P01`，`sub004/sub005/sub006` 归为 `P02`，`sub007/sub008/sub009` 归为 `P03`。不要把文件序号 `sub003` 写成被试编号，避免和 1-270 个实验文件混淆。
-- Signature 映射固定为：Signature1 = low density，Signature2 = medium density，Signature3 = high density；如果文件名没有 Signature，则三连号中的第 1/2/3 个文件作为低/中/高密度 fallback。
+- Signature 映射固定为：Signature1 = low route-confirmation support，Signature2 = medium route-confirmation support，Signature3 = high route-confirmation support；如果文件名没有 Signature，则三连号中的第 1/2/3 个文件作为低/中/高支持 fallback。
 - Python worker 使用相同规则写入 HTML report：单个被试报告只给方向性 contrast；显著性需要全样本 `medium - mean(low, high)` 汇总或带 subject metadata 的 mixed-effects model。
 
 主界面顺序：
@@ -426,7 +426,7 @@ XDF 命名与分析规则：
 2. 文献矩阵：按 wayfinding / VR evacuation / EEG cognitive load 分类，并支持写作助手引用来源
 3. XDF 质控：stream 检查、session 切分、marker 完整性、EEG stream 选择
 4. EEG 分析：MNE-Python / EEGLAB 预处理脚本模板和 trial/event-level 特征表
-5. 批量实验数据：支持 90 名被试 × 3 个密度条件的 XDF 上传、排队和结果汇总
+5. 批量实验数据：支持 90 名被试 × 3 个路径确认支持条件的 XDF 上传、排队和结果汇总
 6. 写作模块：英文 Methods、Introduction 证据链、Discussion 风险点
 7. 场景与标识配置：当前暂不作为主界面模块，未来确有需要再恢复
 
@@ -467,17 +467,56 @@ XDF 命名与分析规则：
 
 - “文献与写作助手”中的写作区应定位为“论文写作工作台”：默认直接生成论文正文，而不是先给建议或证据矩阵。正文输出的第一部分必须是可进入草稿的英文 manuscript text，中文说明、证据链、不能声称和待补数据放在正文之后。
 - 参考科研写作 workflow 的原则：章节写作要有目标章节、正文草稿、证据追踪和质量门控；不把“协助写作”停留在提示词建议层，而是产出 Introduction、Methods、Analysis Plan、Results template 或 Discussion 的具体段落。
-- XDF 被试组显示统一为 `P01` 到 `P90`。`sub001` 到 `sub270` 是实验文件序号，不是 participant ID；每 3 个文件组成一名被试的低/中/高密度 run。
+- XDF 被试组显示统一为 `P01` 到 `P90`。`sub001` 到 `sub270` 是实验文件序号，不是 participant ID；每 3 个文件组成一名被试的低/中/高路径确认支持 run。
 - 文献知识库继续以单篇论文卡为核心，不做全局知识图谱。每篇文章都按同一结构展示：文献身份、研究问题与定位、单篇读论文笔记、方法与数据、主要发现、对本研究的用途、边界、关联证据和引用线索。
 - `lib/literature_article_kb.json` 当前版本为 `literature-article-kb-v4-paper-notes`。它由本地脚本 `scripts/build_literature_article_kb.mjs` 重建，不调用网页 API，也不使用 OpenAI key。
 - 单篇读论文笔记字段包括：TL;DR、problem、motivation、methodSummary、resultSummary、transferableConcepts、strengths、weaknesses、writingAngles、followUpQuestions。后续新增论文也应尽量映射到这套结构。
 - Grade A/B/C/D 是 Metro Rescue 项目内的“相关性/可用度”标记，不是正式文献质量评价。Grade B 表示中等相关：可用于方法类比、背景论证或边界讨论，但通常不是主结论的直接证据。
 - 写作助手上下文现在同时读取全局 claims/mechanisms/analysis rules 和逐篇论文 reading notes。真正写 Results 或显著性结论时仍只能使用已完成 XDF/cohort 报告或用户明确提供的真实统计结果。
 
+## 2026-06-02 PPT 研究框架更新：路径确认信息链
+
+用户提供的 `路径确认信息链与应急疏散行为研究.pptx` 是当前研究任务的核心介绍。后续写作和知识卡应优先采用这套框架，而不是把研究窄化成“标识密度影响 EEG 认知负荷”。
+
+核心现实问题：
+
+- 在公共空间应急疏散中，官方提醒和路径标识不只是“有没有”的问题，而是能否形成一条让人持续确认、快速理解、顺畅行动的路径确认信息链。
+- 官方提醒和现场标识可能脱节；信息不是越多越好；中等支持可能比低支持更容易造成犹豫；广播提醒在复杂空间中可能加重目标-线索匹配负担；手机弹窗能降低记忆负担，但不能替代现场路径确认链。
+
+核心科学问题：
+
+- 个体接收到官方目标提醒后，如何依据后续官方路径确认线索进行路径判断？
+- 为什么不同水平的路径确认支持会导致不同程度的行动迟滞？
+- 路径确认支持水平是否对行动迟滞产生非线性影响？
+- 不同提醒呈现方式是否改变路径确认支持的影响？
+- 路径确认支持如何同时影响行动迟滞和路径判断准确率？
+
+变量框架：
+
+- `X`: 路径确认支持水平（Route-confirmation support level），操纵维度包括首次确认线索接近性、确认链连续性、关键决策点覆盖和平均间距。
+- `Y`: 行动迟滞（Route-decision hesitation），客观测量包括首次行动启动时间、决策点停顿时间、重复核对次数、扫描、停留、掉头和回退。
+- `auxY`: 路径判断准确率（Wayfinding decision accuracy），包括首次方向选择是否正确、决策点选择正确率和最终是否到达正确目标。
+- `M1`: 感知信息可靠性（Perceived information reliability），解释个体为什么愿意继续参考官方线索。
+- `M2`: 信息加工负荷（Information-processing load），解释中等支持下持续核对、等待和犹豫；在本项目中主要由 EEG 事件窗和负荷代理指标表征。
+- `W`: 保护性行动指令清晰度（Protective action instruction clarity），调节官方目标提醒和现场路径确认线索之间的匹配过程。
+
+核心理论机制：
+
+- 低支持下，个体可能快速放弃官方确认链，转向启发式决策，因此行动迟滞低，但准确率可能较低。
+- 中支持下，个体认为官方信息值得继续参考，但确认链不够流畅或未闭合，因此持续核对，行动迟滞和 EEG 信息加工负荷最高。
+- 高支持下，个体能够快速完成路径确认，同时保持较高准确率。
+- 这不是简单的“信息越多越顺畅”模型，而是 accuracy-effort trade-off：个体在提高路径判断准确性和降低信息处理努力之间权衡。
+
+写作与知识卡要求：
+
+- 论文知识卡必须显示“研究任务映射”：该文献支撑 X、Y、M1、M2、W、auxY、方法有效性，还是只适合边界/背景。
+- 写作助手应能直接写完整 Introduction、Literature Review、Theory and Hypotheses、Variables and Measures、Methods、Analysis Plan、Results template 和 Discussion，不只给提示词或写作建议。
+- 旧字段 `densityHypothesisRelevance` 在当前口径中应理解为“低/中/高路径确认支持假设相关性”。界面文案可逐步过渡，但论文正文应优先使用 Route-confirmation support level。
+
 XDF 分析口径扩展：
 
 - 单文件报告仍以 LabRecorder `.xdf` 中的两个来源为核心：EEG stream 与 Unity marker stream。
 - Unity marker 层新增标识与决策指标：可见/可读标识数量、可读比例、首次可读时间、首次决策点时间、决策点数量、左右看次数、左右不平衡、双侧扫描、停留、掉头、回退和导航低效代理指标。
 - EEG 层新增事件窗指标：`sign_visible_enter`、`sign_readable`、`decision_point_enter` 和 `audio_play` 附近的 frontal theta、posterior alpha、theta/alpha 和 EEG load proxy，并标记事件窗附近是否出现音频、停留、掉头或回退。
-- 被试批量报告把这些 run-level 行为指标和事件窗 EEG 指标一起纳入低/中/高密度 planned contrast，不再只比较总时长和全程 EEG 平均。
-- 组内主检验仍是每名被试的 `medium - mean(low, high)`；组间分析仍需要 subject metadata，再检验 `Density × Group` 交互。
+- 被试批量报告把这些 run-level 行为指标和事件窗 EEG 指标一起纳入低/中/高路径确认支持 planned contrast，不再只比较总时长和全程 EEG 平均。
+- 组内主检验仍是每名被试的 `medium - mean(low, high)`；组间分析仍需要 subject metadata，再检验 `SupportLevel × Group` 交互。

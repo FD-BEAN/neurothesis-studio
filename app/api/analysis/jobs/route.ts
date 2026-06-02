@@ -19,11 +19,11 @@ const DENSITY_ANALYSIS_DESIGN = {
   expectedSubjects: 90,
   runsPerSubject: 3,
   expectedTotalRuns: 270,
-  fileCodingRule: "001/002/003 = subject 1; 004/005/006 = subject 2; each triplet is one within-subject density set",
-  withinSubjectFactor: "density",
+  fileCodingRule: "001/002/003 = participant P01; 004/005/006 = P02; each triplet is one within-subject route-confirmation support set",
+  withinSubjectFactor: "route-confirmation support level",
   densityLevels: ["low", "medium", "high"],
   signatureMapping: { Signature1: "low", Signature2: "medium", Signature3: "high" },
-  primaryHypothesis: "medium density has the highest cognitive load",
+  primaryHypothesis: "medium route-confirmation support has the highest route-decision hesitation and information-processing load",
   primaryContrast: {
     name: "medium_minus_low_high_mean",
     weights: { low: -1, medium: 2, high: -1 },
@@ -92,7 +92,7 @@ export async function POST(request: Request) {
   }
 
   if (isSubjectBatch && requestedDocumentIds.length < 2) {
-    return NextResponse.json({ error: "被试批量分析至少需要 2 个 XDF；正式数据建议同一被试的低/中/高密度 3 个 run 一起提交。" }, { status: 400 });
+    return NextResponse.json({ error: "被试批量分析至少需要 2 个 XDF；正式数据建议同一被试的低/中/高路径确认支持 3 个 run 一起提交。" }, { status: 400 });
   }
 
   const resolvedAnalysisType = isCohortSummary ? "cohort_density_summary" : isSubjectBatch ? "subject_batch" : analysisType || "advanced_python";
@@ -129,7 +129,7 @@ export async function POST(request: Request) {
       status_message: batchPayload
         ? `被试 ${batchPayload.subjectId} 的 ${documents.length} 个 XDF 批量分析任务已创建，等待 Python worker。`
         : cohortPayload
-          ? "全样本密度统计汇总任务已创建，等待 Python worker。"
+          ? "全样本路径确认支持统计汇总任务已创建，等待 Python worker。"
           : "XDF 分析任务已创建，等待 Python worker。",
       result_json: batchPayload ? { batch: batchPayload } : cohortPayload ? { cohort: cohortPayload } : null,
     })
@@ -193,9 +193,9 @@ export async function POST(request: Request) {
     .update({
       status: "queued",
       status_message: batchPayload
-        ? `已触发 GitHub Actions：被试 ${batchPayload.subjectId} 的 ${documents.length} 个 XDF 将按低/中/高密度一起分析。`
+        ? `已触发 GitHub Actions：被试 ${batchPayload.subjectId} 的 ${documents.length} 个 XDF 将按低/中/高路径确认支持一起分析。`
         : cohortPayload
-          ? "已触发 GitHub Actions：将汇总已完成被试的密度条件 contrast。"
+          ? "已触发 GitHub Actions：将汇总已完成被试的路径确认支持条件 contrast。"
         : "已触发 GitHub Actions XDF Python worker。",
     })
     .eq("id", job.id)
