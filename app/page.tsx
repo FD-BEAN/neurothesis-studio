@@ -36,6 +36,7 @@ type LiteratureKnowledgeEntry = {
 
 type LibraryFilter = "all" | "literature" | "analysis" | "notes";
 type JobViewFilter = "all" | "active" | "completed" | "failed" | "stale";
+type KnowledgeReviewMode = "global" | "article";
 
 const RESEARCH_FILE_ACCEPT = ".pdf,.doc,.docx,.csv,.tsv,.xlsx,.txt,.md,.svg,.png,.jpg,.jpeg,.json,.jsonl,.py,.m,.ipynb";
 const XDF_FILE_ACCEPT = ".xdf";
@@ -1629,9 +1630,23 @@ function normalizeKnowledgeTitle(title: string) {
 }
 
 function SeedKnowledgeReviewPanel({ entries, review }: { entries: LiteratureKnowledgeEntry[]; review: SeedKnowledgeReview | null }) {
+  const [reviewMode, setReviewMode] = useState<KnowledgeReviewMode>("global");
   const [activeSectionId, setActiveSectionId] = useState("sources");
+  const [activeArticleId, setActiveArticleId] = useState("");
   const [query, setQuery] = useState("");
   const displayReview = useMemo(() => (review ? mergeLiteratureEntriesIntoReview(review, entries) : null), [entries, review]);
+  const articleViews = useMemo(() => (displayReview ? buildArticleKnowledgeViews(displayReview, entries) : []), [displayReview, entries]);
+
+  useEffect(() => {
+    if (!articleViews.length) {
+      setActiveArticleId("");
+      return;
+    }
+
+    if (!articleViews.some((article) => article.id === activeArticleId)) {
+      setActiveArticleId(articleViews[0].id);
+    }
+  }, [activeArticleId, articleViews]);
 
   const activeSection = displayReview?.sections.find((section) => section.id === activeSectionId) ?? displayReview?.sections[0] ?? null;
   const filteredItems = useMemo(() => {
@@ -1652,9 +1667,38 @@ function SeedKnowledgeReviewPanel({ entries, review }: { entries: LiteratureKnow
       ]
         .join(" ")
         .toLowerCase()
-        .includes(normalizedQuery),
+      .includes(normalizedQuery),
     );
   }, [activeSection, query]);
+  const filteredArticles = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    if (!normalizedQuery) return articleViews;
+
+    return articleViews.filter((article) =>
+      [
+        article.id,
+        article.title,
+        article.subtitle,
+        article.tags.join(" "),
+        article.sections
+          .map((section) =>
+            [section.title, section.body ?? "", section.points.join(" "), section.rows.map((row) => `${row.label} ${row.value}`).join(" ")]
+              .join(" ")
+              .trim(),
+          )
+          .join(" "),
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(normalizedQuery),
+    );
+  }, [articleViews, query]);
+  const activeArticle =
+    filteredArticles.find((article) => article.id === activeArticleId) ??
+    articleViews.find((article) => article.id === activeArticleId) ??
+    filteredArticles[0] ??
+    articleViews[0] ??
+    null;
 
   if (!displayReview) {
     return (
@@ -1676,7 +1720,24 @@ function SeedKnowledgeReviewPanel({ entries, review }: { entries: LiteratureKnow
           <p className="eyebrow">文献知识库</p>
           <h3>统一文献知识库</h3>
         </div>
-        <span className="status-pill compact">{totalItems} 个条目</span>
+        <span className="status-pill compact">{sourceCount} 篇文献</span>
+      </div>
+
+      <div className="knowledge-mode-tabs" role="tablist" aria-label="知识库审阅方式">
+        <button
+          className={reviewMode === "global" ? "is-active" : ""}
+          type="button"
+          onClick={() => setReviewMode("global")}
+        >
+          整体知识结构
+        </button>
+        <button
+          className={reviewMode === "article" ? "is-active" : ""}
+          type="button"
+          onClick={() => setReviewMode("article")}
+        >
+          单篇文献结构
+        </button>
       </div>
 
       <div className="seed-review-summary">
@@ -1703,80 +1764,403 @@ function SeedKnowledgeReviewPanel({ entries, review }: { entries: LiteratureKnow
         ))}
       </div>
 
-      <div className="seed-review-layout">
-        <aside className="seed-section-list" aria-label="知识库分类">
-          {displayReview.sections.map((section) => (
-            <button
-              className={`seed-section-button ${activeSection?.id === section.id ? "is-active" : ""}`}
-              key={section.id}
-              onClick={() => setActiveSectionId(section.id)}
-              type="button"
-            >
-              <span>{section.label}</span>
-              <strong>{section.items.length}</strong>
-            </button>
-          ))}
-        </aside>
+      {reviewMode === "global" ? (
+        <GlobalKnowledgeStructure
+          displayReview={displayReview}
+          activeSection={activeSection}
+          filteredItems={filteredItems}
+          query={query}
+          onQueryChange={setQuery}
+          onSectionChange={setActiveSectionId}
+        />
+      ) : (
+        <ArticleKnowledgeStructure
+          articles={filteredArticles}
+          activeArticle={activeArticle}
+          query={query}
+          onQueryChange={setQuery}
+          onArticleChange={setActiveArticleId}
+        />
+      )}
+    </section>
+  );
+}
 
-        <div className="seed-review-main">
-          <div className="seed-review-controls">
-            <div>
-              <p className="eyebrow">{activeSection?.label}</p>
-              <h3>{activeSection?.description}</h3>
-            </div>
-            <label className="search-field">
-              检索当前分类
-              <input
-                type="search"
-                value={query}
-                placeholder="例如 EEG、density、S027、Methods"
-                onChange={(event) => setQuery(event.target.value)}
-              />
-            </label>
+function GlobalKnowledgeStructure({
+  displayReview,
+  activeSection,
+  filteredItems,
+  query,
+  onQueryChange,
+  onSectionChange,
+}: {
+  displayReview: SeedKnowledgeReview;
+  activeSection: SeedKnowledgeReview["sections"][number] | null;
+  filteredItems: SeedKnowledgeReviewItem[];
+  query: string;
+  onQueryChange: (query: string) => void;
+  onSectionChange: (sectionId: string) => void;
+}) {
+  return (
+    <div className="seed-review-layout">
+      <aside className="seed-section-list" aria-label="知识库分类">
+        {displayReview.sections.map((section) => (
+          <button
+            className={`seed-section-button ${activeSection?.id === section.id ? "is-active" : ""}`}
+            key={section.id}
+            onClick={() => onSectionChange(section.id)}
+            type="button"
+          >
+            <span>{section.label}</span>
+            <strong>{section.items.length}</strong>
+          </button>
+        ))}
+      </aside>
+
+      <div className="seed-review-main">
+        <div className="seed-review-controls">
+          <div>
+            <p className="eyebrow">{activeSection?.label}</p>
+            <h3>{activeSection?.description}</h3>
           </div>
+          <label className="search-field">
+            检索当前分类
+            <input
+              type="search"
+              value={query}
+              placeholder="例如 EEG、density、S027、Methods"
+              onChange={(event) => onQueryChange(event.target.value)}
+            />
+          </label>
+        </div>
 
-          <div className="seed-review-list">
-            {filteredItems.length ? (
-              filteredItems.map((item) => (
-                <article className="seed-review-item" key={`${activeSection?.id}-${item.id}`}>
-                  <div className="seed-item-head">
-                    <span>{item.id}</span>
-                    <div>
-                      <h4>{item.title}</h4>
-                      {item.subtitle ? <p>{item.subtitle}</p> : null}
-                    </div>
-                  </div>
-                  <p>{item.body}</p>
-                  {item.tags.length ? (
-                    <div className="keyword-row compact quiet">
-                      {item.tags.slice(0, 8).map((tag) => (
-                        <span key={`${item.id}-${tag}`}>{tag}</span>
+        <div className="seed-review-list">
+          {filteredItems.length ? (
+            filteredItems.map((item) => (
+              <KnowledgeReviewItemCard item={item} sectionId={activeSection?.id ?? "section"} key={`${activeSection?.id}-${item.id}`} />
+            ))
+          ) : (
+            <p className="muted">当前分类里没有匹配条目。</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function KnowledgeReviewItemCard({ item, sectionId }: { item: SeedKnowledgeReviewItem; sectionId: string }) {
+  return (
+    <article className="seed-review-item">
+      <div className="seed-item-head">
+        <span>{item.id}</span>
+        <div>
+          <h4>{item.title}</h4>
+          {item.subtitle ? <p>{item.subtitle}</p> : null}
+        </div>
+      </div>
+      <p>{item.body}</p>
+      {item.tags.length ? (
+        <div className="keyword-row compact quiet">
+          {item.tags.slice(0, 8).map((tag) => (
+            <span key={`${sectionId}-${item.id}-${tag}`}>{tag}</span>
+          ))}
+        </div>
+      ) : null}
+      {item.meta.length ? (
+        <dl className="seed-review-meta">
+          {getDisplaySeedMetaEntries(item.meta).map((entry) => (
+            <div key={`${sectionId}-${item.id}-${entry.label}`}>
+              <dt>{entry.label}</dt>
+              <dd>{entry.fullValue ? <SourceReferenceValue entry={entry} /> : entry.value}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+      {item.boundary ? <p className="seed-boundary">边界：{item.boundary}</p> : null}
+    </article>
+  );
+}
+
+type ArticleKnowledgeRow = {
+  label: string;
+  value: string;
+};
+
+type ArticleKnowledgeSection = {
+  id: string;
+  title: string;
+  body?: string;
+  rows: ArticleKnowledgeRow[];
+  points: string[];
+  linkedItems: SeedKnowledgeReviewItem[];
+};
+
+type ArticleKnowledgeView = {
+  id: string;
+  title: string;
+  subtitle: string;
+  libraryMeta: string;
+  tags: string[];
+  sections: ArticleKnowledgeSection[];
+};
+
+function ArticleKnowledgeStructure({
+  articles,
+  activeArticle,
+  query,
+  onQueryChange,
+  onArticleChange,
+}: {
+  articles: ArticleKnowledgeView[];
+  activeArticle: ArticleKnowledgeView | null;
+  query: string;
+  onQueryChange: (query: string) => void;
+  onArticleChange: (articleId: string) => void;
+}) {
+  return (
+    <div className="article-knowledge-layout">
+      <aside className="article-knowledge-list" aria-label="单篇文献列表">
+        <label className="search-field">
+          检索文献
+          <input
+            type="search"
+            value={query}
+            placeholder="按标题、编号、方法或关键词搜索"
+            onChange={(event) => onQueryChange(event.target.value)}
+          />
+        </label>
+        <div className="article-list-scroll">
+          {articles.length ? (
+            articles.map((article) => (
+              <button
+                className={`article-knowledge-button ${activeArticle?.id === article.id ? "is-active" : ""}`}
+                key={article.id}
+                type="button"
+                onClick={() => onArticleChange(article.id)}
+              >
+                <span>{article.id}</span>
+                <strong>{article.title}</strong>
+                {article.libraryMeta ? <small>{article.libraryMeta}</small> : null}
+              </button>
+            ))
+          ) : (
+            <p className="muted">没有匹配的文献。</p>
+          )}
+        </div>
+      </aside>
+
+      <div className="article-knowledge-detail">
+        {activeArticle ? (
+          <>
+            <div className="article-knowledge-head">
+              <span>{activeArticle.id}</span>
+              <h3>{activeArticle.title}</h3>
+              {activeArticle.subtitle ? <p>{activeArticle.subtitle}</p> : null}
+              {activeArticle.tags.length ? (
+                <div className="keyword-row compact quiet">
+                  {activeArticle.tags.slice(0, 8).map((tag) => (
+                    <span key={`${activeArticle.id}-${tag}`}>{tag}</span>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+            <div className="article-knowledge-sections">
+              {activeArticle.sections.map((section) => (
+                <section className="article-knowledge-section" key={`${activeArticle.id}-${section.id}`}>
+                  <h4>{section.title}</h4>
+                  {section.body ? <p>{section.body}</p> : null}
+                  {section.rows.length ? (
+                    <dl className="seed-review-meta">
+                      {section.rows.map((row) => (
+                        <div key={`${section.id}-${row.label}`}>
+                          <dt>{row.label}</dt>
+                          <dd>{row.value}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  ) : null}
+                  {section.points.length ? (
+                    <ul>
+                      {section.points.map((point) => (
+                        <li key={point}>{point}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {section.linkedItems.length ? (
+                    <div className="article-linked-items">
+                      {section.linkedItems.map((item) => (
+                        <KnowledgeReviewItemCard item={item} sectionId={`${activeArticle.id}-${section.id}`} key={`${section.id}-${item.id}`} />
                       ))}
                     </div>
                   ) : null}
-                  {item.meta.length ? (
-                    <dl className="seed-review-meta">
-                      {getDisplaySeedMetaEntries(item.meta).map((entry) => (
-                          <div key={`${item.id}-${entry.label}`}>
-                            <dt>{entry.label}</dt>
-                            <dd>
-                              {entry.fullValue ? <SourceReferenceValue entry={entry} /> : entry.value}
-                            </dd>
-                          </div>
-                        ))}
-                    </dl>
-                  ) : null}
-                  {item.boundary ? <p className="seed-boundary">边界：{item.boundary}</p> : null}
-                </article>
-              ))
-            ) : (
-              <p className="muted">当前分类里没有匹配条目。</p>
-            )}
-          </div>
-        </div>
+                </section>
+              ))}
+            </div>
+          </>
+        ) : (
+          <p className="muted">请选择一篇文献查看结构化知识。</p>
+        )}
       </div>
-    </section>
+    </div>
   );
+}
+
+function buildArticleKnowledgeViews(review: SeedKnowledgeReview, entries: LiteratureKnowledgeEntry[]): ArticleKnowledgeView[] {
+  const sourceSection = review.sections.find((section) => section.id === "sources");
+  if (!sourceSection) return [];
+
+  const entryBySourceId = new Map<string, LiteratureKnowledgeEntry>();
+  const entryByTitle = new Map<string, LiteratureKnowledgeEntry>();
+
+  for (const entry of entries) {
+    if (entry.seedMatch?.sourceId) {
+      entryBySourceId.set(entry.seedMatch.sourceId, entry);
+    }
+
+    const titleCandidates = [
+      entry.card?.title,
+      entry.seedMatch?.title,
+      getDocumentListTitle(entry.document, entry.card, entry.seedMatch),
+      entry.document.filename,
+    ];
+
+    for (const candidate of titleCandidates) {
+      const normalizedTitle = normalizeKnowledgeTitle(candidate ?? "");
+      if (normalizedTitle && !entryByTitle.has(normalizedTitle)) {
+        entryByTitle.set(normalizedTitle, entry);
+      }
+    }
+  }
+
+  return sourceSection.items.map((sourceItem) => {
+    const entry = entryBySourceId.get(sourceItem.id) ?? entryByTitle.get(normalizeKnowledgeTitle(sourceItem.title)) ?? null;
+    const card = entry?.card ?? null;
+    const linkedItems = getArticleLinkedItems(review, sourceItem.id);
+    const quoteItems = linkedItems.filter((item) => item.id.startsWith(`${sourceItem.id}-`));
+    const evidenceItems = linkedItems.filter((item) => !item.id.startsWith(`${sourceItem.id}-`));
+    const methodOrEvidence = getReviewMetaValue(sourceItem, "证据/方法");
+    const metroUse = getReviewMetaValue(sourceItem, "用于本研究");
+    const sourceFile = getReviewMetaValue(sourceItem, "文件") || entry?.document.filename || card?.filename || "";
+    const libraryMeta = entry?.document ? formatDocumentListMeta(entry.document) : sourceFile ? `文件：${sourceFile}` : "";
+
+    return {
+      id: sourceItem.id,
+      title: sourceItem.title,
+      subtitle: sourceItem.subtitle ?? "",
+      libraryMeta,
+      tags: sourceItem.tags,
+      sections: [
+        {
+          id: "identity",
+          title: "文献身份",
+          rows: compactRows([
+            { label: "文献编号", value: sourceItem.id },
+            { label: "类型/等级", value: sourceItem.subtitle ?? "" },
+            { label: "文件", value: sourceFile },
+            { label: "入库信息", value: entry?.document ? formatDocumentListMeta(entry.document) : "" },
+          ]),
+          points: [],
+          linkedItems: [],
+        },
+        {
+          id: "question",
+          title: "研究问题与定位",
+          body: card?.researchQuestion || sourceItem.body,
+          rows: [],
+          points: compactStrings([card?.oneSentenceTakeaway, card?.abstractZh]),
+          linkedItems: [],
+        },
+        {
+          id: "methods",
+          title: "方法与数据",
+          rows: compactRows([
+            { label: "方法/证据", value: card?.methods || methodOrEvidence },
+            { label: "被试/样本", value: card?.participants },
+            { label: "任务与材料", value: card?.taskAndMaterials },
+            { label: "EEG/行为指标", value: card?.eegOrMeasures || card?.variablesAndMeasures?.join("；") },
+          ]),
+          points: compactStrings([...(card?.methodsWritingUse ?? [])]),
+          linkedItems: [],
+        },
+        {
+          id: "findings",
+          title: "主要发现",
+          rows: [],
+          points: compactStrings(card?.keyFindings?.length ? card.keyFindings : [sourceItem.body]),
+          linkedItems: [],
+        },
+        {
+          id: "metro-use",
+          title: "对本研究的用途",
+          rows: compactRows([
+            { label: "可用于", value: card?.usableForSections?.join("；") },
+            { label: "证据等级", value: card?.evidenceLevel || card?.sourceGrade },
+          ]),
+          points: compactStrings([
+            metroUse,
+            ...(card?.relevanceToMetroRescue ?? []),
+            ...(card?.densityHypothesisRelevance ?? []),
+            ...(card?.resultsDiscussionUse ?? []),
+          ]),
+          linkedItems: [],
+        },
+        {
+          id: "boundaries",
+          title: "边界与不能声称",
+          rows: [],
+          points: compactStrings([sourceItem.boundary, ...(card?.doNotClaim ?? []), ...(card?.limitations ?? []), ...(card?.qualityCaveats ?? [])]),
+          linkedItems: [],
+        },
+        {
+          id: "linked-evidence",
+          title: "关联证据单元",
+          rows: [],
+          points: compactStrings([...(card?.candidateClaims ?? []), ...(card?.theoryOrMechanism ?? [])]),
+          linkedItems: evidenceItems.slice(0, 10),
+        },
+        {
+          id: "quote-anchors",
+          title: "引用线索",
+          rows: [],
+          points: compactStrings([...(card?.quoteAnchorsToVerify ?? [])]),
+          linkedItems: quoteItems.slice(0, 8),
+        },
+      ],
+    };
+  });
+}
+
+function getArticleLinkedItems(review: SeedKnowledgeReview, sourceId: string) {
+  return review.sections
+    .filter((section) => section.id !== "sources")
+    .flatMap((section) =>
+      section.items
+        .filter((item) => knowledgeItemReferencesSource(item, sourceId))
+        .map((item) => ({
+          ...item,
+          subtitle: item.subtitle ? `${section.label} · ${item.subtitle}` : section.label,
+        })),
+    );
+}
+
+function knowledgeItemReferencesSource(item: SeedKnowledgeReviewItem, sourceId: string) {
+  if (item.id.startsWith(`${sourceId}-`)) return true;
+  if (item.tags.includes(sourceId)) return true;
+  return item.meta.some((entry) => entry.value.includes(sourceId));
+}
+
+function getReviewMetaValue(item: SeedKnowledgeReviewItem, label: string) {
+  return item.meta.find((entry) => entry.label === label)?.value ?? "";
+}
+
+function compactRows(rows: Array<{ label: string; value?: string | null }>): ArticleKnowledgeRow[] {
+  return rows
+    .map((row) => ({ label: row.label, value: String(row.value ?? "").trim() }))
+    .filter((row) => row.value);
+}
+
+function compactStrings(values: Array<string | null | undefined>) {
+  return values.map((value) => String(value ?? "").trim()).filter(Boolean);
 }
 
 type DisplaySeedMetaEntry = {
