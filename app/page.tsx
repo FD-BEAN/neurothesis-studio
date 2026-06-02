@@ -1059,47 +1059,33 @@ function Workspace({
             <section className="work-panel document-detail inspector-panel">
               <div className="analysis-head">
                 <div>
-                  <p className="eyebrow">当前选中</p>
-                  <h3>{selectedDocument ? selectedDisplayName : "尚未选择文件"}</h3>
+                  <p className="eyebrow">资料操作</p>
+                  <h3>{selectedDocument ? selectedDisplayName : "选择左侧文件后操作"}</h3>
                 </div>
                 {selectedCategory ? <span className="category-badge">{selectedCategory.label}</span> : null}
               </div>
-              <dl className="file-meta">
-                <div>
-                  <dt>原始文件名</dt>
-                  <dd>{selectedDocument ? selectedDocument.filename : "未选择"}</dd>
-                </div>
-                <div>
-                  <dt>文件类型</dt>
-                  <dd>{selectedDocument ? formatDocumentKind(selectedDocument) : "未选择"}</dd>
-                </div>
-                <div>
-                  <dt>文件大小</dt>
-                  <dd>{selectedDocument ? formatBytes(selectedDocument.size_bytes) : "未选择"}</dd>
-                </div>
-                <div>
-                  <dt>入库日期</dt>
-                  <dd>
-                    {selectedDocument ? new Date(selectedDocument.created_at).toLocaleDateString("zh-CN") : "未选择"}
-                  </dd>
-                </div>
-              </dl>
-              <p className="muted">文件保持私有。需要阅读原文件时，会生成一个短时间有效的临时链接。</p>
-              <button
-                className="secondary-button"
-                disabled={!selectedDocument}
-                onClick={() => selectedDocument && openSignedUrl(selectedDocument)}
-              >
-                打开文件
-              </button>
+              <p className="muted">
+                {selectedDocument
+                  ? `入库信息：${formatDocumentListMeta(selectedDocument)}。文件保持私有，打开时会生成短时间有效的临时链接。`
+                  : "左侧资料只显示标题和入库信息；这里保留必要操作。"}
+              </p>
+              <div className="top-actions">
+                <button
+                  className="secondary-button"
+                  disabled={!selectedDocument}
+                  onClick={() => selectedDocument && openSignedUrl(selectedDocument)}
+                >
+                  打开文件
+                </button>
+              </div>
               {selectedDocumentIsLiterature ? (
                 <p className="muted">
-                  文献入库会抽取论文目的、方法、EEG/行为指标、主要发现、局限和可引用章节，生成结构化知识卡片供写作助手引用。
+                  文献入库会检查是否已有知识卡；新文献才会生成单篇结构化卡片，供写作助手引用。
                 </p>
               ) : null}
               {selectedDocumentIsLiterature && selectedSeedMatch ? (
                 <p className="muted">
-                  这篇文献已入库并可被写作助手引用。点击生成时会直接提示已存在，不会重复调用 OpenAI。
+                  这篇文献已在知识库中。点击生成时会直接提示已存在，不会重复调用外部模型。
                 </p>
               ) : null}
               {selectedDocumentIsLiterature ? (
@@ -1637,7 +1623,7 @@ function SeedKnowledgeReviewPanel({ entries }: { entries: LiteratureKnowledgeEnt
       <div className="analysis-head">
         <div>
           <p className="eyebrow">文献知识库</p>
-          <h3>统一文献知识库</h3>
+          <h3>逐篇文献知识卡</h3>
         </div>
         <span className="status-pill compact">{sourceCount} 篇文献</span>
       </div>
@@ -1862,16 +1848,16 @@ function buildArticleKnowledgeViews(entries: LiteratureKnowledgeEntry[]): Articl
 
   const baseArticles = literatureArticleKnowledgeBase.articles.map((article) => {
     const entry = entryBySourceId.get(article.id) ?? entryByTitle.get(normalizeKnowledgeTitle(article.title)) ?? null;
-    const card = entry?.card ?? null;
     const evidenceItems = buildLinkedEvidenceItems(article);
     const quoteItems = buildQuoteAnchorItems(article);
-    const sourceFile = article.matchedPdfFilename || article.filename || entry?.document.filename || card?.filename || "";
+    const sourceFile = article.matchedPdfFilename || article.filename || entry?.document.filename || "";
     const libraryMeta = entry?.document ? formatDocumentListMeta(entry.document) : sourceFile ? `文件：${sourceFile}` : "";
+    const evidenceSnippets = article.evidenceSnippets ?? {};
 
     return {
       id: article.id,
       title: article.title,
-      subtitle: `${article.articleRole} · Grade ${article.grade} · ${article.depth}`,
+      subtitle: `${article.articleRole} · ${article.evidenceType} · Grade ${article.grade}`,
       libraryMeta,
       tags: article.themeTags,
       sections: [
@@ -1881,7 +1867,8 @@ function buildArticleKnowledgeViews(entries: LiteratureKnowledgeEntry[]): Articl
           rows: compactRows([
             { label: "文献编号", value: article.id },
             { label: "知识角色", value: article.articleRole },
-            { label: "等级", value: `Grade ${article.grade} · ${article.depth}` },
+            { label: "研究类型", value: article.evidenceType },
+            { label: "审阅等级", value: article.qualityTier },
             { label: "论文位置", value: article.thesisSection },
             { label: "文件", value: sourceFile },
             { label: "入库信息", value: entry?.document ? formatDocumentListMeta(entry.document) : "" },
@@ -1892,42 +1879,42 @@ function buildArticleKnowledgeViews(entries: LiteratureKnowledgeEntry[]): Articl
         {
           id: "question",
           title: "研究问题与定位",
-          body: card?.researchQuestion || article.researchPosition,
+          body: article.researchQuestion,
           rows: [],
-          points: compactStrings([card?.oneSentenceTakeaway, article.oneSentenceSummary, card?.abstractZh]),
+          points: compactStrings([article.oneSentenceSummary, article.researchPosition]),
           linkedItems: [],
         },
         {
           id: "methods",
           title: "方法与数据",
           rows: compactRows([
-            { label: "方法/证据", value: card?.methods || article.methodAndData },
-            { label: "被试/样本", value: card?.participants },
-            { label: "任务与材料", value: card?.taskAndMaterials },
-            { label: "EEG/行为指标", value: card?.eegOrMeasures || card?.variablesAndMeasures?.join("；") },
+            { label: "方法/证据", value: article.studyDesign },
+            { label: "被试/样本", value: article.participantsAndSample },
+            { label: "任务与材料", value: article.taskAndMaterials },
+            { label: "变量/条件", value: joinArticleValues(article.variablesAndMeasures) },
+            { label: "神经/生理指标", value: joinArticleValues(article.eegOrPhysioMeasures) },
+            { label: "行为指标", value: joinArticleValues(article.behavioralMeasures) },
           ]),
-          points: compactStrings([...(card?.methodsWritingUse ?? [])]),
+          points: [],
           linkedItems: [],
         },
         {
           id: "findings",
           title: "主要发现",
           rows: [],
-          points: compactStrings(card?.keyFindings?.length ? card.keyFindings : article.keyFindings),
+          points: compactStrings(article.keyFindings),
           linkedItems: [],
         },
         {
           id: "metro-use",
           title: "对本研究的用途",
           rows: compactRows([
-            { label: "可用于", value: card?.usableForSections?.join("；") },
-            { label: "证据等级", value: card?.evidenceLevel || card?.sourceGrade },
+            { label: "写作用途", value: joinArticleValues(article.writingUse) },
+            { label: "密度假设关联", value: joinArticleValues(article.densityHypothesisRelevance) },
           ]),
           points: compactStrings([
             ...article.metroRescueUse,
-            ...(card?.relevanceToMetroRescue ?? []),
-            ...(card?.densityHypothesisRelevance ?? []),
-            ...(card?.resultsDiscussionUse ?? []),
+            ...article.methodTransfer,
           ]),
           linkedItems: [],
         },
@@ -1935,21 +1922,32 @@ function buildArticleKnowledgeViews(entries: LiteratureKnowledgeEntry[]): Articl
           id: "boundaries",
           title: "边界与不能声称",
           rows: [],
-          points: compactStrings([...article.boundaries, ...(card?.doNotClaim ?? []), ...(card?.limitations ?? []), ...(card?.qualityCaveats ?? [])]),
+          points: compactStrings([...article.boundaries, ...article.limitations, ...article.needsVerification]),
           linkedItems: [],
         },
         {
           id: "linked-evidence",
           title: "关联证据单元",
           rows: [],
-          points: compactStrings([...(card?.candidateClaims ?? []), ...(card?.theoryOrMechanism ?? [])]),
+          points: [],
           linkedItems: evidenceItems.slice(0, 10),
+        },
+        {
+          id: "evidence-snippets",
+          title: "原文证据摘录",
+          rows: compactRows([
+            { label: "摘要摘录", value: evidenceSnippets.abstract },
+            { label: "方法摘录", value: evidenceSnippets.methods },
+            { label: "结果/讨论摘录", value: evidenceSnippets.resultsDiscussion },
+          ]),
+          points: [],
+          linkedItems: [],
         },
         {
           id: "quote-anchors",
           title: "引用线索",
           rows: [],
-          points: compactStrings([...(card?.quoteAnchorsToVerify ?? [])]),
+          points: compactStrings(article.quoteAnchorsToVerify),
           linkedItems: quoteItems.slice(0, 8),
         },
       ],
@@ -2130,6 +2128,10 @@ function compactRows(rows: Array<{ label: string; value?: string | null }>): Art
 
 function compactStrings(values: Array<string | null | undefined>) {
   return values.map((value) => String(value ?? "").trim()).filter(Boolean);
+}
+
+function joinArticleValues(values: Array<string | null | undefined> | null | undefined) {
+  return compactStrings(values ?? []).join("；");
 }
 
 type DisplaySeedMetaEntry = {
