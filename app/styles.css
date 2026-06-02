@@ -254,6 +254,32 @@ a {
 .workspace {
   min-width: 0;
   background: var(--bg);
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  order: 0;
+}
+
+#overview {
+  order: 1;
+}
+
+#pipeline {
+  order: 2;
+}
+
+#ai {
+  order: 3;
+}
+
+#files {
+  order: 4;
+}
+
+#knowledge {
+  order: 5;
 }
 
 .topbar {
@@ -1318,6 +1344,53 @@ textarea {
 
 .seed-review-meta dd {
   margin: 3px 0 0;
+}
+
+.source-reference-value {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  align-items: baseline;
+}
+
+.source-reference-value > span {
+  color: var(--muted);
+}
+
+.source-reference-value details {
+  display: inline-block;
+}
+
+.source-reference-value summary {
+  min-height: 26px;
+  padding: 3px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--green);
+  background: #ffffff;
+  cursor: pointer;
+  font-size: 0.76rem;
+  font-weight: 900;
+  list-style: none;
+}
+
+.source-reference-value summary::-webkit-details-marker {
+  display: none;
+}
+
+.source-reference-value details[open] summary {
+  border-color: #9fbeba;
+  background: var(--soft);
+}
+
+.source-reference-value ul {
+  width: min(100%, 900px);
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.source-reference-value li {
+  margin: 4px 0;
 }
 
 .seed-boundary {

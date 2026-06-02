@@ -8,7 +8,7 @@ import {
   type ResearchAnalysisJob,
   type ResearchDocument,
 } from "@/lib/supabase";
-import type { SeedKnowledgeReview, SeedLiteratureMatch } from "@/lib/knowledgeBase";
+import type { SeedKnowledgeReview, SeedKnowledgeReviewItem, SeedLiteratureMatch } from "@/lib/knowledgeBase";
 import { isLiteratureDocument, parseLiteratureCard, type LiteratureKnowledgeCard } from "@/lib/literature";
 import { metroAiPrompt, researchProject } from "@/lib/researchProject";
 
@@ -52,16 +52,6 @@ const thesisKeywords = researchProject.keywords;
 
 const workspaceModules = [
   {
-    href: "#files",
-    title: "研究资料库",
-    text: "文献知识库、XDF 原始数据、分析脚本和写作材料。",
-  },
-  {
-    href: "#knowledge",
-    title: "知识库审阅",
-    text: "查看内置文献卡、claims、机制、假设、模型和引用锚点。",
-  },
-  {
     href: "#pipeline",
     title: "数据分析与论文写作",
     text: "XDF 质量检查、行为数据、EEG 预处理和英文论文段落。",
@@ -71,6 +61,24 @@ const workspaceModules = [
     title: "文献与写作助手",
     text: "基于已入库论文知识卡片生成文献矩阵、Methods 草稿和分析计划。",
   },
+  {
+    href: "#files",
+    title: "研究资料库",
+    text: "文献知识库、XDF 原始数据、分析脚本和写作材料。",
+  },
+  {
+    href: "#knowledge",
+    title: "知识库审阅",
+    text: "查看内置文献卡、claims、机制、假设、模型和引用锚点。",
+  },
+];
+
+const knowledgeReviewNotes = [
+  "内置知识库包含结构化、转述后的文献知识与 source anchor，不是 PDF 全文库。",
+  "写作时可以使用文献卡和引用锚点辅助定位；正式引用前仍需回到原文核对页码、作者、年份和 DOI。",
+  "项目假设、写作块和分析模型是写作与建模辅助；除非明确标记为直接文献证据，不等于已经得到实验结果。",
+  "部分历史字段仍使用 Signature1/2/3 命名；当前研究口径应统一映射为低/中/高密度条件，并在论文中使用 Density condition。",
+  "文献代码可在“文献卡”分类中检索；claims、机制、假设、风险和引用锚点默认显示 S001 这类文献简写，展开后查看完整文献标题。",
 ];
 
 const documentCategories = [
@@ -733,17 +741,17 @@ function Workspace({
           <a className="nav-item is-active" href="#overview">
             项目概览
           </a>
-          <a className="nav-item" href="#files">
-            研究资料库
-          </a>
-          <a className="nav-item" href="#knowledge">
-            知识库审阅
-          </a>
           <a className="nav-item" href="#pipeline">
             数据分析与写作
           </a>
           <a className="nav-item" href="#ai">
             文献与写作助手
+          </a>
+          <a className="nav-item" href="#files">
+            研究资料库
+          </a>
+          <a className="nav-item" href="#knowledge">
+            知识库审阅
           </a>
         </nav>
         <div className="side-note">
@@ -1433,10 +1441,9 @@ function SeedKnowledgeReviewPanel({ review }: { review: SeedKnowledgeReview | nu
       </div>
 
       <div className="review-note-list">
-        {[...review.integrityNotes, ...review.reviewNotes].map((note) => (
+        {knowledgeReviewNotes.map((note) => (
           <p key={note}>{note}</p>
         ))}
-        <p>文献代码可以在“文献卡”分类中检索；claims、机制、假设、风险和引用锚点会同时显示“来源代码”和“来源文献”。</p>
       </div>
 
       <div className="seed-review-layout">
@@ -1492,12 +1499,12 @@ function SeedKnowledgeReviewPanel({ review }: { review: SeedKnowledgeReview | nu
                   ) : null}
                   {item.meta.length ? (
                     <dl className="seed-review-meta">
-                      {item.meta
-                        .filter((entry) => entry.value)
-                        .map((entry) => (
+                      {getDisplaySeedMetaEntries(item.meta).map((entry) => (
                           <div key={`${item.id}-${entry.label}`}>
                             <dt>{entry.label}</dt>
-                            <dd>{entry.value}</dd>
+                            <dd>
+                              {entry.fullValue ? <SourceReferenceValue entry={entry} /> : entry.value}
+                            </dd>
                           </div>
                         ))}
                     </dl>
@@ -1513,6 +1520,77 @@ function SeedKnowledgeReviewPanel({ review }: { review: SeedKnowledgeReview | nu
       </div>
     </section>
   );
+}
+
+type DisplaySeedMetaEntry = {
+  label: string;
+  value: string;
+  fullValue?: string;
+};
+
+const SOURCE_REFERENCE_PATTERN = /S\d{3}/g;
+
+function getDisplaySeedMetaEntries(meta: SeedKnowledgeReviewItem["meta"]): DisplaySeedMetaEntry[] {
+  const fullSourceEntry = meta.find((entry) => entry.label === "来源文献" && entry.value);
+  const hasSourceCodeEntry = meta.some((entry) => entry.label === "来源代码" && entry.value);
+
+  return meta
+    .filter((entry) => entry.value)
+    .flatMap((entry) => {
+      if (entry.label === "来源代码") {
+        return [
+          {
+            label: "来源文献",
+            value: entry.value,
+            fullValue: fullSourceEntry?.value,
+          },
+        ];
+      }
+
+      if (entry.label === "来源文献") {
+        if (hasSourceCodeEntry) return [];
+        return [
+          {
+            label: "来源文献",
+            value: extractSourceReferenceCodes(entry.value).join("; ") || entry.value,
+            fullValue: entry.value,
+          },
+        ];
+      }
+
+      return [{ label: entry.label, value: entry.value }];
+    });
+}
+
+function SourceReferenceValue({ entry }: { entry: DisplaySeedMetaEntry }) {
+  const fullReferences = splitSourceReferences(entry.fullValue);
+
+  return (
+    <div className="source-reference-value">
+      <span>{entry.value}</span>
+      {fullReferences.length ? (
+        <details>
+          <summary>展开</summary>
+          <ul>
+            {fullReferences.map((reference) => (
+              <li key={reference}>{reference}</li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
+    </div>
+  );
+}
+
+function splitSourceReferences(value: string | undefined) {
+  return String(value ?? "")
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function extractSourceReferenceCodes(value: string) {
+  return Array.from(new Set(value.match(SOURCE_REFERENCE_PATTERN) ?? []));
 }
 
 function LiteratureKnowledgePanel({
