@@ -143,14 +143,14 @@ const projectAnalysisDesignReviewItems: SeedKnowledgeReviewItem[] = [
   },
   {
     id: "DESIGN-004",
-    title: "被试间分析",
-    body: "被试间问题指不同被试之间的差异，应建立在被试元数据上，例如组别、年龄、性别、VR 经验、专业背景、实验顺序或 counterbalance。统计上关注 SupportLevel × 被试间变量；不同被试的单个 XDF 文件不能直接混在一起比较。",
-    tags: ["between-subject", "metadata", "mixed-effects"],
+    title: "个体差异与协变量分析",
+    body: "个体差异问题指不同被试之间为什么会有不同的路径确认支持效应，应建立在被试信息表上，例如年龄、性别、VR 经验、空间能力、专业背景、实验顺序或 counterbalance。统计上关注 SupportLevel × ParticipantCovariate；不同被试的单个 XDF 文件不能直接混在一起比较。",
+    tags: ["participant-covariate", "metadata", "mixed-effects"],
     meta: [
-      { label: "建议模型", value: "Load ~ SupportLevel * BetweenSubjectVariable + RunOrder + Map + (1 + SupportLevel | Subject)" },
-      { label: "需要补充", value: "subject metadata / counterbalance / exclusion log" },
+      { label: "建议模型", value: "Load ~ SupportLevel * ParticipantCovariate + RunOrder + Map + (1 + SupportLevel | Subject)" },
+      { label: "需要补充", value: "被试信息表 / counterbalance / exclusion log" },
     ],
-    boundary: "没有 subject-level metadata 时，只能报告总体组内路径确认支持效应，不能解释被试之间的差异来源。",
+    boundary: "没有被试信息表时，只能报告全样本路径确认支持效应，不能解释被试之间的差异来源。",
   },
   {
     id: "DESIGN-005",
@@ -311,7 +311,7 @@ export function getSeedKnowledgeReview(): SeedKnowledgeReview {
       {
         id: "analysis_design",
         label: "分析口径",
-        description: "把当前实验的文件编码、路径确认支持条件、组内主检验和被试间建模边界固定下来。",
+        description: "把当前实验的文件编码、路径确认支持条件、全样本主检验和协变量建模边界固定下来。",
         items: projectAnalysisDesignReviewItems,
       },
       {

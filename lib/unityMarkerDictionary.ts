@@ -162,7 +162,7 @@ export const analysisPipelineStages = [
     detail: "汇总 P01-P90 的 subject-level contrast，检验中等路径确认支持是否带来更高行动迟滞和 EEG 负荷。",
   },
   {
-    title: "被试间与调节分析",
-    detail: "用 subject metadata 检验 SupportLevel × 被试间变量，论文结果优先报告 mixed-effects model。",
+    title: "个体差异与调节分析",
+    detail: "用被试信息表检验 SupportLevel × ParticipantCovariate，论文结果优先报告 mixed-effects model。",
   },
 ];

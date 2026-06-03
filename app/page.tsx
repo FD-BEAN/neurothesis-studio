@@ -229,7 +229,7 @@ const thesisWritingBlueprint = [
   {
     section: "结果",
     task: "只写真实分析产物中的统计量、图表和方向；缺结果时保留占位符。",
-    evidence: "单被试 HTML、全样本 HTML、metadata 被试间报告。",
+    evidence: "单被试 HTML、全样本 HTML、被试信息表与协变量报告。",
   },
   {
     section: "讨论",
@@ -291,7 +291,7 @@ const writingWorkflowPresets: Array<{
     section: "analysis-plan",
     output: "structured",
     prompt:
-      "请写一份可放入论文或预注册说明的中文统计分析计划：90 名被试、每人 3 个路径确认支持 run；sub001/sub002/sub003 归为 P01，sub004/sub005/sub006 归为 P02；Signature1/2/3 分别映射为低/中/高路径确认支持；主检验为 medium - mean(low, high)。请说明组内模型、被试间变量需要哪些 metadata、事件窗 EEG 指标、行动迟滞指标、路径判断准确率和多重比较策略。",
+      "请写一份可放入论文或预注册说明的中文统计分析计划：90 名被试、每人 3 个路径确认支持 run；sub001/sub002/sub003 归为 P01，sub004/sub005/sub006 归为 P02；Signature1/2/3 分别映射为低/中/高路径确认支持；主检验为 medium - mean(low, high)。请说明组内模型、可选被试协变量需要哪些字段、事件窗 EEG 指标、行动迟滞指标、路径判断准确率和多重比较策略。",
   },
   {
     label: "结果模板",
@@ -307,7 +307,7 @@ const writingWorkflowPresets: Array<{
     section: "discussion",
     output: "audit",
     prompt:
-      "请整理 Discussion 的可讨论机制、替代解释、局限和不能过度声称的边界。重点检查中等路径确认支持最高行动迟滞/信息加工负荷这一假设是否有文献类比支持、哪些内容必须等真实 EEG/行为结果支持，以及 VR 生态效度、marker 同步、个体差异、保护性行动指令清晰度和组内/被试间分析的风险。",
+      "请整理 Discussion 的可讨论机制、替代解释、局限和不能过度声称的边界。重点检查中等路径确认支持最高行动迟滞/信息加工负荷这一假设是否有文献类比支持、哪些内容必须等真实 EEG/行为结果支持，以及 VR 生态效度、marker 同步、个体差异、保护性行动指令清晰度和全样本统计的风险。",
   },
   {
     label: "审稿式自查",
@@ -497,8 +497,8 @@ function Workspace({
   const [jobsLastLoadedAt, setJobsLastLoadedAt] = useState<string | null>(null);
   const [selectedBatchIds, setSelectedBatchIds] = useState<string[]>([]);
   const [batchSubjectId, setBatchSubjectId] = useState("");
-  const [subjectMetadataCsv, setSubjectMetadataCsv] = useState("participant_id,group\nP01,A\nP02,B");
-  const [groupVariable, setGroupVariable] = useState("group");
+  const [subjectMetadataCsv, setSubjectMetadataCsv] = useState("participant_id,vr_experience,route_familiarity,run_order\nP01,low,unfamiliar,1\nP02,high,unfamiliar,2");
+  const [groupVariable, setGroupVariable] = useState("vr_experience");
   const selectedWritingMode = writingTaskModes.find((mode) => mode.id === writingMode) ?? writingTaskModes[0];
   const selectedWritingSection =
     writingTargetSections.find((section) => section.id === writingSection) ?? writingTargetSections[0];
@@ -877,7 +877,7 @@ function Workspace({
       setJobMessage(`已提交 ${submitted}/${runnableGroups.length} 个被试的组内分析任务。`);
     }
 
-    setJobMessage(lastWarning || `已提交 ${submitted} 个被试的组内分析任务。GitHub Actions 会逐个运行，完成后可再跑全样本/被试间汇总。`);
+    setJobMessage(lastWarning || `已提交 ${submitted} 个被试的组内分析任务。GitHub Actions 会逐个运行，完成后可再生成全样本汇总报告。`);
     await loadAnalysisJobs();
     setJobLoading(false);
   }
@@ -925,7 +925,7 @@ function Workspace({
     const file = event.target.files?.[0];
     if (!file) return;
     if (!file.name.toLowerCase().endsWith(".csv")) {
-      setJobMessage("subject metadata 目前请上传 CSV；Excel 可以先另存为 .csv。");
+      setJobMessage("被试信息表目前请上传 CSV；Excel 可以先另存为 .csv。");
       event.target.value = "";
       return;
     }
@@ -933,10 +933,11 @@ function Workspace({
     setSubjectMetadataCsv(text.trim());
     const header = text.split(/\r?\n/)[0] ?? "";
     const columns = header.split(",").map((column) => column.trim()).filter(Boolean);
-    if (!columns.includes(groupVariable) && columns.includes("group")) {
-      setGroupVariable("group");
+    if (!columns.includes(groupVariable)) {
+      const nextVariable = columns.find((column) => !["participant_id", "participant", "subject_id", "subject", "id", "被试编号", "被试"].includes(column));
+      if (nextVariable) setGroupVariable(nextVariable);
     }
-    setJobMessage(`已读取 metadata CSV：${file.name}。请确认被试间变量列名后再提交全样本/被试间汇总。`);
+    setJobMessage(`已读取被试信息 CSV：${file.name}。如需解释个体差异，请确认协变量列名；不需要协变量时也可以直接生成全样本报告。`);
     event.target.value = "";
   }
 
@@ -1282,7 +1283,7 @@ function Workspace({
                 disabled={jobLoading || !completedSubjectBatchCount || !xdfDocuments.length}
                 onClick={runCohortDensitySummary}
               >
-                汇总组内/被试间
+                生成全样本报告
               </button>
               <button className="secondary-button" onClick={loadAnalysisJobs}>
                 刷新任务
@@ -1798,9 +1799,9 @@ function AnalysisPipelinePanel() {
       <summary>
         <div>
           <strong>正式分析管线</strong>
-          <small>从单个 XDF 到组内/被试间统计，再到论文结果段落。</small>
+          <small>从单个 XDF 到全样本 planned contrast，再到论文结果段落。</small>
         </div>
-        <span className="status-pill compact">组内 + 被试间</span>
+        <span className="status-pill compact">全样本主检验</span>
       </summary>
       <div className="pipeline-stage-grid">
         {analysisPipelineStages.map((stage, index) => (
@@ -1812,7 +1813,7 @@ function AnalysisPipelinePanel() {
         ))}
       </div>
       <p className="muted compact-note">
-        两名被试、六个 XDF 可以跑完整流程，但只能看 pilot 趋势。正式被试间结论需要 subject metadata 和足够样本量，论文里优先报告 mixed-effects model 的 SupportLevel × 被试间变量。
+        两名被试、六个 XDF 可以跑完整流程，但只能看 pilot 趋势。正式论文先报告全样本主 contrast；年龄、性别、VR 经验、空间能力、实验顺序等被试信息只用于解释个体差异或做调节分析。
       </p>
     </details>
   );
@@ -1989,18 +1990,18 @@ function CohortMetadataPanel({
     <section className="work-panel cohort-metadata-panel">
       <div className="analysis-head">
         <div>
-          <p className="eyebrow">全样本与被试间分析</p>
-          <h3>汇总已完成被试，用 metadata 比较被试间差异</h3>
+          <p className="eyebrow">全样本统计</p>
+          <h3>汇总每名被试的三条件结果</h3>
         </div>
         <span className="status-pill compact">{completedSubjectBatchCount} 个已完成被试报告</span>
       </div>
       <p className="muted">
-        不填 metadata，就只做总体组内 planned contrast，并把被试看作随机效应。填了 metadata，系统会按选定的被试间变量比较每名被试的 subject-level contrast。2 个被试 × 3 个实验适合看趋势，不能写成显著性结论。
+        这个报告的主任务是汇总每名被试的 low / medium / high 三个 run，并检验 medium - mean(low, high)。CSV 不是必填；只有当你有年龄、性别、VR 经验、空间能力、实验顺序等被试信息时，才用其中一列解释个体差异。2 名被试 × 3 个实验只能看流程和趋势，不能写成显著性结论。
       </p>
       <div className="metadata-grid">
         <label>
-          被试间变量列名
-          <input value={groupVariable} placeholder="例如 group / sex / vr_experience" onChange={(event) => onGroupVariableChange(event.target.value)} />
+          协变量列名（可选）
+          <input value={groupVariable} placeholder="例如 vr_experience / sex / age / spatial_ability / run_order" onChange={(event) => onGroupVariableChange(event.target.value)} />
         </label>
         <label className="file-button compact-file-button">
           <input type="file" accept=".csv,text/csv" onChange={onMetadataFileUpload} />
@@ -2008,19 +2009,19 @@ function CohortMetadataPanel({
         </label>
       </div>
       <label>
-        Subject metadata CSV
+        被试信息 CSV（可选）
         <textarea
           value={metadataCsv}
           rows={6}
           spellCheck={false}
-          placeholder={"participant_id,group,sex,vr_experience,order\nP01,A,F,low,1\nP02,B,M,high,2"}
+          placeholder={"participant_id,vr_experience,spatial_ability,run_order\nP01,low,high,1\nP02,high,medium,2"}
           onChange={(event) => onMetadataChange(event.target.value)}
         />
       </label>
       <div className="metadata-footer">
-        <span className="muted">已识别 {metadataRows} 行 metadata。被试编号建议用 P01、P02，也支持 1、2 或 sub001。</span>
+        <span className="muted">已识别 {metadataRows} 行被试信息。被试编号建议用 P01、P02，也支持 1、2 或 sub001。</span>
         <button className="primary-button" disabled={jobLoading || completedSubjectBatchCount < 1} onClick={onRun}>
-          生成全样本/被试间 HTML 报告
+          生成全样本 HTML 报告
         </button>
       </div>
     </section>
@@ -3048,7 +3049,7 @@ function buildFallbackWritingBlocks({
     {
       section: "讨论与边界",
       purpose: "避免把相邻文献误写成本研究结果。",
-      draft: `需要说明的是，${sourceLabel}的作用主要在于${use || "提供理论、方法或背景参照"}。${boundary || "它不能替代本研究基于 90 名被试、270 个实验 run 的组内和被试间统计检验。"} 因此，正式写作时应把文献证据、项目假设和真实实验结果分层陈述。`,
+      draft: `需要说明的是，${sourceLabel}的作用主要在于${use || "提供理论、方法或背景参照"}。${boundary || "它不能替代本研究基于 90 名被试、270 个实验 run 的全样本 planned contrast 和协变量分析。"} 因此，正式写作时应把文献证据、项目假设和真实实验结果分层陈述。`,
     },
   ];
 }
