@@ -557,3 +557,13 @@ XDF 分析口径扩展：
 - 不提供 metadata 时，cohort report 只做总体组内 planned contrast；提供 metadata 时，worker 会按指定分组列比较 subject-level contrast，并生成组间均值矩阵和组间描述/检验表。
 - 每组少于 2 名被试时，组间报告只输出 descriptive only；2 个被试 × 3 个实验适合做 pilot 趋势检查，不能写成显著性结论。
 - 完整论文的组间模型应继续以 `SupportLevel × Group` 为核心，当前线上 report 的组间表是基于每名被试 planned contrast 的快速汇总版本。
+
+## 2026-06-02 Research workstation next layer
+
+- XDF workflow now has a fixed `P01`-`P90` matrix for the planned 270 LabRecorder files. It is separate from the research document library and only manages XDF upload and analysis state.
+- Every participant row expects three route-confirmation support conditions: `Signature1` / triplet position 1 = low, `Signature2` / position 2 = medium, `Signature3` / position 3 = high.
+- Formal analysis layers: single-run QC -> Unity marker behavior features -> EEG event-window features -> one-participant three-condition contrast -> cohort within-subject test -> metadata group analysis.
+- Unity marker events are now treated as a shared contract between the Unity scene and Python worker. Required events are `map_start`, `sign_readable`, `decision_point_enter`, and `evacuation_complete`. Recommended events cover audio instruction, movement start, left/right looks, scans, choice correctness, decision exit, dwell, U-turn, and backtracking.
+- HTML reports include an audit trail: pipeline version, job id, analysis type, source document ids, participant id, main contrast, GitHub run, and Git commit when available.
+- Literature knowledge review remains single-paper-first. Every paper should expose identity, research question, method decomposition, findings, thesis writing use, and overclaim boundaries. There is no separate global graph requirement.
+- The Chinese thesis-writing workstation should produce draftable dissertation sections first, then evidence trace and limitations. Avoid repeatedly using templated contrastive phrasing such as “不是……而是……”。

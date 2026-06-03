@@ -1011,6 +1011,81 @@ textarea {
   background: var(--green);
 }
 
+.writing-blueprint {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.writing-blueprint summary {
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.writing-blueprint-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.writing-blueprint-list article {
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+}
+
+.writing-blueprint-list p {
+  margin: 6px 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.writing-blueprint-list small {
+  color: var(--blue);
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.literature-card-blueprint {
+  margin-bottom: 16px;
+}
+
+.literature-card-blueprint summary {
+  cursor: pointer;
+}
+
+.literature-card-blueprint summary span {
+  display: grid;
+  gap: 4px;
+}
+
+.literature-card-blueprint summary small {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.literature-card-blueprint-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.literature-card-blueprint-grid article {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+}
+
+.literature-card-blueprint-grid p {
+  margin: 7px 0 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
 .prompt-preset-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1147,6 +1222,227 @@ textarea {
   margin: 0;
   color: var(--muted);
   line-height: 1.45;
+}
+
+.subject-matrix-panel,
+.analysis-pipeline-panel {
+  margin-top: 16px;
+  display: grid;
+  gap: 16px;
+}
+
+.matrix-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.matrix-metrics span {
+  padding: 7px 10px;
+  border: 1px solid #cddbd5;
+  border-radius: 999px;
+  background: #f6faf7;
+  color: var(--green);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.subject-matrix-scroll {
+  max-height: 560px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.subject-matrix-table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+}
+
+.subject-matrix-table th,
+.subject-matrix-table td {
+  padding: 10px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.subject-matrix-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--paper);
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.subject-matrix-table tbody th {
+  width: 120px;
+}
+
+.subject-matrix-table tbody th strong,
+.subject-matrix-table tbody th small,
+.matrix-job-time {
+  display: block;
+}
+
+.subject-matrix-table tbody th small,
+.matrix-job-time {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.condition-cell {
+  display: grid;
+  gap: 4px;
+  min-width: 170px;
+}
+
+.condition-cell span {
+  color: var(--teal);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.condition-cell strong {
+  max-width: 230px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.condition-cell small {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.condition-cell.missing-file strong {
+  color: var(--muted);
+}
+
+.matrix-actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.pipeline-stage-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.pipeline-stage-card {
+  min-height: 142px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.pipeline-stage-card span {
+  color: var(--blue);
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.pipeline-stage-card strong {
+  display: block;
+}
+
+.pipeline-stage-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.marker-dictionary-panel {
+  margin-top: 16px;
+}
+
+.marker-dictionary-panel summary {
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+
+.marker-dictionary-panel summary span {
+  display: grid;
+  gap: 3px;
+}
+
+.marker-dictionary-panel summary small {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.marker-dictionary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.marker-card {
+  position: relative;
+  min-height: 150px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  display: grid;
+  gap: 8px;
+}
+
+.marker-card span {
+  color: var(--teal);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.marker-card strong {
+  display: block;
+  margin-top: 3px;
+  overflow-wrap: anywhere;
+}
+
+.marker-card p,
+.marker-card small {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.marker-required {
+  width: fit-content;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-style: normal;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.marker-required.required {
+  border-color: #b8d8c4;
+  background: #f1fbf4;
+  color: var(--green);
+}
+
+.marker-required.recommended {
+  border-color: #b9d3e8;
+  background: #f3f8fd;
+  color: var(--blue);
 }
 
 .subject-batch-panel {
@@ -2050,6 +2346,9 @@ textarea {
   .batch-controls,
   .batch-layout,
   .metadata-grid,
+  .pipeline-stage-grid,
+  .marker-dictionary-grid,
+  .literature-card-blueprint-grid,
   .ai-grid,
   .writing-mode-grid,
   .writing-control-grid,

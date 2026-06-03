@@ -366,7 +366,7 @@ async function buildKnowledgeCard(apiKey: string, document: ResearchDocument, ex
       {
         role: "system",
         content:
-          "You build structured bilingual literature knowledge cards for a thesis knowledge base. Return only valid JSON. Build a single-paper dossier first, then map it to Chinese thesis writing. Do not invent bibliographic details, page numbers, results, effect sizes, or quotations that are missing from the text; use '未识别' when uncertain. Be conservative, separate literature evidence from project hypotheses, and include boundaries under doNotClaim.",
+          "You build structured bilingual literature knowledge cards for a Chinese dissertation knowledge base. Return only valid JSON. Build a single-paper dossier first: identity, research question, method decomposition, findings, thesis writing use, and overclaim boundaries. Then map the paper to concrete Chinese dissertation sections. Do not invent bibliographic details, page numbers, results, effect sizes, or quotations that are missing from the text; use '未识别' when uncertain. Be conservative, separate literature evidence from project hypotheses, and include boundaries under doNotClaim.",
       },
       {
         role: "user",

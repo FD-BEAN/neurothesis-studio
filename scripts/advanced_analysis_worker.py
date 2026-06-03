@@ -96,6 +96,25 @@ BEHAVIOR_EVENTS = [
     "u_turn_detected",
     "route_backtrack_detected",
 ]
+ANALYSIS_PIPELINE_VERSION = "metro-rescue-xdf-pipeline-2026-06-02"
+UNITY_MARKER_DICTIONARY = [
+    ("map_start", "实验时段", "必需", "确定 trial 起点；建议字段 subject/session/map/signature/support_level/run_order。"),
+    ("evacuation_complete", "实验时段", "必需", "确定 trial 终点，并记录 exit/final_correct/success/horizontal_distance_m。"),
+    ("audio_play", "指令与提醒", "建议", "标记官方目标提醒出现时间；用于计算提醒到首次现场确认线索的延迟。"),
+    ("movement_start", "路径执行", "建议", "记录首次行动启动，用于计算行动启动延迟。"),
+    ("sign_visible_enter", "标识确认", "建议", "标识进入可见范围，作为可见到可读延迟和可读比例分母。"),
+    ("sign_readable", "标识确认", "必需", "核心路径确认线索，用于确认链连续性和 sign_readable EEG 事件窗。"),
+    ("sign_readable_exit", "标识确认", "可选", "离开可读状态，用于估计标识可读停留时长。"),
+    ("decision_point_enter", "决策点行为", "必需", "进入关键决策点，用于停留、扫描行为和 decision_point EEG 事件窗。"),
+    ("decision_look_left", "决策点行为", "建议", "记录向左查看，用于计算查看总数和左右不平衡。"),
+    ("decision_look_right", "决策点行为", "建议", "记录向右查看，用于计算查看总数和左右不平衡。"),
+    ("decision_scan_both_sides", "决策点行为", "建议", "记录双侧扫描，作为反复核对和行动迟滞的行为证据。"),
+    ("decision_point_exit", "决策点行为", "建议", "离开关键决策点，与 enter 配对计算停留时长。"),
+    ("choice_made", "正确性", "建议", "记录 chosen_direction/correct_direction/choice_correct，区分快速但错误和快速且正确。"),
+    ("dwell_detected", "路径执行", "可选", "记录停留，用于低效导航和行动迟滞代理指标。"),
+    ("u_turn_detected", "路径执行", "可选", "记录掉头，用于识别路线修正。"),
+    ("route_backtrack_detected", "路径执行", "可选", "记录回退，用于识别走回头路。"),
+]
 DENSITY_LEVELS = ("low", "medium", "high")
 DENSITY_LABELS = {
     "low": "低路径确认支持",
@@ -298,11 +317,15 @@ def attach_html_report(client: SupabaseRest, job: dict[str, Any], report: dict[s
     report_title = str(report.get("subjectId") or report.get("title") or "xdf-report")
     filename = f"{sanitize_filename(report_title)}-{job['id'][:8]}.html"
     storage_path = f"{job['user_id']}/analysis-products/{job['id']}/{filename}"
-    html_text = render_html_report(report, job, generated_at)
+    report_with_audit = {
+        **report,
+        "auditTrail": build_audit_trail(job, report, generated_at),
+    }
+    html_text = render_html_report(report_with_audit, job, generated_at)
     content = html_text.encode("utf-8")
     client.upload_storage_object(storage_path, content, "text/html; charset=utf-8")
     return {
-        **report,
+        **report_with_audit,
         "htmlReport": {
             "storagePath": storage_path,
             "filename": filename,
@@ -322,6 +345,7 @@ def render_html_report(report: dict[str, Any], job: dict[str, Any], generated_at
     notes = report.get("notes") if isinstance(report.get("notes"), list) else []
     narrative_sections = report.get("narrativeSections") if isinstance(report.get("narrativeSections"), list) else []
     model_overview = report.get("modelOverview") if isinstance(report.get("modelOverview"), dict) else None
+    audit_trail = report.get("auditTrail") if isinstance(report.get("auditTrail"), dict) else None
 
     parts = [
         "<!doctype html><html lang='zh-CN'><head><meta charset='utf-8'>",
@@ -382,6 +406,9 @@ def render_html_report(report: dict[str, Any], job: dict[str, Any], generated_at
         if isinstance(table, dict):
             parts.append(render_table(table))
 
+    if audit_trail:
+        parts.append(render_audit_trail(audit_trail))
+
     if notes:
         parts.append("<section class='card'><h2>分析说明与限制</h2><ul>")
         for note in notes:
@@ -435,6 +462,55 @@ def render_model_overview(model: dict[str, Any]) -> str:
         parts.append("</ul>")
     parts.append("</section>")
     return "".join(parts)
+
+
+def build_audit_trail(job: dict[str, Any], report: dict[str, Any], generated_at: str) -> dict[str, Any]:
+    source_document_ids = report.get("sourceDocumentIds")
+    if not isinstance(source_document_ids, list):
+        source_document_ids = [job.get("document_id")] if job.get("document_id") else []
+    design = report.get("design") if isinstance(report.get("design"), dict) else {}
+    return {
+        "pipelineVersion": ANALYSIS_PIPELINE_VERSION,
+        "generatedAt": generated_at,
+        "jobId": job.get("id", ""),
+        "analysisType": job.get("analysis_type", ""),
+        "githubRunUrl": job.get("github_run_url") or os.environ.get("GITHUB_RUN_URL", ""),
+        "githubSha": os.environ.get("GITHUB_SHA", ""),
+        "sourceDocumentIds": source_document_ids,
+        "subjectId": report.get("subjectId", ""),
+        "withinSubjectFactor": design.get("within_subject_factor", "route-confirmation support level"),
+        "primaryContrast": design.get("primary_contrast", "medium - mean(low, high)"),
+        "signatureMapping": design.get("signature_mapping", {"Signature1": "low", "Signature2": "medium", "Signature3": "high"}),
+    }
+
+
+def build_marker_dictionary_table() -> dict[str, Any]:
+    return {
+        "title": "Unity marker 事件字典与写入规范",
+        "columns": ["event", "事件类别", "要求", "分析用途"],
+        "rows": [[event, family, required, purpose] for event, family, required, purpose in UNITY_MARKER_DICTIONARY],
+    }
+
+
+def render_audit_trail(audit: dict[str, Any]) -> str:
+    rows = [
+        ("分析管线版本", audit.get("pipelineVersion", "")),
+        ("生成时间", audit.get("generatedAt", "")),
+        ("任务 ID", audit.get("jobId", "")),
+        ("分析类型", audit.get("analysisType", "")),
+        ("被试/汇总对象", audit.get("subjectId", "")),
+        ("组内因素", audit.get("withinSubjectFactor", "")),
+        ("主 planned contrast", audit.get("primaryContrast", "")),
+        ("源文件 ID", "; ".join(map(str, audit.get("sourceDocumentIds", []))) if isinstance(audit.get("sourceDocumentIds"), list) else ""),
+        ("GitHub Actions", audit.get("githubRunUrl", "")),
+        ("Git commit", audit.get("githubSha", "")),
+    ]
+    table = {
+        "title": "复现审计记录",
+        "columns": ["项目", "记录"],
+        "rows": [[label, value] for label, value in rows if value],
+    }
+    return render_table(table)
 
 
 def render_narrative_sections(sections: list[Any]) -> str:
@@ -1179,6 +1255,16 @@ def analyze_cohort_density(
                 "rows": subject_table_rows,
             },
             {
+                "title": "正式统计模型与论文报告口径",
+                "columns": ["目标", "推荐模型/检验", "论文写法边界"],
+                "rows": [
+                    ["组内主假设", "对每名被试计算 medium - mean(low, high)，再做 one-sample test；等价 mixed model contrast 可作为稳健性检验。", "只有主指标方向、置信区间和 p 值同时支持时，才写作支持中等路径确认支持最高负荷假设。"],
+                    ["组间差异", f"用 subject metadata 的 {group_variable} 比较 subject-level contrast；正式模型可写 Load ~ SupportLevel * {group_variable} + RunOrder + Map + (1 + SupportLevel | Subject)。", "2 名被试或每组少于 2 名时只描述趋势，不报告显著性结论。"],
+                    ["指标层级", "行动迟滞和 EEG 信息加工负荷作为主指标；准确率、确认链不流畅、停留/扫描/回退作为机制和操纵检查。", "探索性指标需与主指标分开报告，避免把所有指标都写成主结果。"],
+                    ["缺失与排除", "排除缺低/中/高条件、缺 completion marker、EEG 覆盖不足或事件窗过少的 run，并在审计记录中保留源文件。", "排除规则应在结果前说明，不能事后按显著性筛选。"],
+                ],
+            },
+            {
                 "title": "下一步组间模型",
                 "columns": ["需要字段", "模型", "用途"],
                 "rows": [
@@ -1575,6 +1661,7 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
                     ["结论判定", "先看主 contrast 的方向、置信区间和 p 值；再看 low vs medium、medium vs high 成对比较", "只有全样本显著后才能写成结果支持假设"],
                 ],
             },
+            build_marker_dictionary_table(),
         ],
         "notes": notes[:12],
     }
@@ -2425,7 +2512,7 @@ def analyze_xdf(document: dict[str, Any], path: Path) -> dict[str, Any]:
             {"label": "有效事件窗", "value": str(valid_event_epochs)},
         ],
         "charts": [chart for chart in charts if chart and chart["data"]][:12],
-        "tables": tables[:10],
+        "tables": (tables + [build_marker_dictionary_table()])[:12],
         "notes": notes[:12],
     }
 

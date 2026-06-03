@@ -12,6 +12,7 @@ import type { SeedKnowledgeReviewItem, SeedLiteratureMatch } from "@/lib/knowled
 import { isLiteratureDocument, parseLiteratureCard, type LiteratureKnowledgeCard } from "@/lib/literature";
 import literatureArticleKnowledgeBase from "@/lib/literature_article_kb.json";
 import { researchProject } from "@/lib/researchProject";
+import { analysisPipelineStages, unityMarkerDictionary, unityMarkerFamilyLabels } from "@/lib/unityMarkerDictionary";
 import {
   compareXdfConditionNames,
   densityLabels,
@@ -37,9 +38,13 @@ type LiteratureKnowledgeEntry = {
 
 type LibraryFilter = "all" | "literature" | "analysis" | "notes";
 type JobViewFilter = "all" | "active" | "completed" | "failed" | "stale";
+type SubjectMatrixFilter = "all" | "ready" | "missing" | "completed" | "active" | "failed";
 
 const RESEARCH_FILE_ACCEPT = ".pdf,.doc,.docx,.csv,.tsv,.xlsx,.txt,.md,.svg,.png,.jpg,.jpeg,.json,.jsonl,.py,.m,.ipynb";
 const XDF_FILE_ACCEPT = ".xdf";
+const EXPECTED_SUBJECT_COUNT = 90;
+const EXPECTED_RUNS_PER_SUBJECT = 3;
+const EXPECTED_XDF_COUNT = EXPECTED_SUBJECT_COUNT * EXPECTED_RUNS_PER_SUBJECT;
 
 type HtmlReportArtifact = {
   storagePath: string;
@@ -77,6 +82,15 @@ const knowledgeReviewNotes = [
   "路径确认支持水平统一写作口径为 low / medium / high route-confirmation support；历史 Signature1/2/3 只作为素材命名线索。",
   "文献只能支持理论、方法和解释机制；中等支持条件是否产生最高认知负荷，必须由真实 XDF/EEG 与行为数据检验。",
   "S001 这类编号只是站内文献索引；展开单篇档案时可以看到完整题名和可写入论文的位置。",
+];
+
+const literatureCardBlueprint = [
+  { label: "文献身份", text: "题名、文件、文献编号、入库时间、研究类型和证据等级。" },
+  { label: "研究问题", text: "该文解决什么问题，和应急寻路、标识、VR、EEG 或认知负荷的关系。" },
+  { label: "方法拆解", text: "样本、任务材料、自变量、因变量、行为/生理指标和统计方法。" },
+  { label: "主要发现", text: "只记录该文真正支持的发现，不把本项目假设写成文献结论。" },
+  { label: "写作用途", text: "可用于引言、综述、方法、变量定义、讨论或局限的具体位置。" },
+  { label: "过度推断边界", text: "明确哪些句子不能直接引用，哪些需要回 PDF 核对页码和语境。" },
 ];
 
 const documentCategories = [
@@ -125,6 +139,15 @@ const jobViewFilters: Array<{ id: JobViewFilter; label: string }> = [
   { id: "completed", label: "已完成" },
   { id: "failed", label: "失败" },
   { id: "stale", label: "疑似卡住" },
+];
+
+const subjectMatrixFilters: Array<{ id: SubjectMatrixFilter; label: string }> = [
+  { id: "all", label: "全部被试" },
+  { id: "ready", label: "可提交" },
+  { id: "missing", label: "缺文件" },
+  { id: "active", label: "分析中" },
+  { id: "completed", label: "已完成" },
+  { id: "failed", label: "需处理" },
 ];
 
 const writingTaskModes = [
@@ -179,6 +202,40 @@ const writingProtocolRules = [
   "显著性、效应量、样本完成情况和页码不能编造。",
   "区分文献证据、项目假设、真实实验结果和需要补充的信息。",
   "中文段落要保守、连续、可直接放进论文草稿；英文只保留必要术语和文献原题。",
+  "避免模板化句式，尤其少用“不是……而是……”这类转折。",
+];
+
+const thesisWritingBlueprint = [
+  {
+    section: "引言",
+    task: "写清地铁应急疏散中目标提醒、现场标识和路径确认之间的研究问题。",
+    evidence: "公共空间应急寻路、风险沟通、保护性行动指令、VR 疏散研究。",
+  },
+  {
+    section: "文献综述",
+    task: "按理论链条整合文献，避免按论文逐篇罗列。",
+    evidence: "应急寻路、标识设计、路径确认、认知负荷、EEG/VR 方法。",
+  },
+  {
+    section: "理论模型与假设",
+    task: "定义路径确认支持、行动迟滞、信息可靠性、EEG 信息加工负荷和准确率。",
+    evidence: "文献机制 + 本项目中等支持最高负荷假设。",
+  },
+  {
+    section: "方法",
+    task: "写清 VR 场景、三种路径确认支持条件、XDF/EEG/Unity marker 同步和排除规则。",
+    evidence: "实验设计文档、Unity marker 字典、XDF 报告审计记录。",
+  },
+  {
+    section: "结果",
+    task: "只写真实分析产物中的统计量、图表和方向；缺结果时保留占位符。",
+    evidence: "单被试 HTML、全样本 HTML、metadata 组间报告。",
+  },
+  {
+    section: "讨论",
+    task: "解释行为和 EEG 是否一致，讨论替代解释、生态效度、marker 质量和样本边界。",
+    evidence: "文献知识卡、真实统计结果、质控说明。",
+  },
 ];
 
 const writingWorkflowPresets: Array<{
@@ -194,7 +251,7 @@ const writingWorkflowPresets: Array<{
     section: "introduction",
     output: "manuscript",
     prompt:
-      "请直接起草“引言”的中文论文正文，形成一个完整小节而不是提纲：从公共空间应急疏散中的官方提醒与现场标识脱节、路径确认信息链、准确性-努力权衡，到本研究为什么用 VR 地铁撤离和 EEG 检验行动迟滞。正文后再给出证据说明、可引用文献和不能声称的边界。",
+      "请直接起草“引言”的中文论文正文，形成一个完整小节，避免输出提纲：从公共空间应急疏散中的官方提醒与现场标识脱节、路径确认信息链、准确性-努力权衡，到本研究为什么用 VR 地铁撤离和 EEG 检验行动迟滞。正文后再给出证据说明、可引用文献和不能声称的边界。",
   },
   {
     label: "文献综述整节",
@@ -436,6 +493,7 @@ function Workspace({
   const [libraryQuery, setLibraryQuery] = useState("");
   const [libraryFilter, setLibraryFilter] = useState<LibraryFilter>("all");
   const [jobViewFilter, setJobViewFilter] = useState<JobViewFilter>("all");
+  const [subjectMatrixFilter, setSubjectMatrixFilter] = useState<SubjectMatrixFilter>("all");
   const [jobsLastLoadedAt, setJobsLastLoadedAt] = useState<string | null>(null);
   const [selectedBatchIds, setSelectedBatchIds] = useState<string[]>([]);
   const [batchSubjectId, setBatchSubjectId] = useState("");
@@ -507,6 +565,12 @@ function Workspace({
   );
   const xdfJobStats = useMemo(() => getXdfJobStats(analysisJobs), [analysisJobs]);
   const completedSubjectBatchCount = useMemo(() => countCompletedSubjectBatchJobs(analysisJobs), [analysisJobs]);
+  const subjectMatrixRows = useMemo(() => buildSubjectMatrixRows(xdfDocuments, analysisJobs), [xdfDocuments, analysisJobs]);
+  const subjectMatrixStats = useMemo(() => summarizeSubjectMatrix(subjectMatrixRows), [subjectMatrixRows]);
+  const filteredSubjectMatrixRows = useMemo(
+    () => subjectMatrixRows.filter((row) => filterSubjectMatrixRow(row, subjectMatrixFilter)),
+    [subjectMatrixRows, subjectMatrixFilter],
+  );
   const runnableSubjectGroupCount = useMemo(
     () => inferredSubjectGroups.filter((group) => isRunnableSubjectGroup(group, analysisJobs)).length,
     [inferredSubjectGroups, analysisJobs],
@@ -1202,6 +1266,7 @@ function Workspace({
               刷新知识库
             </button>
           </div>
+          <LiteratureCardBlueprintPanel />
           <SeedKnowledgeReviewPanel entries={knowledgeEntries} />
         </section>
 
@@ -1237,6 +1302,28 @@ function Workspace({
             <StatusMetric label="已完成" value={xdfJobStats.completed} text="可下载 HTML 报告" />
             <StatusMetric label="失败/需处理" value={xdfJobStats.failed + xdfJobStats.stale} text="失败或长时间未更新" tone="warn" />
           </div>
+          <XdfSubjectMatrixPanel
+            rows={filteredSubjectMatrixRows}
+            stats={subjectMatrixStats}
+            filter={subjectMatrixFilter}
+            jobLoading={jobLoading}
+            onFilterChange={setSubjectMatrixFilter}
+            onRunAllComplete={runAllCompleteSubjectBatches}
+            onRunSubject={(row) => {
+              const documentsForRun = densityLevels
+                .map((level) => row.documentsByDensity[level])
+                .filter((document): document is ResearchDocument => Boolean(document));
+              setBatchSubjectId(row.subjectId);
+              setSelectedBatchIds(documentsForRun.map((document) => document.id));
+              void runSubjectBatchAnalysis(
+                documentsForRun.map((document) => document.id),
+                row.subjectId,
+              );
+            }}
+            onDownloadReport={downloadJobHtmlReport}
+          />
+          <AnalysisPipelinePanel />
+          <UnityMarkerDictionaryPanel />
           <SubjectBatchPanel
             documents={xdfDocuments}
             groups={inferredSubjectGroups}
@@ -1351,6 +1438,7 @@ function Workspace({
                   <span key={rule}>{rule}</span>
                 ))}
               </div>
+              <ThesisWritingBlueprintPanel />
               <label>
                 具体写作要求
                 <textarea value={researchNote} rows={9} onChange={(event) => setResearchNote(event.target.value)} />
@@ -1410,6 +1498,44 @@ function StatusMetric({
       <strong>{value}</strong>
       <p>{text}</p>
     </article>
+  );
+}
+
+function ThesisWritingBlueprintPanel() {
+  return (
+    <details className="writing-blueprint" open>
+      <summary>论文写作蓝图</summary>
+      <div className="writing-blueprint-list">
+        {thesisWritingBlueprint.map((item) => (
+          <article key={item.section}>
+            <strong>{item.section}</strong>
+            <p>{item.task}</p>
+            <small>{item.evidence}</small>
+          </article>
+        ))}
+      </div>
+    </details>
+  );
+}
+
+function LiteratureCardBlueprintPanel() {
+  return (
+    <details className="work-panel literature-card-blueprint" open>
+      <summary>
+        <span>
+          <strong>单篇论文档案格式</strong>
+          <small>新增文献和已有文献都按这一套结构进入知识库</small>
+        </span>
+      </summary>
+      <div className="literature-card-blueprint-grid">
+        {literatureCardBlueprint.map((item) => (
+          <article key={item.label}>
+            <strong>{item.label}</strong>
+            <p>{item.text}</p>
+          </article>
+        ))}
+      </div>
+    </details>
   );
 }
 
@@ -1522,6 +1648,200 @@ function AnalysisQueueOverview({
         <p className="muted">当前筛选下没有 XDF 分析任务。</p>
       )}
     </section>
+  );
+}
+
+type XdfSubjectMatrixRow = {
+  subjectId: string;
+  subjectIndex: number;
+  expectedSequences: Record<DensityLevel, number>;
+  documents: ResearchDocument[];
+  documentsByDensity: Partial<Record<DensityLevel, ResearchDocument>>;
+  missingLevels: DensityLevel[];
+  latestJob: ResearchAnalysisJob | null;
+  completedJob: ResearchAnalysisJob | null;
+  activeJob: ResearchAnalysisJob | null;
+  failedJob: ResearchAnalysisJob | null;
+  complete: boolean;
+  runnable: boolean;
+};
+
+type XdfSubjectMatrixStats = {
+  uploadedRuns: number;
+  completeSubjects: number;
+  runnableSubjects: number;
+  activeSubjects: number;
+  completedSubjects: number;
+  failedSubjects: number;
+};
+
+function XdfSubjectMatrixPanel({
+  rows,
+  stats,
+  filter,
+  jobLoading,
+  onFilterChange,
+  onRunAllComplete,
+  onRunSubject,
+  onDownloadReport,
+}: {
+  rows: XdfSubjectMatrixRow[];
+  stats: XdfSubjectMatrixStats;
+  filter: SubjectMatrixFilter;
+  jobLoading: boolean;
+  onFilterChange: (filter: SubjectMatrixFilter) => void;
+  onRunAllComplete: () => void;
+  onRunSubject: (row: XdfSubjectMatrixRow) => void;
+  onDownloadReport: (job: ResearchAnalysisJob) => void;
+}) {
+  return (
+    <section className="work-panel subject-matrix-panel">
+      <div className="analysis-head">
+        <div>
+          <p className="eyebrow">270 个 XDF 管理矩阵</p>
+          <h3>P01-P90 被试 × 低/中/高路径确认支持</h3>
+        </div>
+        <button className="primary-button" disabled={jobLoading || stats.runnableSubjects < 1} onClick={onRunAllComplete}>
+          批量提交可分析被试（{stats.runnableSubjects}）
+        </button>
+      </div>
+      <div className="matrix-metrics" aria-label="XDF 数据矩阵摘要">
+        <span>文件 {stats.uploadedRuns}/{EXPECTED_XDF_COUNT}</span>
+        <span>三条件完整 {stats.completeSubjects}/{EXPECTED_SUBJECT_COUNT}</span>
+        <span>分析中 {stats.activeSubjects}</span>
+        <span>已完成 {stats.completedSubjects}</span>
+        <span>需处理 {stats.failedSubjects}</span>
+      </div>
+      <div className="segmented-control" aria-label="被试矩阵筛选">
+        {subjectMatrixFilters.map((item) => (
+          <button className={filter === item.id ? "is-active" : ""} key={item.id} onClick={() => onFilterChange(item.id)}>
+            {item.label}
+          </button>
+        ))}
+      </div>
+      <div className="subject-matrix-scroll">
+        <table className="subject-matrix-table">
+          <thead>
+            <tr>
+              <th>被试</th>
+              <th>低</th>
+              <th>中</th>
+              <th>高</th>
+              <th>状态</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.subjectId}>
+                <th scope="row">
+                  <strong>{row.subjectId}</strong>
+                  <small>
+                    sub{String(row.expectedSequences.low).padStart(3, "0")}-sub{String(row.expectedSequences.high).padStart(3, "0")}
+                  </small>
+                </th>
+                {densityLevels.map((level) => (
+                  <td key={`${row.subjectId}-${level}`}>
+                    <XdfConditionCell document={row.documentsByDensity[level] ?? null} level={level} expectedSequence={row.expectedSequences[level]} />
+                  </td>
+                ))}
+                <td>
+                  <span className={`state-chip ${getSubjectMatrixTone(row)}`}>{getSubjectMatrixStatus(row)}</span>
+                  {row.latestJob ? <small className="matrix-job-time">{new Date(row.latestJob.updated_at).toLocaleString("zh-CN")}</small> : null}
+                </td>
+                <td>
+                  <div className="matrix-actions">
+                    {row.completedJob ? (
+                      <button className="secondary-button" disabled={!getJobHtmlReport(row.completedJob)} onClick={() => onDownloadReport(row.completedJob!)}>
+                        下载报告
+                      </button>
+                    ) : (
+                      <button className="secondary-button" disabled={jobLoading || !row.runnable} onClick={() => onRunSubject(row)}>
+                        分析此被试
+                      </button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="muted compact-note">
+        文件编号按三连号归入被试：001-003 为 P01，004-006 为 P02。Signature1/2/3 或三连号位置会映射为低/中/高路径确认支持。
+      </p>
+    </section>
+  );
+}
+
+function XdfConditionCell({
+  document,
+  level,
+  expectedSequence,
+}: {
+  document: ResearchDocument | null;
+  level: DensityLevel;
+  expectedSequence: number;
+}) {
+  return (
+    <div className={`condition-cell ${document ? "has-file" : "missing-file"}`}>
+      <span>{densityLabels[level]}</span>
+      {document ? <strong title={document.filename}>{document.filename}</strong> : <strong>等待 sub{String(expectedSequence).padStart(3, "0")}</strong>}
+      {document ? <small>{formatBytes(document.size_bytes)}</small> : <small>未上传</small>}
+    </div>
+  );
+}
+
+function AnalysisPipelinePanel() {
+  return (
+    <section className="work-panel analysis-pipeline-panel">
+      <div className="analysis-head">
+        <div>
+          <p className="eyebrow">正式分析管线</p>
+          <h3>从单个 XDF 到论文结果段落</h3>
+        </div>
+        <span className="status-pill compact">组内 + 组间</span>
+      </div>
+      <div className="pipeline-stage-grid">
+        {analysisPipelineStages.map((stage, index) => (
+          <article className="pipeline-stage-card" key={stage.title}>
+            <span>{String(index + 1).padStart(2, "0")}</span>
+            <strong>{stage.title}</strong>
+            <p>{stage.detail}</p>
+          </article>
+        ))}
+      </div>
+      <p className="muted compact-note">
+        两名被试、六个 XDF 可以跑完整流程，但只作为 pilot 趋势检查。正式组间结论需要 subject metadata 和足够样本量，论文中优先报告 mixed-effects model 的 SupportLevel × Group。
+      </p>
+    </section>
+  );
+}
+
+function UnityMarkerDictionaryPanel() {
+  return (
+    <details className="work-panel marker-dictionary-panel">
+      <summary>
+        <span>
+          <strong>Unity marker 事件字典</strong>
+          <small>给 Unity 场景和 XDF 解析共用的事件命名规范</small>
+        </span>
+        <span className="status-pill compact">{unityMarkerDictionary.length} 个事件</span>
+      </summary>
+      <div className="marker-dictionary-grid">
+        {unityMarkerDictionary.map((marker) => (
+          <article className="marker-card" key={marker.event}>
+            <div>
+              <span>{unityMarkerFamilyLabels[marker.family]}</span>
+              <strong>{marker.event}</strong>
+            </div>
+            <p>{marker.label}：{marker.purpose}</p>
+            {marker.payload ? <small>建议字段：{marker.payload}</small> : null}
+            <em className={`marker-required ${marker.required}`}>{formatMarkerRequirement(marker.required)}</em>
+          </article>
+        ))}
+      </div>
+    </details>
   );
 }
 
@@ -3240,6 +3560,134 @@ function countCompletedSubjectBatchJobs(jobs: ResearchAnalysisJob[]) {
       Array.isArray(result?.densityContrasts)
     );
   }).length;
+}
+
+function buildSubjectMatrixRows(documents: ResearchDocument[], jobs: ResearchAnalysisJob[]): XdfSubjectMatrixRow[] {
+  const groupedDocuments = new Map<string, ResearchDocument[]>();
+  for (const document of documents) {
+    const subjectId = inferSubjectIdFromFilename(document.filename);
+    groupedDocuments.set(subjectId, [...(groupedDocuments.get(subjectId) ?? []), document]);
+  }
+
+  return Array.from({ length: EXPECTED_SUBJECT_COUNT }, (_, index) => {
+    const subjectIndex = index + 1;
+    const subjectId = `P${String(subjectIndex).padStart(2, "0")}`;
+    const expectedSequences = getExpectedSequencesForSubject(subjectIndex);
+    const subjectDocuments = (groupedDocuments.get(subjectId) ?? []).sort((a, b) => compareXdfConditionOrder(a.filename, b.filename));
+    const documentsByDensity: Partial<Record<DensityLevel, ResearchDocument>> = {};
+    for (const level of densityLevels) {
+      documentsByDensity[level] = chooseDocumentForDensity(subjectDocuments, level, expectedSequences[level]);
+    }
+    const missingLevels = densityLevels.filter((level) => !documentsByDensity[level]);
+    const subjectJobs = jobs
+      .filter((job) => isSubjectBatchJobForSubject(job, subjectId))
+      .sort((a, b) => Date.parse(b.updated_at || b.created_at) - Date.parse(a.updated_at || a.created_at));
+    const latestJob = subjectJobs[0] ?? null;
+    const completedJob = subjectJobs.find((job) => job.status === "completed" && getJobHtmlReport(job)) ?? subjectJobs.find((job) => job.status === "completed") ?? null;
+    const activeJob = subjectJobs.find((job) => isActiveJob(job) && !isStaleJob(job)) ?? null;
+    const failedJob = subjectJobs.find((job) => job.status === "failed" || job.status === "configuration_required" || isStaleJob(job)) ?? null;
+    const complete = missingLevels.length === 0;
+    const runnable = complete && !activeJob && !completedJob;
+    return {
+      subjectId,
+      subjectIndex,
+      expectedSequences,
+      documents: subjectDocuments,
+      documentsByDensity,
+      missingLevels,
+      latestJob,
+      completedJob,
+      activeJob,
+      failedJob,
+      complete,
+      runnable,
+    };
+  });
+}
+
+function summarizeSubjectMatrix(rows: XdfSubjectMatrixRow[]): XdfSubjectMatrixStats {
+  return {
+    uploadedRuns: rows.reduce((sum, row) => sum + row.documents.length, 0),
+    completeSubjects: rows.filter((row) => row.complete).length,
+    runnableSubjects: rows.filter((row) => row.runnable).length,
+    activeSubjects: rows.filter((row) => row.activeJob).length,
+    completedSubjects: rows.filter((row) => row.completedJob).length,
+    failedSubjects: rows.filter((row) => row.failedJob && !row.activeJob && !row.completedJob).length,
+  };
+}
+
+function filterSubjectMatrixRow(row: XdfSubjectMatrixRow, filter: SubjectMatrixFilter) {
+  if (filter === "all") return true;
+  if (filter === "ready") return row.runnable;
+  if (filter === "missing") return !row.complete;
+  if (filter === "active") return Boolean(row.activeJob);
+  if (filter === "completed") return Boolean(row.completedJob);
+  if (filter === "failed") return Boolean(row.failedJob && !row.activeJob && !row.completedJob);
+  return true;
+}
+
+function getExpectedSequencesForSubject(subjectIndex: number): Record<DensityLevel, number> {
+  const base = (subjectIndex - 1) * EXPECTED_RUNS_PER_SUBJECT;
+  return {
+    low: base + 1,
+    medium: base + 2,
+    high: base + 3,
+  };
+}
+
+function chooseDocumentForDensity(documents: ResearchDocument[], level: DensityLevel, expectedSequence: number) {
+  return (
+    documents.find((document) => inferDensityLevelFromFilename(document.filename) === level) ??
+    documents.find((document) => filenameHasSequence(document.filename, expectedSequence))
+  );
+}
+
+function filenameHasSequence(filename: string, expectedSequence: number) {
+  const padded = String(expectedSequence).padStart(3, "0");
+  const normalized = filename.toLowerCase();
+  return normalized.includes(`sub-${padded}`) || normalized.includes(`sub${padded}`) || normalized.includes(`_${padded}_`);
+}
+
+function isSubjectBatchJobForSubject(job: ResearchAnalysisJob, subjectId: string) {
+  if (job.analysis_type !== "subject_batch") return false;
+  return getSubjectIdFromAnalysisJob(job) === subjectId;
+}
+
+function getSubjectIdFromAnalysisJob(job: ResearchAnalysisJob) {
+  const result = job.result_json as { batch?: { subjectId?: string }; subjectId?: string } | string | null | undefined;
+  if (!result) return "";
+  if (typeof result === "string") {
+    try {
+      const parsed = JSON.parse(result) as { batch?: { subjectId?: string }; subjectId?: string };
+      return parsed.batch?.subjectId ?? parsed.subjectId ?? "";
+    } catch {
+      return "";
+    }
+  }
+  return result.batch?.subjectId ?? result.subjectId ?? "";
+}
+
+function getSubjectMatrixStatus(row: XdfSubjectMatrixRow) {
+  if (row.completedJob) return "已完成";
+  if (row.activeJob) return formatJobStatus(row.activeJob.status);
+  if (row.failedJob) return isStaleJob(row.failedJob) ? "需检查" : formatJobStatus(row.failedJob.status);
+  if (row.runnable) return "可提交";
+  if (!row.complete) return `缺 ${row.missingLevels.map((level) => densityLabels[level]).join(" / ")}`;
+  return "待提交";
+}
+
+function getSubjectMatrixTone(row: XdfSubjectMatrixRow) {
+  if (row.completedJob) return "completed";
+  if (row.activeJob) return getJobTone(row.activeJob);
+  if (row.failedJob) return "warning";
+  if (row.runnable) return "queued";
+  return "muted-state";
+}
+
+function formatMarkerRequirement(required: "required" | "recommended" | "optional") {
+  if (required === "required") return "必需";
+  if (required === "recommended") return "建议";
+  return "可选";
 }
 
 function isRunnableSubjectGroup(group: { subjectId: string; documents: ResearchDocument[] }, jobs: ResearchAnalysisJob[]) {
