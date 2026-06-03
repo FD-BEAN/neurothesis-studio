@@ -1824,7 +1824,7 @@ function UnityMarkerDictionaryPanel() {
       <summary>
         <span>
           <strong>Unity marker 事件字典</strong>
-          <small>给 Unity 场景和 XDF 解析共用的事件命名规范</small>
+          <small>当前 worker 已按现有 MetroRescueMarkers 适配；报告会标注真实 marker、代理指标和待补元数据。</small>
         </span>
         <span className="status-pill compact">{unityMarkerDictionary.length} 个事件</span>
       </summary>

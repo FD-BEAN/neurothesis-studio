@@ -96,6 +96,46 @@ BEHAVIOR_EVENTS = [
     "u_turn_detected",
     "route_backtrack_detected",
 ]
+SUPPORT_LEVEL_FIELDS = (
+    "support_level",
+    "density",
+    "density_level",
+    "condition",
+    "support_condition",
+    "route_confirmation_support",
+)
+SIGNATURE_FIELDS = ("signage", "signature", "signage_scene")
+CHOICE_CORRECTNESS_FIELDS = (
+    "first_choice_correct",
+    "direction_correct",
+    "decision_correct",
+    "choice_correct",
+    "route_choice_correct",
+    "correct",
+)
+FINAL_CORRECTNESS_FIELDS = (
+    "final_arrival_correct",
+    "arrived_correct_exit",
+    "route_correct",
+    "target_reached",
+    "reached_target",
+    "success",
+    "correct_exit",
+)
+INSTRUCTION_CLARITY_FIELDS = (
+    "instruction_clarity",
+    "clarity",
+    "message_clarity",
+    "prompt_clarity",
+    "protective_action_instruction_clarity",
+)
+RELIABILITY_FIELDS = (
+    "perceived_reliability",
+    "reliability",
+    "trust",
+    "confidence",
+    "information_reliability",
+)
 ANALYSIS_PIPELINE_VERSION = "metro-rescue-xdf-pipeline-2026-06-02"
 UNITY_MARKER_DICTIONARY = [
     ("map_start", "实验时段", "必需", "确定 trial 起点；建议字段 subject/session/map/signature/support_level/run_order。"),
@@ -1549,6 +1589,7 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
         ],
         "charts": build_subject_batch_charts(run_rows, contrast_json),
         "tables": [
+            build_subject_batch_availability_table(run_rows),
             {
                 "title": "被试内路径确认支持条件汇总",
                 "columns": [
@@ -1665,6 +1706,85 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
         ],
         "notes": notes[:12],
     }
+
+
+def build_subject_batch_availability_table(run_rows: list[dict[str, str]]) -> dict[str, Any]:
+    rows_by_density = {row.get("density", ""): row for row in run_rows if row.get("density")}
+    specs = [
+        (
+            "完成时长",
+            ("duration_s",),
+            "三条件都需要完成时长，才能进入行动迟滞主检验。",
+        ),
+        (
+            "行动启动延迟",
+            ("first_action_latency_s",),
+            "用于区分起步犹豫和后续路径决策负担。",
+        ),
+        (
+            "路径确认线索",
+            ("sign_readable_count", "sign_readable_ratio", "sign_readable_max_gap_s"),
+            "用于描述标识可读、线索连续性和确认链断点。",
+        ),
+        (
+            "决策点查看/扫描",
+            ("decision_point_count", "decision_total_look_count", "decision_scan_both_count"),
+            "用于估计关键节点上的方向核对和行动迟滞。",
+        ),
+        (
+            "低效导航代理",
+            ("navigation_inefficiency_proxy", "behavior_load_proxy", "u_turn_count", "backtrack_count"),
+            "由停留、扫描、掉头和回退共同构成；缺少回退 marker 时按代理指标解释。",
+        ),
+        (
+            "EEG 事件窗负荷",
+            ("sign_readable_eeg_load_proxy", "decision_point_enter_eeg_load_proxy", "eeg_load_proxy", "theta_alpha_ratio"),
+            "用于检验中等路径确认支持是否伴随更高信息加工负荷。",
+        ),
+        (
+            "路径判断准确率",
+            ("decision_choice_accuracy_ratio", "final_arrival_correct", "first_choice_correct"),
+            "用于判断行动速度与正确性是否存在权衡；缺失时不做准确率结论。",
+        ),
+        (
+            "指令清晰度/组间元数据",
+            ("instruction_clarity", "audio"),
+            "用于后续 SupportLevel × Group 或 SupportLevel × Clarity 分析；正式组间变量仍以 metadata 为准。",
+        ),
+    ]
+
+    table_rows = []
+    for label, keys, handling in specs:
+        table_rows.append(
+            [
+                label,
+                batch_condition_status(rows_by_density.get("low"), keys),
+                batch_condition_status(rows_by_density.get("medium"), keys),
+                batch_condition_status(rows_by_density.get("high"), keys),
+                handling,
+            ]
+        )
+
+    return {
+        "title": "三条件指标可用性",
+        "columns": ["指标", "低支持", "中支持", "高支持", "组内分析口径"],
+        "rows": table_rows,
+    }
+
+
+def batch_condition_status(row: dict[str, str] | None, keys: tuple[str, ...]) -> str:
+    if not row:
+        return "缺 run"
+    available = []
+    for key in keys:
+        value = row.get(key)
+        if value not in (None, "", "-", "待补 marker/metadata"):
+            available.append(key)
+    if len(available) == len(keys):
+        return "完整"
+    if available:
+        return "部分"
+    return "缺失"
 
 
 def build_subject_core_profile_chart(run_rows: list[dict[str, str]]) -> dict[str, Any]:
@@ -2461,7 +2581,8 @@ def analyze_xdf(document: dict[str, Any], path: Path) -> dict[str, Any]:
 
     marker_rows = parse_marker_stream(marker_stream) if marker_stream else []
     sessions = summarize_sessions(marker_rows)
-    primary_rows = select_primary_session(marker_rows)
+    raw_primary_rows = select_primary_session(marker_rows)
+    primary_rows, duplicate_primary_marker_count = deduplicate_marker_rows(raw_primary_rows)
     trial_window = get_trial_window(primary_rows)
     event_counts = Counter(row.get("event", "<no_event>") for row in marker_rows)
 
@@ -2470,8 +2591,11 @@ def analyze_xdf(document: dict[str, Any], path: Path) -> dict[str, Any]:
         tables.append(build_session_table(sessions))
     if primary_rows:
         tables.append(build_behavior_table(primary_rows, trial_window))
+        tables.append(build_marker_availability_table(primary_rows, marker_rows, len(eeg_streams), eeg_report=None, duplicate_count=duplicate_primary_marker_count))
         charts.extend(build_single_behavior_charts(primary_rows, trial_window))
         primary_events = {row.get("event", "") for row in primary_rows}
+        if duplicate_primary_marker_count:
+            notes.append(f"主 trial 中检测到 {duplicate_primary_marker_count} 条疑似重复 Unity marker，行为计数和事件窗已使用去重后的 marker。")
         if not set(START_EVENTS) & primary_events:
             notes.append("主 trial 缺少 map_start / trial_start / session_start，报告只能用该 session 的第一条 marker 估计开始时间。")
         if END_EVENT not in primary_events:
@@ -2480,6 +2604,7 @@ def analyze_xdf(document: dict[str, Any], path: Path) -> dict[str, Any]:
         notes.append("未能从 marker 中选出可分析 trial；需要检查 subject/session/map/signage/audio 字段和开始/完成事件。")
 
     eeg_report = analyze_eeg_stream(eeg_stream, primary_rows, trial_window) if eeg_stream else empty_eeg_report()
+    replace_marker_availability_table(tables, build_marker_availability_table(primary_rows, marker_rows, len(eeg_streams), eeg_report, duplicate_primary_marker_count))
     charts.extend(eeg_report["charts"])
     tables.extend(eeg_report["tables"])
     notes.extend(eeg_report["notes"])
@@ -2502,17 +2627,18 @@ def analyze_xdf(document: dict[str, Any], path: Path) -> dict[str, Any]:
         "kind": "XDF EEG+Marker",
         "summary": summary,
         "modelOverview": build_model_overview("single_xdf"),
-        "narrativeSections": build_single_xdf_narrative(document, streams, marker_rows, primary_rows, trial_window, eeg_report, notes),
+        "narrativeSections": build_single_xdf_narrative(document, streams, marker_rows, primary_rows, trial_window, eeg_report, notes, duplicate_primary_marker_count),
         "metrics": [
             {"label": "stream 数", "value": str(len(streams))},
             {"label": "marker 数", "value": str(len(marker_rows))},
+            {"label": "主 trial 去重", "value": f"{len(primary_rows)}/{len(raw_primary_rows)}"},
             {"label": "主 trial", "value": session_label},
             {"label": "trial 时长", "value": fmt_seconds(trial_duration)},
             {"label": "EEG stream", "value": str(len(eeg_streams))},
             {"label": "有效事件窗", "value": str(valid_event_epochs)},
         ],
         "charts": [chart for chart in charts if chart and chart["data"]][:12],
-        "tables": (tables + [build_marker_dictionary_table()])[:12],
+        "tables": (tables + [build_marker_dictionary_table()])[:14],
         "notes": notes[:12],
     }
 
@@ -2604,6 +2730,7 @@ def build_single_xdf_narrative(
     trial_window: dict[str, float] | None,
     eeg_report: dict[str, Any],
     notes: list[str],
+    duplicate_primary_marker_count: int = 0,
 ) -> list[dict[str, Any]]:
     counts = Counter(row.get("event", "<no_event>") for row in primary_rows)
     duration = fmt_seconds(trial_window.get("duration_s") if trial_window else None)
@@ -2625,7 +2752,7 @@ def build_single_xdf_narrative(
         {
             "title": "本 run 的数据完整性",
             "paragraphs": [
-                f"文件 {document.get('filename', '')} 中共识别到 {len(streams)} 条 stream、{len(marker_rows)} 条 marker。主 trial 时长为 {duration}，其中 sign_readable 事件 {readable_count} 次，decision_point_enter 事件 {decision_count} 次。",
+                f"文件 {document.get('filename', '')} 中共识别到 {len(streams)} 条 stream、{len(marker_rows)} 条 marker。主 trial 使用 {len(primary_rows)} 条去重后 marker，疑似重复 marker {duplicate_primary_marker_count} 条。主 trial 时长为 {duration}，其中 sign_readable 事件 {readable_count} 次，decision_point_enter 事件 {decision_count} 次。",
                 f"EEG 事件窗当前有效数量为 {valid_epochs}。如果该数字较低，应优先检查 EEG stream 覆盖、marker 时间戳是否落在 EEG 范围内，以及 LabRecorder 是否完整记录了任务过程。",
             ],
         },
@@ -2649,7 +2776,7 @@ def build_single_xdf_narrative(
             "title": "写作时的限制",
             "paragraphs": [
                 "单文件报告主要用于质控和特征提取。它可以写入方法部分作为数据处理流程示例，也可以用于排查异常 run；研究假设是否成立需要全样本统计支持。",
-                "如果报告中出现缺少开始/完成 marker、多个 EEG stream、EEG 覆盖不足或事件窗过少，应在正式分析前修正或建立排除规则。",
+                "报告中的“指标可用性与适配口径”用于标注真实 marker、代理指标和待补元数据。缺少开始/完成 marker、多个 EEG stream、EEG 覆盖不足或事件窗过少时，应在正式分析前建立排除或降级规则。",
             ],
         },
     ]
@@ -2843,6 +2970,161 @@ def build_behavior_table(rows: list[dict[str, Any]], window: dict[str, float] | 
         "columns": ["metric", "value"],
         "rows": metrics,
     }
+
+
+def build_marker_availability_table(
+    primary_rows: list[dict[str, Any]],
+    marker_rows: list[dict[str, Any]],
+    eeg_stream_count: int,
+    eeg_report: dict[str, Any] | None,
+    duplicate_count: int,
+) -> dict[str, Any]:
+    rows = primary_rows or marker_rows
+    valid_event_epochs = 0
+    if isinstance(eeg_report, dict) and isinstance(eeg_report.get("metrics"), dict):
+        valid_event_epochs = int(to_float(eeg_report["metrics"].get("valid_event_epochs")) or 0)
+
+    has_start = marker_has_event(rows, START_EVENTS)
+    has_complete = marker_has_event(rows, (END_EVENT,))
+    support_fields = present_fields(rows, SUPPORT_LEVEL_FIELDS)
+    signature_fields = present_fields(rows, SIGNATURE_FIELDS)
+    sign_events = present_events(rows, SIGNAGE_EVENTS)
+    decision_events = present_events(rows, DECISION_EVENTS)
+    inefficiency_events = present_events(rows, INEFFICIENCY_EVENTS)
+    action_events = present_events(rows, ACTION_START_EVENTS)
+    prompt_events = present_events(rows, PROMPT_EVENTS)
+    choice_fields = present_fields(rows, CHOICE_CORRECTNESS_FIELDS)
+    final_fields = present_fields(rows, FINAL_CORRECTNESS_FIELDS)
+    clarity_fields = present_fields(rows, INSTRUCTION_CLARITY_FIELDS)
+    reliability_fields = present_fields(rows, RELIABILITY_FIELDS)
+    has_position_fields = bool(present_fields(rows, ("root_x", "root_y", "root_z", "view_yaw", "distance_m", "horizontal_distance_m")))
+
+    table_rows: list[list[str]] = [
+        [
+            "trial 时间窗与完成时长",
+            "真实 marker" if has_start and has_complete else "部分可用",
+            format_basis(present_events(rows, START_EVENTS + (END_EVENT,))),
+            "优先使用 map_start/trial_start/session_start 到 evacuation_complete；缺少起止点时用该 session 的首末 marker 估计，并在报告说明。",
+        ],
+        [
+            "低/中/高路径确认支持条件",
+            "真实字段" if support_fields else ("marker 推导" if signature_fields else "元数据待补"),
+            format_basis(support_fields or signature_fields),
+            "有 support_level 时直接读取；否则按 Signature1/2/3 或文件三连号映射为低/中/高条件。",
+        ],
+        [
+            "路径确认线索接触与可读",
+            "真实 marker" if {"sign_visible_enter", "sign_readable"} & set(sign_events) else "不可用",
+            format_basis(sign_events),
+            "用于计算可见/可读次数、可读比例、首次可读时间、可读标识间隔，并作为 sign_readable EEG 事件窗。",
+        ],
+        [
+            "决策点行为",
+            "真实 marker" if "decision_point_enter" in signless_set(decision_events) else ("部分可用" if decision_events else "不可用"),
+            format_basis(decision_events),
+            "用于计算决策点次数、首次决策点、左右查看、双侧扫描和决策点 EEG 事件窗。",
+        ],
+        [
+            "行动启动",
+            "真实 marker" if action_events else "不可用",
+            format_basis(action_events),
+            "用于计算从 trial 起点到首次 movement_start 的启动延迟；没有该事件时不推断启动时间。",
+        ],
+        [
+            "提示到现场确认链",
+            "真实 marker + 推导" if prompt_events and sign_events else ("部分可用" if prompt_events or sign_events else "不可用"),
+            format_basis(prompt_events + sign_events),
+            "使用 audio_play 等提示事件到 sign_visible_enter/sign_readable 的间隔，刻画官方提醒到现场确认线索的衔接。",
+        ],
+        [
+            "停留、掉头、回退与低效导航",
+            "真实 marker" if inefficiency_events else ("代理指标" if decision_events else "不可用"),
+            format_basis(inefficiency_events or decision_events),
+            "优先使用 dwell_detected、u_turn_detected、route_backtrack_detected；缺少回退 marker 时只保留决策扫描和停留代理，论文中不能写成真实回头路次数。",
+        ],
+        [
+            "路径判断准确率",
+            "真实字段" if choice_fields or final_fields else "不可用",
+            format_basis(choice_fields + final_fields),
+            "需要 choice_correct/route_correct/success 等字段；缺失时只报告行动迟滞和负荷，不能判断速度与正确性的权衡。",
+        ],
+        [
+            "EEG 信息加工负荷",
+            "真实 EEG + marker 对齐" if eeg_stream_count and valid_event_epochs else ("部分可用" if eeg_stream_count else "不可用"),
+            f"EEG stream={eeg_stream_count}; 有效事件窗={valid_event_epochs}",
+            "使用任务期频带功率与 sign_readable、decision_point_enter 事件窗；事件窗不足时只作为 EEG 质控或探索性结果。",
+        ],
+        [
+            "M1 感知信息可靠性",
+            "真实字段" if reliability_fields else "元数据/问卷待补",
+            format_basis(reliability_fields),
+            "可靠性感知应来自问卷或显式评分字段；XDF 行为线索只能作为操纵检查和机制解释材料。",
+        ],
+        [
+            "保护性行动指令清晰度与组间变量",
+            "真实字段" if clarity_fields else ("代理字段" if prompt_events else "元数据待补"),
+            format_basis(clarity_fields or prompt_events),
+            "正式组间或调节分析需要 subject/run metadata；仅凭 audio_play 只能确认提示出现，不能确认清晰度等级。",
+        ],
+        [
+            "位置与朝向辅助信息",
+            "真实字段" if has_position_fields else "不可用",
+            format_basis(present_fields(rows, ("root_x", "root_y", "root_z", "view_yaw", "distance_m", "horizontal_distance_m"))),
+            "可用于解释路径距离、视角和标识距离；若只有离散 marker 时刻，不能替代连续轨迹日志。",
+        ],
+        [
+            "重复 marker 处理",
+            "已处理" if duplicate_count else "无需处理",
+            f"疑似重复 {duplicate_count} 条",
+            "session 切分表保留原始计数；行为指标和 EEG 事件窗使用去重后的主 trial marker。",
+        ],
+    ]
+
+    return {
+        "title": "现有 Unity marker 指标可用性与适配口径",
+        "columns": ["分析目标", "状态", "现有依据", "当前处理"],
+        "rows": table_rows,
+    }
+
+
+def replace_marker_availability_table(tables: list[dict[str, Any]], table: dict[str, Any]) -> None:
+    for index, existing in enumerate(tables):
+        if existing.get("title") == table.get("title"):
+            tables[index] = table
+            return
+    tables.append(table)
+
+
+def marker_has_event(rows: list[dict[str, Any]], events: tuple[str, ...] | list[str]) -> bool:
+    event_set = {event.lower() for event in events}
+    return any(str(row.get("event", "")).lower() in event_set for row in rows)
+
+
+def present_events(rows: list[dict[str, Any]], events: tuple[str, ...] | list[str]) -> list[str]:
+    event_set = {event.lower() for event in events}
+    present = {str(row.get("event", "")).lower(): str(row.get("event", "")) for row in rows if str(row.get("event", "")).lower() in event_set}
+    return [present[event.lower()] for event in events if event.lower() in present]
+
+
+def present_fields(rows: list[dict[str, Any]], fields: tuple[str, ...] | list[str]) -> list[str]:
+    field_set = {field.lower() for field in fields}
+    present: dict[str, str] = {}
+    for row in rows:
+        for key, value in row.items():
+            key_text = str(key).lower()
+            if key_text in field_set and value not in (None, ""):
+                present[key_text] = str(key)
+    return [present[field.lower()] for field in fields if field.lower() in present]
+
+
+def format_basis(items: list[str]) -> str:
+    if not items:
+        return "-"
+    return ", ".join(items[:8]) + (" 等" if len(items) > 8 else "")
+
+
+def signless_set(values: list[str]) -> set[str]:
+    return {str(value).lower() for value in values}
 
 
 def analyze_eeg_stream(stream: dict[str, Any], rows: list[dict[str, Any]], window: dict[str, float] | None) -> dict[str, Any]:
@@ -3171,6 +3453,51 @@ def parse_marker_stream(stream: dict[str, Any]) -> list[dict[str, Any]]:
         parsed["_xdf_ts"] = float(timestamp)
         rows.append(parsed)
     return sorted(rows, key=lambda row: row["_xdf_ts"])
+
+
+def deduplicate_marker_rows(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], int]:
+    deduped: list[dict[str, Any]] = []
+    seen: set[tuple[Any, ...]] = set()
+    duplicate_count = 0
+    for row in sorted(rows, key=lambda item: item["_xdf_ts"]):
+        key = marker_duplicate_key(row)
+        if key in seen:
+            duplicate_count += 1
+            continue
+        seen.add(key)
+        deduped.append(row)
+    return deduped, duplicate_count
+
+
+def marker_duplicate_key(row: dict[str, Any]) -> tuple[Any, ...]:
+    key_fields = (
+        "event",
+        "subject",
+        "session",
+        "map",
+        "signage",
+        "signature",
+        "audio",
+        "unity_frame",
+        "session_time_s",
+        "root_x",
+        "root_y",
+        "root_z",
+        "view_yaw",
+        "distance_m",
+        "horizontal_distance_m",
+    )
+    values: list[Any] = []
+    for field in key_fields:
+        value = row.get(field, "")
+        numeric = to_float(value)
+        if numeric is not None:
+            values.append((field, round(numeric, 3)))
+        else:
+            values.append((field, str(value).strip().lower()))
+    if not row.get("unity_frame") and not row.get("session_time_s"):
+        values.append(("_xdf_ts", round(float(row.get("_xdf_ts", 0.0)), 3)))
+    return tuple(values)
 
 
 def parse_marker(raw: Any) -> dict[str, str]:

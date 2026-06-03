@@ -567,3 +567,14 @@ XDF 分析口径扩展：
 - HTML reports include an audit trail: pipeline version, job id, analysis type, source document ids, participant id, main contrast, GitHub run, and Git commit when available.
 - Literature knowledge review remains single-paper-first. Every paper should expose identity, research question, method decomposition, findings, thesis writing use, and overclaim boundaries. There is no separate global graph requirement.
 - The Chinese thesis-writing workstation should produce draftable dissertation sections first, then evidence trace and limitations. Avoid repeatedly using templated contrastive phrasing such as “不是……而是……”。
+
+## 2026-06-02 Unity marker adaptation rule
+
+- Treat the current `MetroRescueMarkers` stream as the official input format unless Unity later confirms a new export.
+- Existing markers are sufficient for the main analysis line: completion time, first movement, sign visibility/readability, decision point entry, left/right looks, bilateral scans, dwell events, U-turns, arrival/completion, and event-locked EEG windows.
+- The worker now deduplicates suspicious repeated markers inside the selected primary trial before computing behavior counts and EEG event windows. The original session table still keeps raw marker counts for QC.
+- Every single-XDF HTML report includes `现有 Unity marker 指标可用性与适配口径`, separating true markers, true fields, inferred marker mappings, proxy metrics, missing metadata, and unavailable metrics.
+- Accuracy results require explicit fields such as `choice_correct`, `route_correct`, `success`, or `reached_target`. If these are absent, the report can discuss hesitation and load, but it cannot conclude that a route choice was correct.
+- `M1` perceived information reliability should come from questionnaire or explicit rating metadata. XDF behavior features can support manipulation checks and mechanism discussion, but they should not be presented as direct perceived reliability scores.
+- Group-level or moderation analysis requires subject/run metadata such as group, sex, age, VR experience, professional background, counterbalance/order, and instruction clarity.
+- Subject-batch HTML reports now include a three-condition availability table so that low / medium / high runs can be checked before planned contrasts or mixed-effects modeling.
