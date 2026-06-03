@@ -345,7 +345,7 @@ function buildLiteratureEntryReport(document: ResearchDocument): AnalysisReport 
     title: `${document.filename} 文献知识库入口`,
     kind: "LITERATURE",
     summary:
-      "这是一篇文献 PDF。它不进入 XDF 高级分析；请在文献区使用“生成/更新知识卡片”，系统会抽取论文目的、方法、EEG/行为指标、主要发现、局限和对 Metro Rescue 的可引用价值。",
+      "这是一篇文献 PDF。它不进入 XDF 高级分析。请在文献区生成知识卡片，系统会抽取论文目的、方法、EEG/行为指标、主要发现、局限和对 Metro Rescue 的可引用价值。",
     metrics: [
       { label: "文件类型", value: "PDF" },
       { label: "文件大小", value: formatBytes(document.size_bytes) },

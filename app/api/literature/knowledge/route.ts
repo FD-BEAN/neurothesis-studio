@@ -366,7 +366,7 @@ async function buildKnowledgeCard(apiKey: string, document: ResearchDocument, ex
       {
         role: "system",
         content:
-          "You build structured bilingual literature knowledge cards for a Chinese dissertation knowledge base. Return only valid JSON. Build a single-paper dossier first: identity, research question, method decomposition, findings, thesis writing use, and overclaim boundaries. Then map the paper to concrete Chinese dissertation sections. Do not invent bibliographic details, page numbers, results, effect sizes, or quotations that are missing from the text; use '未识别' when uncertain. Be conservative, separate literature evidence from project hypotheses, and include boundaries under doNotClaim.",
+          "You build structured bilingual literature knowledge cards for a Chinese dissertation knowledge base. Return only valid JSON. Build a single-paper dossier first: identity, research question, method decomposition, findings, thesis writing use, and overclaim boundaries. Then map the paper to concrete Chinese dissertation sections. Chinese fields should be specific, direct, and dissertation-ready; avoid generic filler, slogan-like transitions, and repeated '不是……而是……' structures. Do not invent bibliographic details, page numbers, results, effect sizes, or quotations that are missing from the text; use '未识别' when uncertain. Be conservative, separate literature evidence from project hypotheses, and include boundaries under doNotClaim.",
       },
       {
         role: "user",
@@ -473,7 +473,7 @@ Thesis project context:
 Evidence rules:
 - Do not turn this thesis hypothesis into a finding from the paper unless the paper directly tested it.
 - Preserve English technical terms in parentheses where helpful.
-- Use concise Chinese for dashboard display.
+- Use concise Chinese for dashboard display; keep technical terms, but avoid generic AI-sounding transitions.
 - If bibliographic details, sample size, measures, or results are unclear, write 未识别.
 - candidateClaims must be claims that can be cautiously supported by this paper for the thesis, not invented conclusions.
 - densityHypothesisRelevance should be interpreted broadly as relevance to the low/medium/high route-confirmation support hypothesis.

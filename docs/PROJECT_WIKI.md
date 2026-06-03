@@ -243,7 +243,7 @@ XDF worker 目前输出：
 
 2026-06-01 后的产品边界：
 
-- 文献与论文：只做文献知识库。上传 PDF 后生成/更新“知识卡片”，卡片包含研究问题、方法、EEG/行为指标、主要发现、局限、可用于论文哪个章节等。AI 写作助手必须优先读取这些卡片，并用论文标题或文件名引用来源。
+- 文献与论文：只做文献知识库。上传 PDF 后生成“知识卡片”，卡片包含研究问题、方法、EEG/行为指标、主要发现、局限、可用于论文哪个章节等。AI 写作助手必须优先读取这些卡片，并用论文标题或文件名引用来源。
 - 新增文献知识卡片必须走后端 OpenAI API，不把 key 暴露到前端。长 PDF 不应只截取开头；先按 chunk 生成 evidence digest，再生成最终知识卡片。卡片需要包含中文摘要、英文摘要、one-sentence takeaway、方法/指标、主要发现、局限、与路径确认支持假设的关系、可写入 Methods/Results/Discussion 的用法、不可过度声称的边界和待核对 quote anchors。
 - XDF 原始数据：只放 LabRecorder `.xdf`、EEG 原始文件和正式实验数据。XDF 高级分析只处理这里的 EEG stream + Unity marker stream。
 - 分析脚本与输出：放 Python/MATLAB/notebook、trial_features、event_features、中间统计表和写作产物。后续 90 名被试 × 3 个路径确认支持条件 = 270 个实验文件，应走批量上传和批量提交 XDF 队列。
@@ -380,7 +380,7 @@ AI 不应该：
 文献知识库：
 
 - 用户上传的新论文如果能匹配 Metro Rescue 既有 source card，界面统一显示“已入库”。
-- “生成/更新知识卡片”接口会先检查已有用户卡片，再检查既有知识层命中；命中时直接返回“已存在”，不读取 PDF、不调用 OpenAI。
+- “生成知识卡片”接口会先检查已有用户卡片，再检查既有知识层命中；命中时直接返回“已存在”，不读取 PDF、不调用 OpenAI。
 - 真正不在既有知识层里的新文献才走 PDF 文本抽取和 OpenAI 知识卡片生成流程。
 - 知识库审阅页只显示中文说明，不混用 seed bundle 原始英文提示。
 - claims、机制、假设、风险和引用锚点中的来源默认显示 S001 这类文献简写，字段名统一为“来源文献”；完整标题通过展开控件查看，避免列表过长。
@@ -440,7 +440,7 @@ XDF 命名与分析规则：
 
 ## 2026-06-01 PDF 知识卡片生成修复
 
-- Vercel serverless 环境中，`pdf-parse` / PDF.js 的 fake worker 可能会尝试运行时加载 `.next/server/chunks/pdf.worker.mjs`，导致新增文献点击“生成/更新知识卡片”时报 `Cannot find module ... pdf.worker.mjs`。
+- Vercel serverless 环境中，`pdf-parse` / PDF.js 的 fake worker 可能会尝试运行时加载 `.next/server/chunks/pdf.worker.mjs`，导致新增文献点击“生成知识卡片”时报 `Cannot find module ... pdf.worker.mjs`。
 - 文献知识卡片 API 现在只使用 `pdfjs-dist/legacy/build/pdf.mjs`，并在 `getDocument` 中显式设置 `disableWorker: true`。
 - API 路由不再导入 `pdf.worker.mjs`，避免 Vercel serverless 运行时继续按 `.next/server/chunks/pdf.worker.mjs` 路径查找 worker 文件。
 - 仍然保留 `DOMMatrix/ImageData/Path2D` 最小 polyfill，用于 Vercel/Node 环境中的 PDF 文本抽取。
@@ -475,8 +475,8 @@ XDF 命名与分析规则：
 
 ## 2026-06-02 写作、XDF 命名与单篇文献笔记升级
 
-- “文献与写作助手”中的写作区应定位为“论文写作工作台”：默认直接生成论文正文，而不是先给建议或证据矩阵。正文输出的第一部分必须是可进入草稿的英文 manuscript text，中文说明、证据链、不能声称和待补数据放在正文之后。
-- 参考科研写作 workflow 的原则：章节写作要有目标章节、正文草稿、证据追踪和质量门控；不把“协助写作”停留在提示词建议层，而是产出 Introduction、Methods、Analysis Plan、Results template 或 Discussion 的具体段落。
+- “文献与写作助手”中的写作区应定位为“论文写作工作台”：默认直接生成中文论文正文，而不是先给建议或证据矩阵。正文输出的第一部分必须是可进入草稿的中文学位论文段落；证据链、不能声称和待补数据放在正文之后。
+- 参考科研写作 workflow 的原则：章节写作要有目标章节、正文草稿、证据追踪和质量检查；写作助手要产出 Introduction、Methods、Analysis Plan、Results template 或 Discussion 的具体段落。
 - XDF 被试组显示统一为 `P01` 到 `P90`。`sub001` 到 `sub270` 是实验文件序号，不是 participant ID；每 3 个文件组成一名被试的低/中/高路径确认支持 run。
 - 文献知识库继续以单篇论文卡为核心，不做全局知识图谱。每篇文章都按同一结构展示：文献身份、研究问题与定位、单篇读论文笔记、方法与数据、主要发现、对本研究的用途、边界、关联证据和引用线索。
 - `lib/literature_article_kb.json` 当前版本为 `literature-article-kb-v4-paper-notes`。它由本地脚本 `scripts/build_literature_article_kb.mjs` 重建，不调用网页 API，也不使用 OpenAI key。
@@ -578,3 +578,11 @@ XDF 分析口径扩展：
 - `M1` perceived information reliability should come from questionnaire or explicit rating metadata. XDF behavior features can support manipulation checks and mechanism discussion, but they should not be presented as direct perceived reliability scores.
 - Group-level or moderation analysis requires subject/run metadata such as group, sex, age, VR experience, professional background, counterbalance/order, and instruction clarity.
 - Subject-batch HTML reports now include a three-condition availability table so that low / medium / high runs can be checked before planned contrasts or mixed-effects modeling.
+
+## 2026-06-03 中文表达规则
+
+- 参考 `shuorenhua` 的写法：先保信息，再改语气。数字、变量名、marker 名、统计模型、报错、路径和责任主体不能为了“自然”而漂移。
+- Dashboard 文案优先写真实动作和真实状态，例如“上传 XDF”“生成报告”“等待 metadata”，少写“赋能、闭环、沉淀、抓手”这类空词。
+- 中文论文写作保持学术口吻，但正文要能直接进草稿。少用模板转折，尤其少用“不是……而是……”“综上所述”“值得注意的是”这类套句。
+- 写作助手默认先写中文正文，再交代证据、边界和待核对信息。不要把“协助写作”停在建议清单。
+- 不确定就直说：没有全样本结果时写分析计划或初步输出；没有页码时提示回 PDF 核对；没有 metadata 时不写组间显著性。

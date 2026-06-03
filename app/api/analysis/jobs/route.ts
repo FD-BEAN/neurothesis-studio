@@ -94,7 +94,7 @@ export async function POST(request: Request) {
   }
 
   if (isSubjectBatch && requestedDocumentIds.length < 2) {
-    return NextResponse.json({ error: "被试批量分析至少需要 2 个 XDF；正式数据建议同一被试的低/中/高路径确认支持 3 个 run 一起提交。" }, { status: 400 });
+    return NextResponse.json({ error: "至少选择 2 个 XDF。正式数据最好按同一被试的低/中/高 3 个 run 一起提交。" }, { status: 400 });
   }
 
   const resolvedAnalysisType = isCohortSummary ? "cohort_density_summary" : isSubjectBatch ? "subject_batch" : analysisType || "advanced_python";
@@ -131,10 +131,10 @@ export async function POST(request: Request) {
       analysis_type: resolvedAnalysisType,
       status: "pending",
       status_message: batchPayload
-        ? `被试 ${batchPayload.subjectId} 的 ${documents.length} 个 XDF 批量分析任务已创建，等待 Python worker。`
+        ? `已提交 ${batchPayload.subjectId} 的 ${documents.length} 个 XDF，等待 Python worker。`
         : cohortPayload
-          ? "全样本路径确认支持统计汇总任务已创建，等待 Python worker。"
-          : "XDF 分析任务已创建，等待 Python worker。",
+          ? "已提交全样本路径确认支持统计汇总，等待 Python worker。"
+          : "已提交 XDF 分析任务，等待 Python worker。",
       result_json: batchPayload ? { batch: batchPayload } : cohortPayload ? { cohort: cohortPayload } : null,
     })
     .select("*")

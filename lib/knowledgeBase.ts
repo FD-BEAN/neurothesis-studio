@@ -133,7 +133,7 @@ const projectAnalysisDesignReviewItems: SeedKnowledgeReviewItem[] = [
   {
     id: "DESIGN-003",
     title: "组内主检验",
-    body: "主假设不是线性“支持越高负荷越高”，而是中等路径确认支持最高。每名被试先形成 low、medium、high 三个 run-level 指标，再计算 planned contrast：medium - mean(low, high)，权重为 low:-1, medium:2, high:-1。",
+    body: "主假设检验中等路径确认支持是否最高，而非线性检验“支持越高负荷越高”。每名被试先形成 low、medium、high 三个 run-level 指标，再计算 planned contrast：medium - mean(low, high)，权重为 low:-1, medium:2, high:-1。",
     tags: ["within-subject", "planned-contrast", "hypothesis"],
     meta: [
       { label: "主指标候选", value: "EEG load proxy、theta/alpha、frontal theta、posterior alpha、completion time、behavior load proxy" },
@@ -144,7 +144,7 @@ const projectAnalysisDesignReviewItems: SeedKnowledgeReviewItem[] = [
   {
     id: "DESIGN-004",
     title: "组间分析",
-    body: "组间问题应建立在被试元数据上，例如组别、年龄、性别、VR 经验、专业背景、实验顺序或 counterbalance。统计上关注 Support Level × Group 交互，而不是把不同被试的单个 XDF 文件直接混在一起比较。",
+    body: "组间问题应建立在被试元数据上，例如组别、年龄、性别、VR 经验、专业背景、实验顺序或 counterbalance。统计上关注 Support Level × Group 交互；不同被试的单个 XDF 文件不能直接混在一起比较。",
     tags: ["between-subject", "metadata", "mixed-effects"],
     meta: [
       { label: "建议模型", value: "Load ~ SupportLevel * Group + RunOrder + Map + (1 + SupportLevel | Subject)" },
@@ -180,7 +180,7 @@ export function buildResearchKnowledgeContext(prompt: string, userCards: Literat
     "=== Metro Rescue literature knowledge base: uploaded source cards using the same evidence rules ===",
     userContext,
     "",
-    "Usage rule: distinguish literature evidence, project-specific hypotheses, and the user's own experimental results. Treat project hypotheses and writing blocks as drafting aids, not proven findings.",
+    "使用规则：区分文献证据、项目假设和用户自己的实验结果。项目假设和写作块只能作为起草材料，不能当成已经得到的发现。",
   ].join("\n");
 }
 
@@ -224,7 +224,7 @@ export function getSeedKnowledgeReview(): SeedKnowledgeReview {
     reviewNotes: [
       "这是一层结构化、可审阅的文献知识库，不是 PDF 全文库；正式引用前仍要回到原文核对页码、作者、年份和 DOI。",
       "KB 中部分历史字段仍使用 Signature1/2/3 命名；当前研究口径应统一映射为低/中/高路径确认支持条件，并在论文中使用 Route-confirmation support level。",
-      "Hypotheses、writing blocks 和 analysis models 是写作与建模辅助，不等于已经得到实验结果。",
+      "假设、写作块和分析模型是写作与建模材料，不等于已经得到的实验结果。",
     ],
     sections: [
       {

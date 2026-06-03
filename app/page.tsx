@@ -154,22 +154,22 @@ const writingTaskModes = [
   {
     id: "section-draft",
     label: "写论文章节",
-    description: "直接生成目标章节的连续正文，证据链放在正文之后核验。",
+    description: "先写目标章节正文，正文后列证据和待核对点。",
   },
   {
     id: "methods-analysis",
     label: "写方法与分析",
-    description: "生成方法、分析计划的中文正文、模型说明和变量口径。",
+    description: "写方法、分析计划、模型和变量口径。",
   },
   {
     id: "evidence-map",
     label: "证据到段落",
-    description: "先组织证据，再输出可进入论文的段落和引用边界。",
+    description: "把文献和报告整理成可放进论文的段落。",
   },
   {
     id: "review-revision",
     label: "审稿式修改",
-    description: "把已有段落按证据边界重写，并给出修改理由。",
+    description: "按证据边界重写已有段落，保留修改理由。",
   },
 ] as const;
 
@@ -201,8 +201,8 @@ const writingProtocolRules = [
   "引用必须来自文献知识库、已上传文献卡或真实分析报告。",
   "显著性、效应量、样本完成情况和页码不能编造。",
   "区分文献证据、项目假设、真实实验结果和需要补充的信息。",
-  "中文段落要保守、连续、可直接放进论文草稿；英文只保留必要术语和文献原题。",
-  "避免模板化句式，尤其少用“不是……而是……”这类转折。",
+  "中文段落要能直接进草稿；英文只留必要术语和文献原题。",
+  "少用模板化转折，尤其少用“不是……而是……”。",
 ];
 
 const thesisWritingBlueprint = [
@@ -810,7 +810,7 @@ function Workspace({
   async function runSubjectBatchAnalysis(documentIds = selectedBatchIds, subjectId = batchSubjectId) {
     const uniqueDocumentIds = Array.from(new Set(documentIds));
     if (uniqueDocumentIds.length < 2) {
-      setJobMessage("被试批量分析至少需要选择 2 个 XDF；正式数据建议同一被试的低/中/高路径确认支持 3 个 run 一起提交。");
+      setJobMessage("至少选择 2 个 XDF。正式数据最好按同一被试的低/中/高 3 个 run 一起提交。");
       return;
     }
 
@@ -857,7 +857,7 @@ function Workspace({
     }
 
     setJobLoading(true);
-    setJobMessage(`准备提交 ${runnableGroups.length} 个被试的组内分析任务。`);
+    setJobMessage(`正在提交 ${runnableGroups.length} 个被试的组内分析任务。`);
 
     let submitted = 0;
     let lastWarning = "";
@@ -1248,7 +1248,7 @@ function Workspace({
               ) : null}
               {selectedDocumentIsLiterature ? (
                 <button className="primary-button" disabled={!selectedDocument || knowledgeLoading} onClick={buildLiteratureKnowledgeCard}>
-                  {knowledgeLoading ? "生成知识卡片中..." : "生成/更新知识卡片"}
+                  {knowledgeLoading ? "正在生成知识卡片..." : "生成知识卡片"}
                 </button>
               ) : null}
               {knowledgeMessage ? <p className="muted">{knowledgeMessage}</p> : null}
@@ -1289,7 +1289,7 @@ function Workspace({
               </button>
               <label className="file-button">
                 <input type="file" multiple accept={XDF_FILE_ACCEPT} onChange={handleXdfUpload} />
-                {xdfUploadState === "uploading" ? "上传 XDF 中..." : "上传 XDF"}
+                {xdfUploadState === "uploading" ? "正在上传 XDF..." : "上传 XDF"}
               </label>
             </div>
           </div>
@@ -1297,10 +1297,10 @@ function Workspace({
           {jobMessage ? <p className="notice">{jobMessage}</p> : null}
           <div className="library-status-grid pipeline-status-grid">
             <StatusMetric label="XDF 文件" value={xdfDocuments.length} text="LabRecorder EEG + Unity marker" />
-            <StatusMetric label="已选择" value={selectedBatchIds.length} text="准备提交批量分析" />
+            <StatusMetric label="已选择" value={selectedBatchIds.length} text="待提交" />
             <StatusMetric label="进行中" value={xdfJobStats.active} text="pending / queued / running" />
             <StatusMetric label="已完成" value={xdfJobStats.completed} text="可下载 HTML 报告" />
-            <StatusMetric label="失败/需处理" value={xdfJobStats.failed + xdfJobStats.stale} text="失败或长时间未更新" tone="warn" />
+            <StatusMetric label="失败/需处理" value={xdfJobStats.failed + xdfJobStats.stale} text="失败或太久没更新" tone="warn" />
           </div>
           <XdfSubjectMatrixPanel
             rows={filteredSubjectMatrixRows}
@@ -1449,7 +1449,7 @@ function Workspace({
               <p className="muted">
                 当前任务：{selectedWritingMode.label} · {selectedWritingSection.label} · {selectedWritingOutput.label}
               </p>
-              <pre>{aiState.output || "生成后，这里会显示可直接审阅和继续修改的论文正文。"}</pre>
+              <pre>{aiState.output || "生成后，这里会显示论文正文和需要核对的证据边界。"}</pre>
             </section>
           </div>
         </section>
@@ -1812,7 +1812,7 @@ function AnalysisPipelinePanel() {
         ))}
       </div>
       <p className="muted compact-note">
-        两名被试、六个 XDF 可以跑完整流程，但只作为 pilot 趋势检查。正式组间结论需要 subject metadata 和足够样本量，论文中优先报告 mixed-effects model 的 SupportLevel × Group。
+        两名被试、六个 XDF 可以跑完整流程，但只能看 pilot 趋势。正式组间结论需要 subject metadata 和足够样本量，论文里优先报告 mixed-effects model 的 SupportLevel × Group。
       </p>
     </details>
   );
@@ -1824,7 +1824,7 @@ function UnityMarkerDictionaryPanel() {
       <summary>
         <span>
           <strong>Unity marker 事件字典</strong>
-          <small>当前 worker 已按现有 MetroRescueMarkers 适配；报告会标注真实 marker、代理指标和待补元数据。</small>
+          <small>已按现有 MetroRescueMarkers 适配；报告会区分真实 marker、代理指标和待补元数据。</small>
         </span>
         <span className="status-pill compact">{unityMarkerDictionary.length} 个事件</span>
       </summary>
@@ -1879,14 +1879,14 @@ function SubjectBatchPanel({
       <div className="analysis-head">
         <div>
           <p className="eyebrow">被试批量分析</p>
-          <h3>同一被试的低 / 中 / 高路径确认支持 XDF 一起分析</h3>
+          <h3>按被试合并低 / 中 / 高 XDF</h3>
         </div>
         <span className="status-pill compact">
           {selectedIds.length} 个已选{selectedIds.length ? ` · ${selectedCoverage.label}` : ""}
         </span>
       </div>
       <p className="muted">
-        正式数据按 90 名被试 × 3 个路径确认支持条件组织。实验文件 sub001/sub002/sub003 归为 P01，sub004/sub005/sub006 归为 P02，以此类推；Signature1/2/3 分别对应低/中/高路径确认支持。报告会输出被试内条件表和主 planned contrast：中等支持 - 低/高支持平均。
+        正式数据按 90 名被试 × 3 个路径确认支持条件组织。sub001/sub002/sub003 归为 P01，sub004/sub005/sub006 归为 P02，以此类推；Signature1/2/3 分别对应低/中/高路径确认支持。报告包含被试内条件表和主 planned contrast：中等支持 - 低/高支持平均。
       </p>
       <div className="design-strip" aria-label="分析设计">
         <span>90 被试</span>
@@ -1935,7 +1935,7 @@ function SubjectBatchPanel({
           ))}
         </div>
         <div className="subject-group-list">
-          <strong>按文件名推断的被试组</strong>
+          <strong>按文件名分组</strong>
           {groups.length ? (
             groups.map((group) => {
               const coverage = summarizeDensityCoverage(group.documents);
@@ -1956,7 +1956,7 @@ function SubjectBatchPanel({
               );
             })
           ) : (
-            <p className="muted">还没有 XDF 文件。上传后会按文件编号三连组推断被试，并按 Signature 或编号位置推断低/中/高路径确认支持条件。</p>
+            <p className="muted">还没有 XDF 文件。上传后会按文件编号三连组推断被试，再按 Signature 或编号位置推断低/中/高条件。</p>
           )}
         </div>
       </div>
@@ -1990,12 +1990,12 @@ function CohortMetadataPanel({
       <div className="analysis-head">
         <div>
           <p className="eyebrow">全样本与组间分析</p>
-          <h3>汇总已完成被试，并用 subject metadata 做组间比较</h3>
+          <h3>汇总已完成被试，用 metadata 比较组间差异</h3>
         </div>
         <span className="status-pill compact">{completedSubjectBatchCount} 个已完成被试报告</span>
       </div>
       <p className="muted">
-        不填 metadata 时，报告只做总体组内 planned contrast；填写后，会按分组列比较每名被试的 subject-level contrast。2 个被试 × 3 个实验可以作为趋势检查，正式显著性需要每组更多被试。
+        不填 metadata，就只做总体组内 planned contrast。填了 metadata，系统会按分组列比较每名被试的 subject-level contrast。2 个被试 × 3 个实验适合看趋势，不能写成显著性结论。
       </p>
       <div className="metadata-grid">
         <label>
@@ -2018,7 +2018,7 @@ function CohortMetadataPanel({
         />
       </label>
       <div className="metadata-footer">
-        <span className="muted">已识别 {metadataRows} 行 metadata；被试编号建议使用 P01、P02，也支持 1、2 或 sub001 这类写法。</span>
+        <span className="muted">已识别 {metadataRows} 行 metadata。被试编号建议用 P01、P02，也支持 1、2 或 sub001。</span>
         <button className="primary-button" disabled={jobLoading || completedSubjectBatchCount < 1} onClick={onRun}>
           生成全样本/组间 HTML 报告
         </button>
@@ -2135,7 +2135,7 @@ function SeedKnowledgeReviewPanel({ entries }: { entries: LiteratureKnowledgeEnt
         <div>
           <span>写作映射</span>
           <strong>{schemaCount}</strong>
-          <p>把文献证据映射到综述、假设、方法、讨论和中文段落。</p>
+          <p>把文献证据整理到综述、假设、方法和讨论里。</p>
         </div>
         <div>
           <span>核对提醒</span>
@@ -3038,7 +3038,7 @@ function buildFallbackWritingBlocks({
     {
       section: "文献综述",
       purpose: "把这篇文章接入研究背景与理论链条。",
-      draft: `围绕应急情境下的空间导向与疏散决策，${sourceLabel}提供了与本研究相邻的经验证据。其核心启发在于：${finding || "相关行为或认知指标需要结合具体任务情境解释"}。因此，该文献可用于说明地铁逃生中的路径确认并非单纯的空间移动问题，而是包含目标提示、环境线索识别和行动选择的连续过程。`,
+      draft: `围绕应急情境下的空间导向与疏散决策，${sourceLabel}提供了与本研究相邻的经验证据。其核心启发在于：${finding || "相关行为或认知指标需要结合具体任务情境解释"}。据此，地铁逃生中的路径确认可以被写成一个连续过程：个体先接收目标提示，再识别环境线索，最后完成行动选择。`,
     },
     {
       section: "方法与指标",

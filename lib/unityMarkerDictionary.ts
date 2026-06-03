@@ -163,6 +163,6 @@ export const analysisPipelineStages = [
   },
   {
     title: "组间与调节分析",
-    detail: "用 subject metadata 检验 SupportLevel × Group，正式论文中优先使用 mixed-effects model。",
+    detail: "用 subject metadata 检验 SupportLevel × Group，论文结果优先报告 mixed-effects model。",
   },
 ];
