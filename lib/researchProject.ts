@@ -14,7 +14,7 @@ export const researchProject = {
   },
   routeConfirmationFramework: {
     coreProblem:
-      "在公共空间应急疏散中，官方目标提醒和现场路径标识的关键问题不是信息是否存在，而是能否形成一条让人持续确认、快速理解、顺畅行动的路径确认信息链。",
+      "在公共空间应急疏散中，官方目标提醒和现场路径标识的关键问题在于：这些信息能否形成一条让人持续确认、快速理解、顺畅行动的路径确认信息链。",
     scientificQuestion:
       "个体接收到官方目标提醒后，如何依据后续官方路径确认线索进行路径判断；为什么不同水平的路径确认支持会导致不同程度的行动迟滞。",
     constructs: [
@@ -165,7 +165,7 @@ export const metroAiPrompt =
 
 export const projectWritingContext = [
   "Project: Metro Rescue, a VR subway evacuation wayfinding study with synchronized Unity LSL markers and EEG LabRecorder .xdf files.",
-  "Current theoretical framing: the core construct is a route-confirmation information chain after an official target alert. The question is not whether signage exists, but whether official target reminders and subsequent on-site confirmation cues form a continuous, traceable, and confirmable chain for action.",
+  "Current theoretical framing: the core construct is a route-confirmation information chain after an official target alert. The key question is whether official target reminders and subsequent on-site confirmation cues form a continuous, traceable, and confirmable chain for action.",
   "Participants/runs: target 90 subjects, each with 3 route-confirmation support runs: low, medium, high; expected 270 XDF files.",
   "Manipulated X: route-confirmation support level, operationalized through first confirmation cue proximity, chain continuity, decision-point coverage, and cue spacing. Signature1/2/3 currently map to low/medium/high support unless a later condition table says otherwise.",
   "Primary Y: route-decision hesitation, measured by initial action onset time, decision-point dwell time, repeated checking, stopping, scanning, U-turns, and backtracking. Auxiliary Y: wayfinding decision accuracy.",
@@ -174,6 +174,6 @@ export const projectWritingContext = [
   "Main hypothesis: medium route-confirmation support may produce the highest route-decision hesitation and EEG information-processing load, because the official information chain is reliable enough to keep checking but not closed enough to resolve the decision quickly.",
   "Primary planned contrast: medium - mean(low, high), weights low:-1, medium:2, high:-1.",
   "Primary data products: subject-level support-level table, EEG load proxy, theta/alpha ratio, frontal theta, posterior alpha, behavior hesitation proxy, completion time, decision accuracy, and event-window features around sign_readable and decision_point_enter.",
-  "Statistics: within-subject route-confirmation support model first; between-subject conclusions require subject metadata and Support x Group interaction. Do not claim significance unless cohort summary or user-provided results support it.",
+  "Statistics: within-subject route-confirmation support model first; between-subject conclusions refer to differences across participants and require subject metadata. Do not claim significance unless cohort summary or user-provided results support it.",
   "Writing rule: produce manuscript-ready Chinese academic paragraphs when asked for writing; keep English only for necessary variable names, model terms, marker names, and original paper titles. Put evidence trace and limitations after the draft. Distinguish literature evidence, project hypotheses, and actual experimental results.",
 ].join("\n");

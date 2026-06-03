@@ -174,7 +174,7 @@ git push origin main
 - 组内因素：`Route-confirmation support level`。每名被试应尽量同时提交 3 个 XDF，使 worker 能生成被试内条件表。
 - 主 planned contrast：`medium - mean(low, high)`，权重为 `low:-1, medium:2, high:-1`。同时报告 medium-low 与 medium-high 的方向和置信区间。
 - 建议 trial/run-level mixed model：`Load ~ SupportLevel + RunOrder + Map + (1 + SupportLevel | Subject)`。
-- 如有组间变量，建议模型：`Load ~ SupportLevel * Group + RunOrder + Map + (1 + SupportLevel | Subject)`。Group 必须来自 subject metadata，例如组别、年龄、性别、VR 经验、专业背景、实验顺序或 counterbalance。
+- 被试间变量指不同被试之间的个体差异或被试属性，建议模型：`Load ~ SupportLevel * BetweenSubjectVariable + RunOrder + Map + (1 + SupportLevel | Subject)`。被试间变量必须来自 subject metadata，例如组别、年龄、性别、VR 经验、专业背景、实验顺序或 counterbalance。
 - 需要另建 `support_condition_table.csv` 或在 Unity marker 中稳定写入 `support_level=low|medium|high`，记录每个 run 的路径确认支持条件、场景编号、标识数量、文字信息量、箭头数量、决策相关性、冗余度、歧义度和呈现顺序。
 
 XDF 测试数据：
@@ -251,8 +251,8 @@ XDF worker 目前输出：
 - 不把真实论文 PDF、XDF、EEG 原始数据或被试数据提交到公开 GitHub repo 的 `data` 目录。公开 GitHub 只保存代码、schema、wiki 和可公开的模板；私有数据优先放 Supabase private Storage。
 - GitHub Actions 的 `SUPABASE_SERVICE_ROLE_KEY` 可以使用新版 `sb_secret_...` 或旧版 JWT `service_role`。worker 请求头需要区分两者：新版 secret key 只放 `apikey`，旧版 JWT 才放 `Authorization: Bearer ...`。
 - 文件管理界面必须以“文件为中心”呈现分析状态：XDF 文件旁边直接显示未提交、排队、运行、完成、失败、疑似卡住；任务队列支持状态筛选和进度条。270 个实验文件不能只靠一串卡片堆叠。
-- XDF 正式分析必须支持“被试批量任务”：同一被试的低/中/高路径确认支持 3 个 XDF run 一起提交，先逐 run 做 QC，再汇总成 subject-level support table。当前文件编码规则为 001/002/003 = P01，004/005/006 = P02，007/008/009 = P03，以此类推；Signature1/2/3 分别映射为低/中/高路径确认支持。核心组内因素是 SupportLevel；Metro/map、run order、signage version 可作为控制变量或辅助解释字段。组间因素需要用户额外提供 subject metadata 表，例如 subject_id、group、age、sex、VR experience、专业背景、实验顺序/分组等。
-- “数据分析与论文写作”还需要一个全样本汇总任务：读取已完成的被试批量报告，提取每名被试的 `medium - mean(low, high)` contrast，输出 n、均值、95% CI、t/p、Cohen dz 和结论口径。该汇总只能回答组内主假设；组间显著性需要额外 subject metadata 后再做 SupportLevel × Group 交互模型。
+- XDF 正式分析必须支持“被试批量任务”：同一被试的低/中/高路径确认支持 3 个 XDF run 一起提交，先逐 run 做 QC，再汇总成 subject-level support table。当前文件编码规则为 001/002/003 = P01，004/005/006 = P02，007/008/009 = P03，以此类推；Signature1/2/3 分别映射为低/中/高路径确认支持。核心组内因素是 SupportLevel；Metro/map、run order、signage version 可作为控制变量或辅助解释字段。被试间变量需要用户额外提供 subject metadata 表，例如 subject_id、group、age、sex、VR experience、专业背景、实验顺序/分组等。
+- “数据分析与论文写作”还需要一个全样本汇总任务：读取已完成的被试批量报告，提取每名被试的 `medium - mean(low, high)` contrast，输出 n、均值、95% CI、t/p、Cohen dz 和结论口径。该汇总只能回答组内主假设；被试间结论需要额外 subject metadata 后再做 SupportLevel × 被试间变量交互模型。
 - 运行完成、失败、配置错误、疑似卡住的任务应该能从界面删除，避免历史错误任务堆积影响判断。
 - XDF worker 的正式输出不要在 dashboard 内长篇展示；生成自包含 HTML report，存入 Supabase private Storage，并在任务列表中提供下载入口。页面只显示队列状态、进度和下载按钮。
 - 信息架构：研究资料库只做文件管理、打开文件和文献知识卡片；XDF 被试批量分析、任务队列、HTML 报告下载应集中放在“数据分析与论文写作”，避免同一分析入口在两个模块重复出现。
@@ -539,7 +539,7 @@ XDF 分析口径扩展：
 - 全样本汇总同时突出 H1 行动迟滞和 H3 EEG 信息加工负荷；准确率指标用于解释 accuracy-effort trade-off，不自动当成“中等最高”的主结论。
 - 旧字段 `densityContrasts` 暂时保留用于兼容旧任务；新增 `supportContrasts` 作为后续主字段。
 - HTML 报告语言应保持中文论文/研究报告口吻，减少系统说明和模板化表达；避免使用“不是……而是……”这类句式。
-- 组内主检验仍是每名被试的 `medium - mean(low, high)`；组间分析仍需要 subject metadata，再检验 `SupportLevel × Group` 交互。
+- 组内主检验仍是每名被试的 `medium - mean(low, high)`；被试间分析仍需要 subject metadata，再检验 `SupportLevel × 被试间变量` 交互。
 
 ## 2026-06-02 XDF report visualization v3
 
@@ -549,20 +549,20 @@ XDF 分析口径扩展：
 - 细节柱状图继续保留，用于追踪具体指标来源；正式写作时优先看剖面图、指标矩阵和全样本 forest plot。
 - 分析层面的被试编号统一为 `P01` 到 `P90`。原始 `sub-001` 到 `sub-270` 仍按三连号推断每名被试的低/中/高支持 run。
 
-## 2026-06-02 Batch within-subject and metadata group analysis
+## 2026-06-02 Batch within-subject and metadata between-participant analysis
 
 - 页面支持一次提交多个完整被试的组内三条件 XDF 批量分析。完整被试定义为同一 `Pxx` 下能识别低/中/高三个路径确认支持条件，且当前没有正在运行或已完成的同被试批量任务。
 - 全样本汇总支持可选 subject metadata CSV。最小字段为 `participant_id,group`；推荐字段包括 `participant_id,group,sex,age,vr_experience,order,counterbalance,instruction_type`。
 - metadata 中的被试编号会尽量统一为 `P01` 格式，允许 `P01`、`1`、`sub001` 等写法，但正式数据整理仍建议统一使用 `P01` 到 `P90`。
-- 不提供 metadata 时，cohort report 只做总体组内 planned contrast；提供 metadata 时，worker 会按指定分组列比较 subject-level contrast，并生成组间均值矩阵和组间描述/检验表。
-- 每组少于 2 名被试时，组间报告只输出 descriptive only；2 个被试 × 3 个实验适合做 pilot 趋势检查，不能写成显著性结论。
-- 完整论文的组间模型应继续以 `SupportLevel × Group` 为核心，当前线上 report 的组间表是基于每名被试 planned contrast 的快速汇总版本。
+- 不提供 metadata 时，cohort report 只做总体组内 planned contrast；提供 metadata 时，worker 会按指定被试间变量列比较 subject-level contrast，并生成被试间均值矩阵和描述/检验表。
+- 被试间变量的每个水平少于 2 名被试时，报告只输出 descriptive only；2 个被试 × 3 个实验适合做 pilot 趋势检查，不能写成显著性结论。
+- 完整论文的被试间模型应以 `SupportLevel × 被试间变量` 为核心，当前线上 report 的被试间表是基于每名被试 planned contrast 的快速汇总版本。
 
 ## 2026-06-02 Research workstation next layer
 
 - XDF workflow now has a fixed `P01`-`P90` matrix for the planned 270 LabRecorder files. It is separate from the research document library and only manages XDF upload and analysis state.
 - Every participant row expects three route-confirmation support conditions: `Signature1` / triplet position 1 = low, `Signature2` / position 2 = medium, `Signature3` / position 3 = high.
-- Formal analysis layers: single-run QC -> Unity marker behavior features -> EEG event-window features -> one-participant three-condition contrast -> cohort within-subject test -> metadata group analysis.
+- Formal analysis layers: single-run QC -> Unity marker behavior features -> EEG event-window features -> one-participant three-condition contrast -> cohort within-subject test -> metadata between-participant analysis.
 - Unity marker events are now treated as a shared contract between the Unity scene and Python worker. Required events are `map_start`, `sign_readable`, `decision_point_enter`, and `evacuation_complete`. Recommended events cover audio instruction, movement start, left/right looks, scans, choice correctness, decision exit, dwell, U-turn, and backtracking.
 - HTML reports include an audit trail: pipeline version, job id, analysis type, source document ids, participant id, main contrast, GitHub run, and Git commit when available.
 - Literature knowledge review remains single-paper-first. Every paper should expose identity, research question, method decomposition, findings, thesis writing use, and overclaim boundaries. There is no separate global graph requirement.
@@ -576,7 +576,7 @@ XDF 分析口径扩展：
 - Every single-XDF HTML report includes `现有 Unity marker 指标可用性与适配口径`, separating true markers, true fields, inferred marker mappings, proxy metrics, missing metadata, and unavailable metrics.
 - Accuracy results require explicit fields such as `choice_correct`, `route_correct`, `success`, or `reached_target`. If these are absent, the report can discuss hesitation and load, but it cannot conclude that a route choice was correct.
 - `M1` perceived information reliability should come from questionnaire or explicit rating metadata. XDF behavior features can support manipulation checks and mechanism discussion, but they should not be presented as direct perceived reliability scores.
-- Group-level or moderation analysis requires subject/run metadata such as group, sex, age, VR experience, professional background, counterbalance/order, and instruction clarity.
+- Between-participant or moderation analysis requires subject/run metadata such as group, sex, age, VR experience, professional background, counterbalance/order, and instruction clarity.
 - Subject-batch HTML reports now include a three-condition availability table so that low / medium / high runs can be checked before planned contrasts or mixed-effects modeling.
 
 ## 2026-06-03 中文表达规则
@@ -585,4 +585,4 @@ XDF 分析口径扩展：
 - Dashboard 文案优先写真实动作和真实状态，例如“上传 XDF”“生成报告”“等待 metadata”，少写“赋能、闭环、沉淀、抓手”这类空词。
 - 中文论文写作保持学术口吻，但正文要能直接进草稿。少用模板转折，尤其少用“不是……而是……”“综上所述”“值得注意的是”这类套句。
 - 写作助手默认先写中文正文，再交代证据、边界和待核对信息。不要把“协助写作”停在建议清单。
-- 不确定就直说：没有全样本结果时写分析计划或初步输出；没有页码时提示回 PDF 核对；没有 metadata 时不写组间显著性。
+- 不确定就直说：没有全样本结果时写分析计划或初步输出；没有页码时提示回 PDF 核对；没有 metadata 时不写被试间显著性。

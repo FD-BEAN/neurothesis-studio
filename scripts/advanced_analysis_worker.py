@@ -198,7 +198,7 @@ PROJECT_MODEL_VARIABLES = [
         "code": "W",
         "name": "保护性行动指令清晰度",
         "definition": "警报是否明确说明目标、应依据的现场官方线索，以及关键决策点的确认规则。",
-        "xdf_mapping": "由 audio/message/popup/clarity 字段推断；正式组间或调节分析需要 subject/run metadata。",
+        "xdf_mapping": "由 audio/message/popup/clarity 字段推断；正式被试间或调节分析需要 subject/run metadata。",
     },
 ]
 
@@ -458,7 +458,7 @@ def render_html_report(report: dict[str, Any], job: dict[str, Any], generated_at
     parts.extend(
         [
             "<section class='card'><h2>后续统计建模提醒</h2>",
-            "<p>这份 HTML 用于检查 XDF、Unity marker、EEG 覆盖和 run-level 指标。正式论文结论需要把所有被试汇总为 subject-level / trial-level 表，再检验路径确认支持条件的组内主效应、主 planned contrast：中等支持 - 低/高支持平均，以及必要的组间交互。</p>",
+            "<p>这份 HTML 用于检查 XDF、Unity marker、EEG 覆盖和 run-level 指标。正式论文结论需要把所有被试汇总为 subject-level / trial-level 表，再检验路径确认支持条件的组内主效应、主 planned contrast：中等支持 - 低/高支持平均，以及必要的被试间变量交互。</p>",
             "</section>",
             "<details class='card'><summary>JSON 摘要</summary>",
             f"<pre>{h(json.dumps(to_jsonable(report), ensure_ascii=False, indent=2))}</pre>",
@@ -960,7 +960,7 @@ def build_model_overview(scope: str) -> dict[str, Any]:
         purpose = "本报告汇总已完成被试批量报告，用于检验路径确认支持水平的组内主效应和主 planned contrast。"
         remarks = [
             "全样本结论应优先报告预先指定的主指标，再报告探索性指标。",
-            "组间或调节结论需要 subject/run metadata，例如保护性行动指令清晰度、提醒通道、VR 经验或专业背景。",
+            "被试间或调节结论需要 subject/run metadata，例如保护性行动指令清晰度、提醒通道、VR 经验或专业背景。",
         ]
 
     return {
@@ -1210,13 +1210,13 @@ def analyze_cohort_density(
     notes = [
         "该报告只汇总已经完成的被试批量 XDF HTML/JSON 结果；未完成、失败或路径确认支持条件缺失的被试不会进入统计。",
         "主检验是每名被试的 medium - mean(low, high) contrast 是否显著大于 0；这是组内设计最直接的检验。",
-        "组间分析使用 subject metadata 中的分组列，只比较已经完成三条件被试报告且能匹配 metadata 的被试。",
+        "没有 metadata 时，被试差异主要通过 Subject 随机效应处理；被试间分析使用 subject metadata 中的变量列，只比较已经完成三条件被试报告且能匹配 metadata 的被试。",
         "结论写作应优先报告预先指定的主指标，再把行为和其他 EEG 指标作为一致性证据或探索性结果。",
     ]
     if metadata_by_subject and not matched_metadata_subjects:
         notes.append("metadata 已提供，但没有被试编号与已完成批量报告匹配；请检查 participant_id 是否使用 P01、P02 这类分析层编号。")
     if group_levels and any(sum(1 for row in subject_rows if row.get("metric") == "route_decision_hesitation_index" and row.get("group") == group) < 2 for group in group_levels):
-        notes.append("部分组在主指标上少于 2 名被试；报告会保留描述性均值，暂不把组间差异写成显著性结论。")
+        notes.append("被试间变量的部分水平在主指标上少于 2 名被试；报告会保留描述性均值，暂不把被试间差异写成显著性结论。")
 
     return {
         "title": "全样本路径确认支持统计汇总",
@@ -1238,7 +1238,7 @@ def analyze_cohort_density(
             {"label": "已纳入被试", "value": f"{len(unique_subjects)}/90"},
             {"label": "contrast 行", "value": str(len(subject_rows))},
             {"label": "metadata 匹配", "value": f"{len(matched_metadata_subjects)}/{len(metadata_subjects)}" if metadata_subjects else "未提供"},
-            {"label": "组间变量", "value": group_variable if group_levels else "未启用", "text": " / ".join(group_levels) if group_levels else ""},
+            {"label": "被试间变量", "value": group_variable if group_levels else "未启用", "text": " / ".join(group_levels) if group_levels else ""},
             {"label": "H1 行动迟滞", "value": primary_behavior_result["conclusion"] if primary_behavior_result else "未形成", "text": behavior_text},
             {"label": "H3 EEG 负荷", "value": primary_eeg_result["conclusion"] if primary_eeg_result else "未形成", "text": eeg_text},
         ],
@@ -1285,8 +1285,8 @@ def analyze_cohort_density(
                 "rows": summary_rows,
             },
             {
-                "title": f"组间 metadata 描述与检验（分组列：{group_variable}）",
-                "columns": ["metric", "groups", "test", "statistic", "p", "interpretation"],
+                "title": f"被试间 metadata 描述与检验（变量列：{group_variable}）",
+                "columns": ["metric", "变量水平", "test", "statistic", "p", "interpretation"],
                 "rows": between_rows or [["-", "-", "-", "-", "-", "未提供可匹配的 subject metadata；当前报告只做总体组内汇总。"]],
             },
             {
@@ -1299,16 +1299,16 @@ def analyze_cohort_density(
                 "columns": ["目标", "推荐模型/检验", "论文写法边界"],
                 "rows": [
                     ["组内主假设", "对每名被试计算 medium - mean(low, high)，再做 one-sample test；等价 mixed model contrast 可作为稳健性检验。", "只有主指标方向、置信区间和 p 值同时支持时，才写作支持中等路径确认支持最高负荷假设。"],
-                    ["组间差异", f"用 subject metadata 的 {group_variable} 比较 subject-level contrast；正式模型可写 Load ~ SupportLevel * {group_variable} + RunOrder + Map + (1 + SupportLevel | Subject)。", "2 名被试或每组少于 2 名时只描述趋势，不报告显著性结论。"],
+                    ["被试间差异", f"用 subject metadata 的 {group_variable} 比较 subject-level contrast；正式模型可写 Load ~ SupportLevel * {group_variable} + RunOrder + Map + (1 + SupportLevel | Subject)。", "2 名被试或变量水平样本过少时只描述趋势，不报告显著性结论。"],
                     ["指标层级", "行动迟滞和 EEG 信息加工负荷作为主指标；准确率、确认链不流畅、停留/扫描/回退作为机制和操纵检查。", "探索性指标需与主指标分开报告，避免把所有指标都写成主结果。"],
                     ["缺失与排除", "排除缺低/中/高条件、缺 completion marker、EEG 覆盖不足或事件窗过少的 run，并在审计记录中保留源文件。", "排除规则应在结果前说明，不能事后按显著性筛选。"],
                 ],
             },
             {
-                "title": "下一步组间模型",
+                "title": "下一步被试间模型",
                 "columns": ["需要字段", "模型", "用途"],
                 "rows": [
-                    ["subject_id, group", "Load ~ SupportLevel * Group + RunOrder + Map + (1 + SupportLevel | Subject)", "检验不同组别是否有不同路径确认支持效应"],
+                    ["subject_id, 被试间变量", "Load ~ SupportLevel * BetweenSubjectVariable + RunOrder + Map + (1 + SupportLevel | Subject)", "检验不同被试属性是否对应不同路径确认支持效应"],
                     ["order/counterbalance", "Load ~ SupportLevel + Order + SupportLevel:Order + (1 + SupportLevel | Subject)", "控制顺序、练习和疲劳效应"],
                     ["trial_features/event_features", "event-level 或 trial-level mixed model", "把 sign_readable、decision_point_enter 等事件窗指标纳入更细粒度模型"],
                 ],
@@ -1406,14 +1406,14 @@ def build_between_subject_group_results(subject_rows: list[dict[str, Any]], grou
 
     chart = {
         "type": "heatmap",
-        "title": f"组间 contrast 均值矩阵（{group_variable}）",
+        "title": f"被试间 contrast 均值矩阵（{group_variable}）",
         "columns": heatmap_groups,
         "rows": heatmap_rows,
         "data": flat_data,
         "wide": True,
         "xLabel": group_variable,
         "yLabel": "subject-level contrast",
-        "caption": "每个单元格是该组被试的 medium - mean(low, high) 平均值。样本量不足时，该图用于 pilot 趋势检查。",
+        "caption": "每个单元格是该被试间变量水平下的 medium - mean(low, high) 平均值。样本量不足时，该图用于 pilot 趋势检查。",
     }
     return table_rows, chart
 
@@ -1422,7 +1422,7 @@ def compare_groups_for_metric(grouped_values: dict[str, list[float]], metric: st
     groups = sorted(grouped_values)
     usable_groups = [group for group in groups if len(grouped_values[group]) >= 2]
     if len(usable_groups) < 2:
-        return "descriptive only", "-", None, "每组至少需要 2 名被试才进行组间显著性检验；当前只报告均值趋势。"
+        return "descriptive only", "-", None, "每个变量水平至少需要 2 名被试才进行被试间显著性检验；当前只报告均值趋势。"
 
     if len(usable_groups) == 2:
         group_a, group_b = usable_groups
@@ -1449,10 +1449,10 @@ def compare_groups_for_metric(grouped_values: dict[str, list[float]], metric: st
         test = stats.f_oneway(*(np.asarray(grouped_values[group], dtype=float) for group in usable_groups))
         statistic = float(test.statistic)
         p_value = float(test.pvalue)
-        interpretation = "检验不同组的 subject-level contrast 是否存在总体差异。"
+        interpretation = "检验不同被试间变量水平的 subject-level contrast 是否存在总体差异。"
         return "one-way ANOVA", fmt(statistic), p_value, interpretation
     except Exception:
-        return "descriptive only", "-", None, "组数超过 2 且当前运行环境缺少可用 ANOVA；先报告各组均值。"
+        return "descriptive only", "-", None, "变量水平超过 2 且当前运行环境缺少可用 ANOVA；先报告各水平均值。"
 
 
 def welch_t_fallback(values_a: np.ndarray, values_b: np.ndarray) -> tuple[float | None, float | None]:
@@ -1472,9 +1472,9 @@ def welch_t_fallback(values_a: np.ndarray, values_b: np.ndarray) -> tuple[float 
 
 def format_between_subject_summary(group_variable: str, group_levels: list[str], between_rows: list[list[str]]) -> str:
     if not group_levels:
-        return "未提供可匹配的 subject metadata，本报告暂不进行组间比较。"
+        return "未提供可匹配的 subject metadata，本报告暂不进行被试间比较。"
     tested = sum(1 for row in between_rows if len(row) >= 3 and row[2] != "descriptive only")
-    return f"组间变量为 {group_variable}，当前识别到 {len(group_levels)} 个组：{' / '.join(group_levels)}；{tested} 个指标具备组间检验条件。"
+    return f"被试间变量为 {group_variable}，当前识别到 {len(group_levels)} 个水平：{' / '.join(group_levels)}；{tested} 个指标具备被试间检验条件。"
 
 
 def format_primary_result(label: str, result: dict[str, Any] | None) -> str:
@@ -1520,7 +1520,7 @@ def build_cohort_narrative(
             "paragraphs": [
                 "当行动迟滞和 EEG 信息加工负荷两个主指标均为正向且达到显著，可以写作：中等路径确认支持条件下，被试表现出更高的行动迟滞和信息加工负荷。若准确率指标同步改善或下降，需要分别讨论 accuracy–effort trade-off 的方向。",
                 "当主指标未显著或方向不一致，结果部分应写为：当前数据尚未支持中等路径确认支持最高的主假设。讨论部分可进一步检查条件操纵、样本量、个体策略、marker 覆盖和 EEG 噪声。",
-                "组间结论需要建立在 subject metadata 和足够的每组样本量上。报告中的组间表使用每名被试的 subject-level contrast 做比较；完整论文可进一步用 trial-level mixed-effects model 检验 SupportLevel × Group 交互。",
+                "被试间结论需要建立在 subject metadata 和足够样本量上。报告中的被试间表使用每名被试的 subject-level contrast 做比较；完整论文可进一步用 trial-level mixed-effects model 检验 SupportLevel × 被试间变量交互。",
             ],
         },
     ]
@@ -1552,7 +1552,7 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
     if not contrast_rows:
         notes.append("未能计算中等支持 planned contrast；通常是低/中/高路径确认支持没有全部识别，或对应指标缺失。")
     notes.append("单个被试报告只计算方向性 contrast，不报告显著性；显著性需要 90 名被试的 subject-level contrast 或 trial-level mixed-effects model。")
-    notes.append("组内因素主轴为 route-confirmation support level；组间因素需要额外上传 subject metadata，例如 group、sex、age、VR experience、专业背景、实验顺序或 counterbalance。")
+    notes.append("组内因素主轴为 route-confirmation support level；被试间变量需要额外上传 subject metadata，例如 group、sex、age、VR experience、专业背景、实验顺序或 counterbalance。")
     notes.append("正式主检验建议预注册为：中等路径确认支持下行动迟滞和信息加工负荷高于低/高支持平均，contrast weights = low:-1, medium:2, high:-1。")
 
     return {
@@ -1697,7 +1697,7 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
                 "rows": [
                     ["被试内主检验", "对每名被试计算 contrast = medium - (low + high) / 2，再对 90 个 contrast 做 one-sample test 或等价 mixed model contrast", "直接回答中等支持是否显著高于低/高支持平均"],
                     ["trial/run-level mixed model", "Load ~ SupportLevel + RunOrder + Map + (1 + SupportLevel | Subject)", "SupportLevel 是组内固定效应；Subject 是随机效应"],
-                    ["组间差异", "Load ~ SupportLevel * Group + RunOrder + Map + (1 + SupportLevel | Subject)", "Group 需要来自被试元数据；重点看 SupportLevel:Group 交互"],
+                    ["被试间差异", "Load ~ SupportLevel * BetweenSubjectVariable + RunOrder + Map + (1 + SupportLevel | Subject)", "被试间变量需要来自 subject metadata；重点看 SupportLevel 与该变量的交互"],
                     ["多指标控制", "EEG load proxy、theta/alpha、frontal theta、posterior alpha、completion time、behavior_load_proxy 分开报告；主指标优先，其他作为 convergent evidence", "避免把多个探索性指标都写成主结论"],
                     ["结论判定", "先看主 contrast 的方向、置信区间和 p 值；再看 low vs medium、medium vs high 成对比较", "只有全样本显著后才能写成结果支持假设"],
                 ],
@@ -1747,9 +1747,9 @@ def build_subject_batch_availability_table(run_rows: list[dict[str, str]]) -> di
             "用于判断行动速度与正确性是否存在权衡；缺失时不做准确率结论。",
         ),
         (
-            "指令清晰度/组间元数据",
+            "指令清晰度/被试间元数据",
             ("instruction_clarity", "audio"),
-            "用于后续 SupportLevel × Group 或 SupportLevel × Clarity 分析；正式组间变量仍以 metadata 为准。",
+            "用于后续 SupportLevel × 被试间变量 或 SupportLevel × Clarity 分析；正式被试间变量仍以 metadata 为准。",
         ),
     ]
 
@@ -1996,7 +1996,7 @@ def build_subject_batch_narrative(subject_id: str, run_rows: list[dict[str, str]
             "paragraphs": [
                 "单个被试报告只能用于质控、特征检查和方向性观察，不能直接写成统计显著。正式结果应在 90 名被试层面汇总每人的 medium - mean(low, high) contrast，并进行 one-sample test 或 mixed-effects contrast。",
                 f"路径判断准确率的 contrast 为 {contrast_sentence(accuracy_contrast)}。低支持条件下如果迟滞较低且准确率较低，可作为 accuracy–effort trade-off 的结果线索；如果准确率字段缺失，需要在 Unity marker 中补写 choice_correct 或 route_correct。",
-                f"保护性行动指令清晰度当前识别为：{' / '.join(clarity_levels) if clarity_levels else '待补 marker/metadata'}。后续加入 VR 经验、专业背景、性别或指令清晰度时，应在 subject metadata 中显式记录，再检验 SupportLevel × Group 或 SupportLevel × Clarity 交互。",
+                f"保护性行动指令清晰度当前识别为：{' / '.join(clarity_levels) if clarity_levels else '待补 marker/metadata'}。后续加入 VR 经验、专业背景、性别或指令清晰度时，应在 subject metadata 中显式记录，再检验 SupportLevel × 被试间变量 或 SupportLevel × Clarity 交互。",
             ],
         },
     ]
@@ -3061,10 +3061,10 @@ def build_marker_availability_table(
             "可靠性感知应来自问卷或显式评分字段；XDF 行为线索只能作为操纵检查和机制解释材料。",
         ],
         [
-            "保护性行动指令清晰度与组间变量",
+            "保护性行动指令清晰度与被试间变量",
             "真实字段" if clarity_fields else ("代理字段" if prompt_events else "元数据待补"),
             format_basis(clarity_fields or prompt_events),
-            "正式组间或调节分析需要 subject/run metadata；仅凭 audio_play 只能确认提示出现，不能确认清晰度等级。",
+            "正式被试间或调节分析需要 subject/run metadata；仅凭 audio_play 只能确认提示出现，不能确认清晰度等级。",
         ],
         [
             "位置与朝向辅助信息",

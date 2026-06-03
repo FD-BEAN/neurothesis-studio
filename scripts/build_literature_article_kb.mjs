@@ -233,7 +233,7 @@ const curatedArticleNotes = {
     summary: "该理论框架和 meta-analysis 讨论压力下的 indoor emergency wayfinding decision，是解释决策、压力和环境线索的理论核心。",
     question: "研究问题是：压力情境中个体如何整合环境线索、风险感知和路线策略做出寻路决策。",
     method: "方法上整合理论框架与元分析，梳理 emergency wayfinding 的认知和行为机制。",
-    findings: ["压力、环境复杂性、信息可得性和个体差异共同影响 wayfinding decision。", "它为 mixed-effects model 中的组内/组间因素提供理论背景。"],
+    findings: ["压力、环境复杂性、信息可得性和个体差异共同影响 wayfinding decision。", "它为 mixed-effects model 中的组内因素和被试间差异提供理论背景。"],
     use: ["用于 Introduction 和 hypothesis development。"],
     boundaries: ["元分析结论不能替代本研究具体密度条件的统计检验。"],
   },
@@ -306,7 +306,7 @@ const curatedArticleNotes = {
     question: "研究问题是：不同寻路策略和地标类型如何影响 VR 导航表现和压力。",
     method: "方法上在 VR 环境中比较 landmark type、strategy 与 performance。",
     findings: ["地标类型与个人策略会共同影响导航表现。", "这支持在分析中考虑个体方向感或策略差异。"],
-    use: ["用于组间差异、策略问卷和随机效应解释。"],
+    use: ["用于被试间差异、策略问卷和随机效应解释。"],
     boundaries: ["地标不是应急标识，需区分。"],
   },
   S038: {
@@ -346,7 +346,7 @@ const curatedArticleNotes = {
     question: "研究问题是：人在火灾中为什么会做出风险路线选择。",
     method: "方法上操控烟雾水平、个体风险偏好和邻居行为，观察 route choice。",
     findings: ["风险偏好和社会线索可能覆盖理性路径选择。", "环境风险与个体倾向会调节疏散决策。"],
-    use: ["用于解释组间差异和风险偏好问卷的重要性。"],
+    use: ["用于解释被试间差异和风险偏好问卷的重要性。"],
     boundaries: ["烟雾和邻居行为若未在当前实验中操控，只能作为混杂或未来变量。"],
   },
   S043: {

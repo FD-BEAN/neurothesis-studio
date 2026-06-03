@@ -143,14 +143,14 @@ const projectAnalysisDesignReviewItems: SeedKnowledgeReviewItem[] = [
   },
   {
     id: "DESIGN-004",
-    title: "组间分析",
-    body: "组间问题应建立在被试元数据上，例如组别、年龄、性别、VR 经验、专业背景、实验顺序或 counterbalance。统计上关注 Support Level × Group 交互；不同被试的单个 XDF 文件不能直接混在一起比较。",
+    title: "被试间分析",
+    body: "被试间问题指不同被试之间的差异，应建立在被试元数据上，例如组别、年龄、性别、VR 经验、专业背景、实验顺序或 counterbalance。统计上关注 SupportLevel × 被试间变量；不同被试的单个 XDF 文件不能直接混在一起比较。",
     tags: ["between-subject", "metadata", "mixed-effects"],
     meta: [
-      { label: "建议模型", value: "Load ~ SupportLevel * Group + RunOrder + Map + (1 + SupportLevel | Subject)" },
+      { label: "建议模型", value: "Load ~ SupportLevel * BetweenSubjectVariable + RunOrder + Map + (1 + SupportLevel | Subject)" },
       { label: "需要补充", value: "subject metadata / counterbalance / exclusion log" },
     ],
-    boundary: "没有 subject-level metadata 时，只能报告总体组内路径确认支持效应，不能声称某类人群之间存在差异。",
+    boundary: "没有 subject-level metadata 时，只能报告总体组内路径确认支持效应，不能解释被试之间的差异来源。",
   },
   {
     id: "DESIGN-005",
@@ -311,7 +311,7 @@ export function getSeedKnowledgeReview(): SeedKnowledgeReview {
       {
         id: "analysis_design",
         label: "分析口径",
-        description: "把当前实验的文件编码、路径确认支持条件、组内主检验和组间建模边界固定下来。",
+        description: "把当前实验的文件编码、路径确认支持条件、组内主检验和被试间建模边界固定下来。",
         items: projectAnalysisDesignReviewItems,
       },
       {

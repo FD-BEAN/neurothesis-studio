@@ -468,7 +468,7 @@ Thesis project context:
 - Current theoretical frame: after an official target reminder, individuals judge whether the subsequent official on-site cues form a continuous, traceable, and confirmable path. Medium route-confirmation support may be reliable enough to keep checking but not closed enough to resolve the decision quickly.
 - Current primary hypothesis: medium route-confirmation support may create the highest route-decision hesitation and EEG-indexed information-processing load; formal contrast is medium - mean(low, high).
 - Main constructs: X route-confirmation support level; Y route-decision hesitation; auxiliary Y wayfinding decision accuracy; M1 perceived information reliability; M2 information-processing load; W protective action instruction clarity.
-- Analysis route: within-subject support-level factor, subject-level contrasts, and later mixed-effects models with possible between-subject metadata.
+- Analysis route: within-subject support-level factor, subject-level contrasts, and later mixed-effects models with subject metadata for between-participant differences.
 
 Evidence rules:
 - Do not turn this thesis hypothesis into a finding from the paper unless the paper directly tested it.
