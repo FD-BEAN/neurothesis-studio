@@ -1363,26 +1363,69 @@ textarea {
   line-height: 1.5;
 }
 
-.marker-dictionary-panel {
-  margin-top: 16px;
+.collapsible-info-panel {
+  padding: 0;
 }
 
-.marker-dictionary-panel summary {
+.collapsible-info-panel summary {
   cursor: pointer;
   display: flex;
   justify-content: space-between;
   gap: 16px;
   align-items: center;
+  padding: 18px 20px;
+  list-style: none;
 }
 
-.marker-dictionary-panel summary span {
+.collapsible-info-panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.collapsible-info-panel:not([open]) > :not(summary) {
+  display: none !important;
+}
+
+.collapsible-info-panel summary::after {
+  content: "展开";
+  flex: 0 0 auto;
+  color: var(--green);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.collapsible-info-panel[open] summary::after {
+  content: "收起";
+}
+
+.collapsible-info-panel summary > div,
+.collapsible-info-panel summary > span:first-child {
   display: grid;
   gap: 3px;
 }
 
-.marker-dictionary-panel summary small {
+.collapsible-info-panel summary strong {
+  font-size: 1rem;
+}
+
+.collapsible-info-panel summary small {
   color: var(--muted);
+  font-size: 0.82rem;
   font-weight: 700;
+  line-height: 1.35;
+}
+
+.collapsible-info-panel[open] .pipeline-stage-grid,
+.collapsible-info-panel[open] .marker-dictionary-grid,
+.collapsible-info-panel[open] .compact-note {
+  margin-inline: 20px;
+}
+
+.collapsible-info-panel[open] .compact-note {
+  margin-bottom: 20px;
+}
+
+.marker-dictionary-panel {
+  margin-top: 16px;
 }
 
 .marker-dictionary-grid {

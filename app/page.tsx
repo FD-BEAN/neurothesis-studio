@@ -1794,14 +1794,14 @@ function XdfConditionCell({
 
 function AnalysisPipelinePanel() {
   return (
-    <section className="work-panel analysis-pipeline-panel">
-      <div className="analysis-head">
+    <details className="work-panel analysis-pipeline-panel collapsible-info-panel">
+      <summary>
         <div>
-          <p className="eyebrow">正式分析管线</p>
-          <h3>从单个 XDF 到论文结果段落</h3>
+          <strong>正式分析管线</strong>
+          <small>从单个 XDF 到组内/组间统计，再到论文结果段落。</small>
         </div>
         <span className="status-pill compact">组内 + 组间</span>
-      </div>
+      </summary>
       <div className="pipeline-stage-grid">
         {analysisPipelineStages.map((stage, index) => (
           <article className="pipeline-stage-card" key={stage.title}>
@@ -1814,13 +1814,13 @@ function AnalysisPipelinePanel() {
       <p className="muted compact-note">
         两名被试、六个 XDF 可以跑完整流程，但只作为 pilot 趋势检查。正式组间结论需要 subject metadata 和足够样本量，论文中优先报告 mixed-effects model 的 SupportLevel × Group。
       </p>
-    </section>
+    </details>
   );
 }
 
 function UnityMarkerDictionaryPanel() {
   return (
-    <details className="work-panel marker-dictionary-panel">
+    <details className="work-panel marker-dictionary-panel collapsible-info-panel">
       <summary>
         <span>
           <strong>Unity marker 事件字典</strong>
