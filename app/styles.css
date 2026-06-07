@@ -1327,6 +1327,8 @@ textarea {
 
 .matrix-actions {
   display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   justify-content: flex-start;
 }
 
@@ -1531,12 +1533,24 @@ textarea {
   align-content: start;
 }
 
-.batch-file-list {
-  max-height: 380px;
+.batch-file-list,
+.subject-group-list {
+  max-height: min(560px, 58vh);
   overflow: auto;
+  overscroll-behavior: contain;
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
+  background: var(--paper);
+  scrollbar-gutter: stable;
+}
+
+.subject-group-list > strong {
+  position: sticky;
+  top: -12px;
+  z-index: 1;
+  margin: -12px -12px 0;
+  padding: 12px 12px 8px;
   background: var(--paper);
 }
 

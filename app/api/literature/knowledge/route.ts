@@ -366,7 +366,7 @@ async function buildKnowledgeCard(apiKey: string, document: ResearchDocument, ex
       {
         role: "system",
         content:
-          "You build structured bilingual literature knowledge cards for a Chinese dissertation knowledge base. Return only valid JSON. Build a single-paper dossier first: identity, research question, method decomposition, findings, thesis writing use, and overclaim boundaries. Then map the paper to concrete Chinese dissertation sections. Chinese fields should be specific, direct, and dissertation-ready; avoid generic filler, slogan-like transitions, and repeated '不是……而是……' structures. Do not invent bibliographic details, page numbers, results, effect sizes, or quotations that are missing from the text; use '未识别' when uncertain. Be conservative, separate literature evidence from project hypotheses, and include boundaries under doNotClaim.",
+          "You build structured bilingual literature knowledge cards for a Chinese dissertation knowledge base. Return only valid JSON. Build a single-paper dossier first: identity, research question, method decomposition, findings, thesis writing use, and overclaim boundaries. Then build a deeper singlePaperKnowledgeSystem: construct links, evidence units, thesis claims, verification checklist, and open questions. Map the paper to concrete Chinese dissertation sections with draftable paragraphs. Chinese fields should be specific, direct, and dissertation-ready; avoid generic filler, slogan-like transitions, and repeated '不是……而是……' structures. Do not invent bibliographic details, page numbers, results, effect sizes, or quotations that are missing from the text; use '未识别' when uncertain. Be conservative, separate literature evidence from project hypotheses, and include boundaries under doNotClaim.",
       },
       {
         role: "user",
@@ -384,7 +384,7 @@ async function buildKnowledgeCard(apiKey: string, document: ResearchDocument, ex
 
   const raw = JSON.parse(response.output_text) as Omit<LiteratureKnowledgeCard, "version" | "documentId" | "filename" | "createdAt" | "extractionMeta">;
   return {
-    version: 3,
+    version: 4,
     documentId: document.id,
     filename: document.filename,
     createdAt: new Date().toISOString(),
@@ -492,7 +492,7 @@ ${directText || "(No text could be extracted; use only filename and state limita
 Trailing excerpt, often references/discussion/limitations:
 ${trailingText || "(No trailing excerpt.)"}
 
-Return JSON with exactly these keys: title, citation, paperType, oneSentenceTakeaway, abstractZh, abstractEn, researchQuestion, methods, participants, taskAndMaterials, eegOrMeasures, keyFindings, limitations, relevanceToMetroRescue, usableForSections, keywords, evidenceLevel, sourceGrade, themeTags, doNotClaim, candidateClaims, quoteAnchorsToVerify, theoryOrMechanism, variablesAndMeasures, densityHypothesisRelevance, methodsWritingUse, resultsDiscussionUse, qualityCaveats, paperDossier, thesisWritingMap. Arrays must be arrays of short Chinese strings. sourceGrade should be A/B/C/未识别 based on relevance and evidence strength for this thesis, not journal prestige. paperDossier is a readable Chinese single-paper dossier. thesisWritingMap contains concrete Chinese thesis-writing uses, including short draft paragraphs that can be edited into the dissertation.`;
+Return JSON with exactly these keys: title, citation, paperType, oneSentenceTakeaway, abstractZh, abstractEn, researchQuestion, methods, participants, taskAndMaterials, eegOrMeasures, keyFindings, limitations, relevanceToMetroRescue, usableForSections, keywords, evidenceLevel, sourceGrade, themeTags, doNotClaim, candidateClaims, quoteAnchorsToVerify, theoryOrMechanism, variablesAndMeasures, densityHypothesisRelevance, methodsWritingUse, resultsDiscussionUse, qualityCaveats, paperDossier, thesisWritingMap, singlePaperKnowledgeSystem. Arrays must be arrays of short Chinese strings. sourceGrade should be A/B/C/未识别 based on relevance and evidence strength for this thesis, not journal prestige. paperDossier is a readable Chinese single-paper dossier. thesisWritingMap contains concrete Chinese thesis-writing uses, including short draft paragraphs that can be edited into the dissertation. singlePaperKnowledgeSystem is the deeper per-paper knowledge system: construct links, evidence units, thesis claims, verification checklist, and open questions.`;
 }
 
 function literatureCardSchema() {
@@ -516,6 +516,40 @@ function literatureCardSchema() {
       support: { type: "string" },
       use: { type: "string" },
       caution: { type: "string" },
+    },
+  };
+  const knowledgeConstructLink = {
+    type: "object",
+    additionalProperties: false,
+    required: ["construct", "evidence", "thesisUse", "caution"],
+    properties: {
+      construct: { type: "string" },
+      evidence: { type: "string" },
+      thesisUse: { type: "string" },
+      caution: { type: "string" },
+    },
+  };
+  const evidenceUnit = {
+    type: "object",
+    additionalProperties: false,
+    required: ["topic", "evidence", "paperLocation", "thesisUse", "limitation"],
+    properties: {
+      topic: { type: "string" },
+      evidence: { type: "string" },
+      paperLocation: { type: "string" },
+      thesisUse: { type: "string" },
+      limitation: { type: "string" },
+    },
+  };
+  const thesisClaim = {
+    type: "object",
+    additionalProperties: false,
+    required: ["claim", "supportLevel", "useInSection", "mustVerify"],
+    properties: {
+      claim: { type: "string" },
+      supportLevel: { type: "string" },
+      useInSection: { type: "string" },
+      mustVerify: { type: "string" },
     },
   };
   return {
@@ -552,6 +586,7 @@ function literatureCardSchema() {
       "qualityCaveats",
       "paperDossier",
       "thesisWritingMap",
+      "singlePaperKnowledgeSystem",
     ],
     properties: {
       title: { type: "string" },
@@ -620,6 +655,26 @@ function literatureCardSchema() {
           writingBlocks: { type: "array", items: writingBlock },
           overclaimWarnings: stringArray,
           verificationTasks: stringArray,
+        },
+      },
+      singlePaperKnowledgeSystem: {
+        type: "object",
+        additionalProperties: false,
+        required: [
+          "coreContribution",
+          "constructLinks",
+          "evidenceUnits",
+          "thesisClaims",
+          "verificationChecklist",
+          "openQuestions",
+        ],
+        properties: {
+          coreContribution: { type: "string" },
+          constructLinks: { type: "array", items: knowledgeConstructLink },
+          evidenceUnits: { type: "array", items: evidenceUnit },
+          thesisClaims: { type: "array", items: thesisClaim },
+          verificationChecklist: stringArray,
+          openQuestions: stringArray,
         },
       },
     },

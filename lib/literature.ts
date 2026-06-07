@@ -47,8 +47,33 @@ export type LiteratureThesisWritingMap = {
   verificationTasks: string[];
 };
 
+export type LiteratureSinglePaperKnowledgeSystem = {
+  coreContribution: string;
+  constructLinks: Array<{
+    construct: string;
+    evidence: string;
+    thesisUse: string;
+    caution: string;
+  }>;
+  evidenceUnits: Array<{
+    topic: string;
+    evidence: string;
+    paperLocation: string;
+    thesisUse: string;
+    limitation: string;
+  }>;
+  thesisClaims: Array<{
+    claim: string;
+    supportLevel: string;
+    useInSection: string;
+    mustVerify: string;
+  }>;
+  verificationChecklist: string[];
+  openQuestions: string[];
+};
+
 export type LiteratureKnowledgeCard = {
-  version: 1 | 2 | 3;
+  version: 1 | 2 | 3 | 4;
   documentId: string;
   filename: string;
   title: string;
@@ -81,6 +106,7 @@ export type LiteratureKnowledgeCard = {
   qualityCaveats?: string[];
   paperDossier?: LiteraturePaperDossier;
   thesisWritingMap?: LiteratureThesisWritingMap;
+  singlePaperKnowledgeSystem?: LiteratureSinglePaperKnowledgeSystem;
   extractionMeta?: {
     extractedChars: number;
     digestChunks: number;
@@ -97,7 +123,7 @@ export function parseLiteratureCard(notes: string | null | undefined): Literatur
   if (!notes?.startsWith(LITERATURE_CARD_PREFIX)) return null;
   try {
     const parsed = JSON.parse(notes.slice(LITERATURE_CARD_PREFIX.length)) as LiteratureKnowledgeCard;
-    return parsed?.version === 1 || parsed?.version === 2 || parsed?.version === 3 ? parsed : null;
+    return parsed?.version === 1 || parsed?.version === 2 || parsed?.version === 3 || parsed?.version === 4 ? parsed : null;
   } catch {
     return null;
   }

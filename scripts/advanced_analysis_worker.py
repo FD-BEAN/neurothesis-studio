@@ -161,7 +161,124 @@ DENSITY_LABELS = {
     "medium": "中路径确认支持",
     "high": "高路径确认支持",
 }
-PRIMARY_CONTRAST_WEIGHTS = {"low": -1.0, "medium": 2.0, "high": -1.0}
+PRIMARY_CONTRAST_WEIGHTS = {"low": -0.5, "medium": 1.0, "high": -0.5}
+METRIC_REGISTRY = {
+    "route_decision_hesitation_index": {
+        "label": "路径决策迟滞指数",
+        "tier": "secondary_behavior",
+        "role": "H1 辅助行为敏感性指标",
+        "report_rule": "作为广义行动迟滞的敏感性指标报告；该指标包含完成时长和导航低效事件，容易混入整段路线执行效率，不再作为近端 H1 主检验。",
+    },
+    "route_confirmation_hesitation_index": {
+        "label": "近端路径确认迟滞指数",
+        "tier": "primary_behavior",
+        "role": "H1 行为主指标",
+        "report_rule": "作为 H1 近端行为主结果优先报告；聚焦官方目标提示到现场确认线索之间的延迟和主动核对行为，不纳入整段路线完成时长或导航低效事件。",
+    },
+    "eeg_information_processing_load_index": {
+        "label": "EEG 信息加工负荷指数",
+        "tier": "primary_eeg",
+        "role": "H3 EEG 主指标",
+        "report_rule": "作为 EEG 主结果优先报告；整合 trial-level 与事件窗 EEG 负荷代理指标。",
+    },
+    "decision_point_enter_eeg_load_proxy": {
+        "label": "decision_point_enter 事件窗 EEG 负荷",
+        "tier": "primary_eeg_window",
+        "role": "H3 事件窗主指标",
+        "report_rule": "优先用于解释关键决策点上的目标-线索-方向匹配负荷；事件窗数量不足时降级为探索性。",
+    },
+    "first_action_latency_s": {
+        "label": "首次行动启动延迟",
+        "tier": "secondary_behavior",
+        "role": "行动迟滞次指标",
+        "report_rule": "需要 movement_start 或同义 marker；缺失时不能用总时长替代启动迟滞。",
+    },
+    "decision_dwell_total_s": {
+        "label": "决策点停留总时长",
+        "tier": "secondary_behavior",
+        "role": "行动迟滞次指标",
+        "report_rule": "直接反映关键节点停顿；没有 decision_point_exit 时可读取 dwell duration 字段，但需标注代理口径。",
+    },
+    "decision_scan_both_count": {
+        "label": "双侧扫描次数",
+        "tier": "secondary_behavior",
+        "role": "路径确认行为证据",
+        "report_rule": "重复扫描本身是行为证据，不能当作重复 marker 随意删除。",
+    },
+    "sign_readable_eeg_load_proxy": {
+        "label": "sign_readable 事件窗 EEG 负荷",
+        "tier": "secondary_eeg_window",
+        "role": "路径确认线索事件窗",
+        "report_rule": "用于说明看清标识附近的加工负荷；正式结论应结合 decision_point_enter。",
+    },
+    "theta_alpha_ratio": {
+        "label": "theta/alpha ratio",
+        "tier": "secondary_eeg",
+        "role": "EEG 负荷次指标",
+        "report_rule": "作为频带代理指标报告，需说明不是单独的临床或诊断指标。",
+    },
+    "frontal_theta_4_7": {
+        "label": "额区 theta",
+        "tier": "secondary_eeg",
+        "role": "EEG 负荷次指标",
+        "report_rule": "通道标签不足时可能退化为全通道均值，报告中需保留 QC 说明。",
+    },
+    "posterior_alpha_8_12": {
+        "label": "后部 alpha",
+        "tier": "secondary_eeg",
+        "role": "EEG 负荷次指标",
+        "report_rule": "方向解释与多数负荷指标相反；alpha 降低常被解释为负荷升高的辅助线索。",
+    },
+    "route_confirmation_disfluency_index": {
+        "label": "路径确认链不流畅指数",
+        "tier": "mechanism",
+        "role": "机制与操纵检查",
+        "report_rule": "用于解释中等支持是否形成可依赖但未闭合的信息链，不应替代 H1/H3 主指标。",
+    },
+    "prompt_to_first_confirmation_s": {
+        "label": "提示到首次确认线索",
+        "tier": "mechanism",
+        "role": "路径确认链机制指标",
+        "report_rule": "用于检查官方提醒与现场确认线索衔接；需要 audio/prompt marker 与 sign marker 同时存在。",
+    },
+    "sign_readable_ratio": {
+        "label": "可读标识比例",
+        "tier": "manipulation_check",
+        "role": "操纵检查",
+        "report_rule": "用于检查支持条件是否真的改变线索可用性；不能直接当作认知负荷结果。",
+    },
+    "decision_point_coverage_proxy": {
+        "label": "决策点覆盖代理",
+        "tier": "manipulation_check",
+        "role": "操纵检查",
+        "report_rule": "最好由场景配置表确认；marker 只能给出运行时代理。",
+    },
+    "decision_choice_accuracy_ratio": {
+        "label": "路径判断准确率线索",
+        "tier": "auxiliary_outcome",
+        "role": "辅助因变量",
+        "report_rule": "用于解释 accuracy-effort trade-off；缺少 correctness 字段时不能报告正确率结论。",
+    },
+    "duration_s": {
+        "label": "完成时间",
+        "tier": "exploratory_behavior",
+        "role": "探索性行为指标",
+        "report_rule": "容易受地图、路径长度和移动速度影响，不能单独作为行动迟滞主结论。",
+    },
+}
+METRIC_TIERS = {
+    "primary_behavior": "主指标：近端路径确认迟滞",
+    "primary_eeg": "主指标：EEG 信息加工负荷",
+    "primary_eeg_window": "主指标：EEG 事件窗",
+    "secondary_behavior": "次指标：行为机制",
+    "secondary_eeg": "次指标：EEG 频带",
+    "secondary_eeg_window": "次指标：EEG 事件窗",
+    "mechanism": "机制/操纵解释",
+    "manipulation_check": "操纵检查",
+    "auxiliary_outcome": "辅助结果",
+    "exploratory_behavior": "探索性行为指标",
+    "exploratory_eeg": "探索性 EEG 指标",
+}
 
 PROJECT_MODEL_VARIABLES = [
     {
@@ -386,6 +503,8 @@ def render_html_report(report: dict[str, Any], job: dict[str, Any], generated_at
     narrative_sections = report.get("narrativeSections") if isinstance(report.get("narrativeSections"), list) else []
     model_overview = report.get("modelOverview") if isinstance(report.get("modelOverview"), dict) else None
     audit_trail = report.get("auditTrail") if isinstance(report.get("auditTrail"), dict) else None
+    key_findings = report.get("keyFindings") if isinstance(report.get("keyFindings"), list) else []
+    metric_plan = report.get("metricPlan") if isinstance(report.get("metricPlan"), list) else []
 
     parts = [
         "<!doctype html><html lang='zh-CN'><head><meta charset='utf-8'>",
@@ -403,8 +522,14 @@ def render_html_report(report: dict[str, Any], job: dict[str, Any], generated_at
     if summary:
         parts.extend(["<section class='card'><h2>报告摘要</h2>", f"<p>{h(summary)}</p>", "</section>"])
 
+    if key_findings:
+        parts.append(render_key_findings(key_findings))
+
     if model_overview:
         parts.append(render_model_overview(model_overview))
+
+    if metric_plan:
+        parts.append(render_metric_plan(metric_plan))
 
     if narrative_sections:
         parts.append(render_narrative_sections(narrative_sections))
@@ -467,6 +592,47 @@ def render_html_report(report: dict[str, Any], job: dict[str, Any], generated_at
         ]
     )
     return "".join(parts)
+
+
+def render_key_findings(findings: list[Any]) -> str:
+    parts = ["<section class='card key-findings'><h2>主结果与可写结论</h2><div class='finding-list'>"]
+    for finding in findings:
+        if not isinstance(finding, dict):
+            continue
+        tone = str(finding.get("tone") or "neutral")
+        parts.append(
+            f"<article class='finding-item {h(tone)}'>"
+            f"<span>{h(finding.get('label', '结果'))}</span>"
+            f"<strong>{h(finding.get('value', '-'))}</strong>"
+            f"<p>{h(finding.get('text', ''))}</p>"
+            "</article>"
+        )
+    parts.append("</div></section>")
+    return "".join(parts)
+
+
+def render_metric_plan(plan: list[Any]) -> str:
+    rows = []
+    for item in plan:
+        if not isinstance(item, dict):
+            continue
+        rows.append(
+            [
+                item.get("tierLabel", ""),
+                item.get("metricLabel", item.get("metric", "")),
+                item.get("role", ""),
+                item.get("reportRule", ""),
+            ]
+        )
+    if not rows:
+        return ""
+    return render_table(
+        {
+            "title": "预设指标层级与报告规则",
+            "columns": ["层级", "指标", "用途", "报告规则"],
+            "rows": rows,
+        }
+    )
 
 
 def render_model_overview(model: dict[str, Any]) -> str:
@@ -1115,11 +1281,15 @@ def extract_subject_contrast_rows(rows: list[dict[str, Any]]) -> list[dict[str, 
             metric = str(contrast.get("metric") or "")
             if estimate is None or not metric:
                 continue
+            meta = metric_meta(metric, str(contrast.get("metricLabel") or metric))
             extracted.append(
                 {
                     "subject": subject_id,
                     "metric": metric,
-                    "metricLabel": str(contrast.get("metricLabel") or metric),
+                    "metricLabel": meta["metricLabel"],
+                    "tier": str(contrast.get("tier") or meta["tier"]),
+                    "tierLabel": str(contrast.get("tierLabel") or meta["tierLabel"]),
+                    "role": str(contrast.get("role") or meta["role"]),
                     "estimate": estimate,
                     "direction": str(contrast.get("direction") or ""),
                     "jobId": row.get("id", ""),
@@ -1146,22 +1316,30 @@ def analyze_cohort_density(
     metric_p_charts = []
     forest_data = []
     primary_behavior_result = None
+    fallback_behavior_result = None
     primary_eeg_result = None
+    fallback_decision_eeg_result = None
     fallback_eeg_result = None
     for metric, rows in sorted(by_metric.items(), key=lambda item: metric_priority(item[0])):
         values = [float(row["estimate"]) for row in rows]
         stats = one_sample_contrast_stats(values)
-        metric_label = str(rows[0].get("metricLabel") or metric)
+        meta = metric_meta(metric, str(rows[0].get("metricLabel") or metric))
+        metric_label = meta["metricLabel"]
         conclusion = contrast_conclusion(stats, metric)
-        result_payload = {**stats, "metricLabel": metric_label, "conclusion": conclusion}
-        if metric == "route_decision_hesitation_index":
+        result_payload = {**stats, "metric": metric, "metricLabel": metric_label, "tierLabel": meta["tierLabel"], "conclusion": conclusion}
+        if metric == "route_confirmation_hesitation_index":
             primary_behavior_result = result_payload
+        elif metric == "route_decision_hesitation_index":
+            fallback_behavior_result = result_payload
         elif metric == "eeg_information_processing_load_index":
             primary_eeg_result = result_payload
+        elif metric == "decision_point_enter_eeg_load_proxy":
+            fallback_decision_eeg_result = result_payload
         elif metric == "eeg_load_proxy":
             fallback_eeg_result = result_payload
         summary_rows.append(
             [
+                meta["tierLabel"],
                 metric_label,
                 str(stats["n"]),
                 fmt(stats["mean"]),
@@ -1191,6 +1369,7 @@ def analyze_cohort_density(
         [
             str(row["subject"]),
             str(row.get("group") or "-"),
+            str(row.get("tierLabel") or metric_meta(str(row["metric"])).get("tierLabel")),
             str(row["metricLabel"]),
             fmt(row["estimate"]),
             str(row["direction"]),
@@ -1203,8 +1382,9 @@ def analyze_cohort_density(
     matched_metadata_subjects = sorted({str(row["subject"]) for row in subject_rows if row.get("metadataMatched")})
     group_levels = sorted({str(row.get("group")) for row in subject_rows if row.get("group")})
     between_rows, between_chart = build_between_subject_group_results(subject_rows, group_variable)
-    primary_eeg_result = primary_eeg_result or fallback_eeg_result
-    behavior_text = format_primary_result("H1 行动迟滞", primary_behavior_result)
+    primary_behavior_result = primary_behavior_result or fallback_behavior_result
+    primary_eeg_result = primary_eeg_result or fallback_decision_eeg_result or fallback_eeg_result
+    behavior_text = format_primary_result("H1 近端路径确认迟滞", primary_behavior_result)
     eeg_text = format_primary_result("H3 EEG 信息加工负荷", primary_eeg_result)
 
     notes = [
@@ -1215,7 +1395,7 @@ def analyze_cohort_density(
     ]
     if metadata_by_subject and not matched_metadata_subjects:
         notes.append("已提供被试信息 CSV，但没有被试编号与已完成批量报告匹配；请检查 participant_id 是否使用 P01、P02 这类分析层编号。")
-    if group_levels and any(sum(1 for row in subject_rows if row.get("metric") == "route_decision_hesitation_index" and row.get("group") == group) < 2 for group in group_levels):
+    if group_levels and any(sum(1 for row in subject_rows if row.get("metric") == "route_confirmation_hesitation_index" and row.get("group") == group) < 2 for group in group_levels):
         notes.append("所选协变量的部分水平在主指标上少于 2 名被试；报告会保留描述性均值，暂不写成显著性结论。")
 
     return {
@@ -1223,7 +1403,9 @@ def analyze_cohort_density(
         "kind": "Cohort Route-confirmation Support Summary",
         "subjectId": "cohort-density-summary",
         "summary": f"从 {len(unique_subjects)} 名被试的已完成批量报告中汇总低/中/高路径确认支持 planned contrast。{behavior_text}；{eeg_text}。{format_between_subject_summary(group_variable, group_levels, between_rows)}",
+        "keyFindings": build_cohort_key_findings(len(unique_subjects), primary_behavior_result, primary_eeg_result, group_variable, group_levels),
         "modelOverview": build_model_overview("cohort"),
+        "metricPlan": build_metric_plan(),
         "narrativeSections": build_cohort_narrative(unique_subjects, primary_behavior_result, primary_eeg_result, summary_rows, group_variable, group_levels, between_rows),
         "design": {
             "expected_subjects": 90,
@@ -1239,7 +1421,7 @@ def analyze_cohort_density(
             {"label": "contrast 行", "value": str(len(subject_rows))},
             {"label": "被试信息匹配", "value": f"{len(matched_metadata_subjects)}/{len(metadata_subjects)}" if metadata_subjects else "未提供"},
             {"label": "协变量", "value": group_variable if group_levels else "未启用", "text": " / ".join(group_levels) if group_levels else ""},
-            {"label": "H1 行动迟滞", "value": primary_behavior_result["conclusion"] if primary_behavior_result else "未形成", "text": behavior_text},
+            {"label": "H1 近端确认迟滞", "value": primary_behavior_result["conclusion"] if primary_behavior_result else "未形成", "text": behavior_text},
             {"label": "H3 EEG 负荷", "value": primary_eeg_result["conclusion"] if primary_eeg_result else "未形成", "text": eeg_text},
         ],
         "charts": [
@@ -1281,7 +1463,7 @@ def analyze_cohort_density(
         "tables": [
             {
                 "title": "组内 planned contrast 显著性汇总",
-                "columns": ["metric", "n", "mean", "95% CI", "t", "p", "Cohen dz", "结论"],
+                "columns": ["指标层级", "metric", "n", "mean", "95% CI", "t", "p", "Cohen dz", "结论"],
                 "rows": summary_rows,
             },
             {
@@ -1291,9 +1473,10 @@ def analyze_cohort_density(
             },
             {
                 "title": "被试级 contrast 明细",
-                "columns": ["subject", group_variable, "metric", "estimate", "direction", "completed_at"],
+                "columns": ["subject", group_variable, "指标层级", "metric", "estimate", "direction", "completed_at"],
                 "rows": subject_table_rows,
             },
+            build_cohort_sensitivity_table(unique_subjects, subject_rows, metadata_subjects, matched_metadata_subjects),
             {
                 "title": "正式统计模型与论文报告口径",
                 "columns": ["目标", "推荐模型/检验", "论文写法边界"],
@@ -1315,6 +1498,93 @@ def analyze_cohort_density(
             },
         ],
         "notes": notes,
+    }
+
+
+def build_cohort_key_findings(
+    subject_count: int,
+    primary_behavior_result: dict[str, Any] | None,
+    primary_eeg_result: dict[str, Any] | None,
+    group_variable: str,
+    group_levels: list[str],
+) -> list[dict[str, str]]:
+    return [
+        {
+            "label": "纳入被试",
+            "value": f"{subject_count}/90",
+            "tone": "neutral" if subject_count >= 10 else "warning",
+            "text": "全样本显著性结论建议等待接近正式样本量；小样本报告用于检查流程、方向和数据质量。",
+        },
+        {
+            "label": "H1 近端确认迟滞",
+            "value": primary_behavior_result["conclusion"] if primary_behavior_result else "未形成",
+            "tone": cohort_result_tone(primary_behavior_result),
+            "text": format_primary_result("H1 近端路径确认迟滞", primary_behavior_result),
+        },
+        {
+            "label": "H3 EEG 负荷",
+            "value": primary_eeg_result["conclusion"] if primary_eeg_result else "未形成",
+            "tone": cohort_result_tone(primary_eeg_result),
+            "text": format_primary_result("H3 EEG 信息加工负荷", primary_eeg_result),
+        },
+        {
+            "label": "协变量分析",
+            "value": group_variable if group_levels else "未启用",
+            "tone": "neutral" if group_levels else "warning",
+            "text": "协变量只用于个体差异或调节解释；不提供被试信息表时，报告只做全样本 planned contrast。",
+        },
+    ]
+
+
+def cohort_result_tone(result: dict[str, Any] | None) -> str:
+    if not result:
+        return "warning"
+    p_value = result.get("p")
+    mean = result.get("mean")
+    if p_value is not None and to_float(p_value) is not None and float(p_value) < 0.05 and to_float(mean) is not None and float(mean) > 0:
+        return "neutral"
+    return "warning"
+
+
+def build_cohort_sensitivity_table(
+    unique_subjects: list[str],
+    subject_rows: list[dict[str, Any]],
+    metadata_subjects: list[str],
+    matched_metadata_subjects: list[str],
+) -> dict[str, Any]:
+    primary_behavior_n = sum(1 for row in subject_rows if row.get("metric") == "route_confirmation_hesitation_index")
+    primary_eeg_n = sum(1 for row in subject_rows if row.get("metric") == "eeg_information_processing_load_index")
+    decision_eeg_n = sum(1 for row in subject_rows if row.get("metric") == "decision_point_enter_eeg_load_proxy")
+    return {
+        "title": "全样本敏感性与排除记录",
+        "columns": ["检查项", "当前状态", "写作/统计处理"],
+        "rows": [
+            [
+                "正式样本量",
+                f"{len(unique_subjects)}/90 名被试",
+                "样本量不足时只写 pilot 或流程检查；正式显著性结论等待完整 subject-level contrast。",
+            ],
+            [
+                "H1 主指标可用性",
+                f"{primary_behavior_n} 名被试有近端路径确认迟滞 contrast",
+                "报告 H1 时以该 n 为准；旧的路径决策迟滞指数作为广义行动迟滞敏感性指标保留。",
+            ],
+            [
+                "H3 主指标可用性",
+                f"{primary_eeg_n} 名被试有 EEG 信息加工负荷 contrast；decision_point 事件窗 {decision_eeg_n} 名",
+                "事件窗不足时优先说明 marker 覆盖和 EEG 对齐限制，不把 trial-level 频带强行写成事件窗结论。",
+            ],
+            [
+                "被试信息匹配",
+                f"{len(matched_metadata_subjects)}/{len(metadata_subjects)}" if metadata_subjects else "未提供",
+                "协变量编号应使用 P01-P90；不匹配时不做个体差异解释。",
+            ],
+            [
+                "多指标解释",
+                "主、次、机制、探索指标已分层",
+                "论文结果先写 H1/H3 主指标；其余指标作为一致性证据、机制解释或附录，避免事后选择显著指标。",
+            ],
+        ],
     }
 
 
@@ -1341,6 +1611,7 @@ def attach_metadata_to_subject_rows(
 
 def build_between_subject_group_results(subject_rows: list[dict[str, Any]], group_variable: str) -> tuple[list[list[str]], dict[str, Any]]:
     metrics_for_chart = {
+        "route_confirmation_hesitation_index",
         "route_decision_hesitation_index",
         "route_confirmation_disfluency_index",
         "eeg_information_processing_load_index",
@@ -1499,10 +1770,10 @@ def build_cohort_narrative(
     n_subjects = len(unique_subjects)
     group_levels = group_levels or []
     between_rows = between_rows or []
-    behavior_paragraph = format_primary_result("H1 行动迟滞", primary_behavior_result)
+    behavior_paragraph = format_primary_result("H1 近端路径确认迟滞", primary_behavior_result)
     eeg_paragraph = format_primary_result("H3 EEG 信息加工负荷", primary_eeg_result)
-    supported_metrics = [row for row in summary_rows if len(row) >= 8 and ("符合" in row[7] or "高于" in row[7])]
-    unsupported_metrics = [row for row in summary_rows if len(row) >= 8 and ("未呈现" in row[7] or "未高于" in row[7])]
+    supported_metrics = [row for row in summary_rows if row and ("符合" in row[-1] or "高于" in row[-1])]
+    unsupported_metrics = [row for row in summary_rows if row and ("未呈现" in row[-1] or "未高于" in row[-1])]
     between_summary = format_between_subject_summary(group_variable, group_levels, between_rows)
 
     return [
@@ -1571,10 +1842,13 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
             "primary_hypothesis": "medium route-confirmation support produces the highest route-decision hesitation and information-processing load",
             "primary_contrast_weights": PRIMARY_CONTRAST_WEIGHTS,
         },
+        "keyFindings": build_subject_key_findings(subject_id, run_rows, contrast_json, complete_density_set),
         "supportContrasts": contrast_json,
         "densityContrasts": contrast_json,
+        "runRows": run_rows,
         "summary": "本报告把同一被试的低、中、高路径确认支持 XDF run 作为一个组内单元。报告先完成 EEG 与 Unity marker 质控，再汇总行动迟滞、路径判断准确率线索、确认链不流畅指标和 EEG 事件窗负荷，并计算主 planned contrast：中等支持 - 低/高支持平均。",
         "modelOverview": build_model_overview("subject_batch"),
+        "metricPlan": build_metric_plan(),
         "narrativeSections": build_subject_batch_narrative(subject_id, run_rows, contrast_json, complete_density_set),
         "metrics": [
             {"label": "被试编号", "value": str(subject_id)},
@@ -1623,6 +1897,7 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
                     "decision_load",
                     "behavior_load_proxy",
                     "confirmation_disfluency",
+                    "H1_proximal_confirmation_hesitation",
                     "H1_hesitation_index",
                     "M1_disfluency_index",
                     "H3_eeg_load_index",
@@ -1669,6 +1944,7 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
                         row["decision_load_proxy"],
                         row["behavior_load_proxy"],
                         row["route_confirmation_disfluency_proxy"],
+                        row["route_confirmation_hesitation_index"],
                         row["route_decision_hesitation_index"],
                         row["route_confirmation_disfluency_index"],
                         row["eeg_information_processing_load_index"],
@@ -1688,9 +1964,10 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
             },
             {
                 "title": "主 planned contrast：中等支持是否最高",
-                "columns": ["contrast", "metric", "low", "medium", "high", "estimate", "direction"],
-                "rows": contrast_rows or [["medium - mean(low, high)", "-", "-", "-", "-", "-", "缺少完整路径确认支持条件或指标"]],
+                "columns": ["指标层级", "contrast", "metric", "low", "medium", "high", "estimate", "direction"],
+                "rows": contrast_rows or [["-", "medium - mean(low, high)", "-", "-", "-", "-", "-", "缺少完整路径确认支持条件或指标"]],
             },
+            build_subject_sensitivity_table(run_rows, contrast_json),
             {
                 "title": "90 被试全样本统计模型建议",
                 "columns": ["分析层级", "模型/检验", "解释口径"],
@@ -1705,6 +1982,88 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
             build_marker_dictionary_table(),
         ],
         "notes": notes[:12],
+    }
+
+
+def build_subject_key_findings(
+    subject_id: str,
+    run_rows: list[dict[str, str]],
+    contrast_json: list[dict[str, Any]],
+    complete_density_set: bool,
+) -> list[dict[str, str]]:
+    behavior = find_contrast(contrast_json, "route_confirmation_hesitation_index") or find_contrast(contrast_json, "route_decision_hesitation_index")
+    eeg = find_contrast(contrast_json, "eeg_information_processing_load_index") or find_contrast(contrast_json, "decision_point_enter_eeg_load_proxy")
+    accuracy = find_contrast(contrast_json, "decision_choice_accuracy_ratio")
+    completed_runs = sum(1 for row in run_rows if row.get("has_completion") == "yes")
+    findings = [
+        {
+            "label": "三条件完整性",
+            "value": "完整" if complete_density_set and len(run_rows) == 3 else f"{len(run_rows)}/3",
+            "tone": "neutral" if complete_density_set and len(run_rows) == 3 else "warning",
+            "text": f"{subject_id} 当前包含 {len(run_rows)} 个 run，完成 marker 可识别 {completed_runs}/{len(run_rows)}。单被试报告只给方向性结果，不报告显著性。",
+        },
+        {
+            "label": "H1 近端确认迟滞方向",
+            "value": contrast_brief_value(behavior),
+            "tone": contrast_tone(behavior),
+            "text": contrast_plain_text(behavior, "近端路径确认迟滞指数"),
+        },
+        {
+            "label": "H3 EEG 负荷方向",
+            "value": contrast_brief_value(eeg),
+            "tone": contrast_tone(eeg),
+            "text": contrast_plain_text(eeg, "EEG 信息加工负荷指标"),
+        },
+    ]
+    if accuracy:
+        findings.append(
+            {
+                "label": "准确率辅助线索",
+                "value": contrast_brief_value(accuracy),
+                "tone": "neutral",
+                "text": "准确率用于解释 accuracy-effort trade-off；缺少 correctness marker 时不要写正确率结论。",
+            }
+        )
+    return findings
+
+
+def build_subject_sensitivity_table(run_rows: list[dict[str, str]], contrast_json: list[dict[str, Any]]) -> dict[str, Any]:
+    complete = set(DENSITY_LEVELS).issubset({row.get("density", "") for row in run_rows})
+    event_windows = [
+        to_float(row.get("decision_point_enter_eeg_load_proxy")) is not None or to_float(row.get("sign_readable_eeg_load_proxy")) is not None
+        for row in run_rows
+    ]
+    accuracy_available = any(to_float(row.get("decision_choice_accuracy_ratio")) is not None for row in run_rows)
+    return {
+        "title": "敏感性与稳健性检查清单",
+        "columns": ["检查项", "当前状态", "解释规则"],
+        "rows": [
+            [
+                "低/中/高条件完整性",
+                "完整" if complete else "不完整",
+                "不完整时不计算主 planned contrast；需要补齐 XDF 或 subject-run 条件表。",
+            ],
+            [
+                "主指标优先级",
+                "已固定" if contrast_json else "未形成 contrast",
+                "先解释 H1 近端路径确认迟滞和 H3 EEG 负荷；完成时间、旧版广义行动迟滞、准确率和确认链指标作为辅助、敏感性或机制解释。",
+            ],
+            [
+                "事件窗 EEG 可用性",
+                f"{sum(event_windows)}/{len(run_rows)} 个 run 有事件窗负荷指标",
+                "decision_point_enter 事件窗不足时，EEG 结论应降级为探索性或仅报告 trial-level 频带。",
+            ],
+            [
+                "路径判断准确率",
+                "有 correctness 线索" if accuracy_available else "缺少 correctness 线索",
+                "没有 choice_correct/route_correct/success 字段时，只能讨论迟滞和负荷，不能写速度-准确率权衡结论。",
+            ],
+            [
+                "marker 过滤原则",
+                "使用去重后的 trial window 指标",
+                "只删除同一时间/同一帧的疑似重复 marker；左右查看、重复阅读和反复扫描保留为行为证据。",
+            ],
+        ],
     }
 
 
@@ -1789,6 +2148,7 @@ def batch_condition_status(row: dict[str, str] | None, keys: tuple[str, ...]) ->
 
 def build_subject_core_profile_chart(run_rows: list[dict[str, str]]) -> dict[str, Any]:
     series_specs = [
+        ("H1 近端确认迟滞", "route_confirmation_hesitation_index"),
         ("H1 行动迟滞", "route_decision_hesitation_index"),
         ("M1 确认链不流畅", "route_confirmation_disfluency_index"),
         ("H3 EEG 加工负荷", "eeg_information_processing_load_index"),
@@ -1856,7 +2216,7 @@ def build_subject_metric_heatmap(run_rows: list[dict[str, str]]) -> dict[str, An
 def build_accuracy_effort_scatter(run_rows: list[dict[str, str]]) -> dict[str, Any]:
     data = []
     for row in run_rows:
-        x_value = to_float(row.get("route_decision_hesitation_index"))
+        x_value = to_float(row.get("route_confirmation_hesitation_index"))
         y_value = to_float(row.get("decision_choice_accuracy_ratio"))
         if y_value is None:
             y_value = to_float(row.get("sign_readable_ratio"))
@@ -1874,7 +2234,7 @@ def build_accuracy_effort_scatter(run_rows: list[dict[str, str]]) -> dict[str, A
     return {
         "type": "scatter",
         "title": "迟滞与准确率/确认线索关系",
-        "xLabel": "H1 行动迟滞指数",
+        "xLabel": "H1 近端路径确认迟滞指数",
         "yLabel": "路径判断准确率；缺失时用可读标识覆盖率",
         "data": data,
         "caption": "用于检查 accuracy-effort trade-off：较高迟滞是否伴随更高正确率或更充分的路径确认。若准确率字段缺失，图中会退回到可读标识覆盖率。",
@@ -1895,7 +2255,8 @@ def build_subject_batch_charts(run_rows: list[dict[str, str]], contrast_json: li
         build_subject_core_profile_chart(run_rows),
         build_subject_metric_heatmap(run_rows),
         build_accuracy_effort_scatter(run_rows),
-        build_run_metric_chart(run_rows, "H1 行动迟滞指数", "route_decision_hesitation_index", "within-subject z index", "该指数整合完成时长、启动延迟、决策点停留、左右查看、双侧扫描、停留、掉头和回退。"),
+        build_run_metric_chart(run_rows, "H1 近端路径确认迟滞指数", "route_confirmation_hesitation_index", "within-subject z index", "该指数聚焦官方提示到现场确认线索的延迟，以及决策点查看和双侧扫描；不纳入整段完成时长或导航低效事件。"),
+        build_run_metric_chart(run_rows, "H1 广义行动迟滞敏感性指数", "route_decision_hesitation_index", "within-subject z index", "该指数整合完成时长、启动延迟、决策点停留、左右查看、双侧扫描、停留、掉头和回退，用于敏感性检查。"),
         build_run_metric_chart(run_rows, "M1 确认链不流畅指数", "route_confirmation_disfluency_index", "within-subject z index", "该指数用于检查官方目标提醒之后，现场确认线索是否连续、及时并覆盖决策点。问卷中的感知可靠性仍需单独收集。"),
         build_run_metric_chart(run_rows, "H3 EEG 信息加工负荷指数", "eeg_information_processing_load_index", "within-subject z index", "该指数整合 trial-level 与事件窗 EEG 负荷指标，用于检验目标—线索—方向匹配负荷。"),
         build_run_metric_chart(run_rows, "路径确认支持条件完成时长", "duration_s", "seconds", "完成时长用于检查行动迟滞的总体趋势，但正式结论应优先结合决策点停留、扫描和 EEG 事件窗。"),
@@ -1940,6 +2301,7 @@ def build_run_metric_chart(run_rows: list[dict[str, str]], title: str, metric: s
 
 def build_contrast_estimate_chart(contrast_json: list[dict[str, Any]]) -> dict[str, Any]:
     priority_metrics = {
+        "route_confirmation_hesitation_index",
         "route_decision_hesitation_index",
         "route_confirmation_disfluency_index",
         "eeg_information_processing_load_index",
@@ -1969,6 +2331,7 @@ def build_contrast_estimate_chart(contrast_json: list[dict[str, Any]]) -> dict[s
 
 
 def build_subject_batch_narrative(subject_id: str, run_rows: list[dict[str, str]], contrast_json: list[dict[str, Any]], complete_density_set: bool) -> list[dict[str, Any]]:
+    confirmation_hesitation_contrast = find_contrast(contrast_json, "route_confirmation_hesitation_index")
     hesitation_contrast = find_contrast(contrast_json, "route_decision_hesitation_index")
     disfluency_contrast = find_contrast(contrast_json, "route_confirmation_disfluency_index")
     eeg_index_contrast = find_contrast(contrast_json, "eeg_information_processing_load_index")
@@ -1986,7 +2349,7 @@ def build_subject_batch_narrative(subject_id: str, run_rows: list[dict[str, str]
             "title": "被试内结果解读",
             "paragraphs": [
                 f"本报告将 {subject_id} 的 {len(run_rows)} 个 XDF run 作为同一被试的组内数据处理，当前识别到的路径确认支持条件为：{coverage_text}。{'三种条件已完整覆盖，可以计算主 planned contrast。' if complete_density_set else f'当前只覆盖 {condition_count}/3 个条件，因此部分 contrast 只能作为检查结果。'}",
-                f"H1 行动迟滞指数的 contrast 为 {contrast_sentence(hesitation_contrast)}。同时参考完成时长 {contrast_sentence(duration_contrast)}、导航行为负荷 {contrast_sentence(behavior_contrast)} 和决策扫描/回退代理指标 {contrast_sentence(decision_contrast)}。",
+                f"H1 近端路径确认迟滞指数的 contrast 为 {contrast_sentence(confirmation_hesitation_contrast)}。旧版广义行动迟滞指数的 contrast 为 {contrast_sentence(hesitation_contrast)}，用于敏感性解释；同时参考完成时长 {contrast_sentence(duration_contrast)}、导航行为负荷 {contrast_sentence(behavior_contrast)} 和决策扫描/回退代理指标 {contrast_sentence(decision_contrast)}。",
                 f"M1 相关的确认链不流畅指数为 {contrast_sentence(disfluency_contrast)}。该指数来自提示到首次确认线索、可读标识间隔、决策点覆盖和低效行为，可作为感知信息可靠性问卷的操纵检查线索。",
                 f"H3 EEG 信息加工负荷指数的 contrast 为 {contrast_sentence(eeg_index_contrast)}；旧版 EEG load proxy 的 contrast 为 {contrast_sentence(eeg_contrast)}。若行为负荷和 EEG 负荷方向一致，论文可讨论神经和行为指标的一致性；若方向分离，应讨论策略差异或 EEG 噪声。",
             ],
@@ -2019,6 +2382,28 @@ def contrast_sentence(item: dict[str, Any] | None) -> str:
     if means:
         mean_text = f"（低={fmt(means.get('low'))}，中={fmt(means.get('medium'))}，高={fmt(means.get('high'))}）"
     return f"{fmt(estimate)}，{direction}{mean_text}"
+
+
+def contrast_brief_value(item: dict[str, Any] | None) -> str:
+    if not item:
+        return "未形成"
+    return fmt(item.get("estimate"))
+
+
+def contrast_tone(item: dict[str, Any] | None) -> str:
+    if not item:
+        return "warning"
+    direction = str(item.get("direction") or "")
+    return "neutral" if ("符合" in direction or "高于" in direction) else "warning"
+
+
+def contrast_plain_text(item: dict[str, Any] | None, fallback_label: str) -> str:
+    if not item:
+        return f"{fallback_label}还不能计算。通常原因是低/中/高条件不完整，或对应 run 缺少必要 marker / EEG 事件窗。"
+    return (
+        f"{item.get('metricLabel') or fallback_label} 的 medium - mean(low, high) = {fmt(item.get('estimate'))}，"
+        f"{item.get('direction', '')}。单被试结果只用于检查方向，不能写成显著性结论。"
+    )
 
 
 def extract_run_summary(document: dict[str, Any], report: dict[str, Any]) -> dict[str, str]:
@@ -2220,6 +2605,15 @@ def attach_subject_level_indices(rows: list[dict[str, str]]) -> list[dict[str, s
             ],
         ),
         (
+            "route_confirmation_hesitation_index",
+            [
+                ("prompt_to_first_confirmation_s", 1.0),
+                ("time_to_first_sign_readable_s", 1.0),
+                ("decision_total_look_count", 1.0),
+                ("decision_scan_both_count", 1.0),
+            ],
+        ),
+        (
             "route_confirmation_disfluency_index",
             [
                 ("prompt_to_first_confirmation_s", 1.0),
@@ -2242,6 +2636,7 @@ def attach_subject_level_indices(rows: list[dict[str, str]]) -> list[dict[str, s
     ]
     for row in rows:
         row.setdefault("route_decision_hesitation_index", "-")
+        row.setdefault("route_confirmation_hesitation_index", "-")
         row.setdefault("route_confirmation_disfluency_index", "-")
         row.setdefault("eeg_information_processing_load_index", "-")
         row.setdefault("accuracy_effort_profile", "-")
@@ -2264,7 +2659,7 @@ def attach_subject_level_indices(rows: list[dict[str, str]]) -> list[dict[str, s
 
     for row in rows:
         accuracy = to_float(row.get("decision_choice_accuracy_ratio"))
-        hesitation = to_float(row.get("route_decision_hesitation_index"))
+        hesitation = to_float(row.get("route_confirmation_hesitation_index"))
         if accuracy is None or hesitation is None:
             continue
         if hesitation > 0 and accuracy < 0.5:
@@ -2306,6 +2701,7 @@ def format_density_coverage(rows: list[dict[str, str]]) -> str:
 
 def compute_density_planned_contrasts(rows: list[dict[str, str]]) -> tuple[list[list[str]], list[dict[str, Any]]]:
     metrics = [
+        ("route_confirmation_hesitation_index", "近端路径确认迟滞指数"),
         ("route_decision_hesitation_index", "route-decision hesitation index"),
         ("route_confirmation_disfluency_index", "confirmation-chain disfluency index"),
         ("eeg_information_processing_load_index", "EEG information-processing load index"),
@@ -2336,6 +2732,7 @@ def compute_density_planned_contrasts(rows: list[dict[str, str]]) -> tuple[list[
     json_rows: list[dict[str, Any]] = []
 
     for metric_key, metric_label in metrics:
+        meta = metric_meta(metric_key, metric_label)
         values_by_density: dict[str, list[float]] = {level: [] for level in DENSITY_LEVELS}
         for row in rows:
             density = row.get("density", "")
@@ -2351,8 +2748,9 @@ def compute_density_planned_contrasts(rows: list[dict[str, str]]) -> tuple[list[
         direction = contrast_direction_label(metric_key, estimate)
         table_rows.append(
             [
+                meta["tierLabel"],
                 "medium - mean(low, high)",
-                metric_label,
+                meta["metricLabel"],
                 fmt(means["low"]),
                 fmt(means["medium"]),
                 fmt(means["high"]),
@@ -2364,7 +2762,11 @@ def compute_density_planned_contrasts(rows: list[dict[str, str]]) -> tuple[list[
             {
                 "contrast": "medium - mean(low, high)",
                 "metric": metric_key,
-                "metricLabel": metric_label,
+                "metricLabel": meta["metricLabel"],
+                "tier": meta["tier"],
+                "tierLabel": meta["tierLabel"],
+                "role": meta["role"],
+                "reportRule": meta["reportRule"],
                 "means": means,
                 "estimate": estimate,
                 "direction": direction,
@@ -2377,17 +2779,18 @@ def compute_density_planned_contrasts(rows: list[dict[str, str]]) -> tuple[list[
 
 def metric_priority(metric: str) -> tuple[int, str]:
     order = {
-        "route_decision_hesitation_index": 0,
-        "eeg_information_processing_load_index": 1,
-        "route_confirmation_disfluency_index": 2,
-        "eeg_load_proxy": 3,
-        "decision_point_enter_eeg_load_proxy": 4,
-        "sign_readable_eeg_load_proxy": 5,
-        "theta_alpha_ratio": 6,
-        "frontal_theta_4_7": 7,
-        "posterior_alpha_8_12": 8,
-        "decision_load_proxy": 9,
-        "behavior_load_proxy": 10,
+        "route_confirmation_hesitation_index": 0,
+        "route_decision_hesitation_index": 1,
+        "eeg_information_processing_load_index": 2,
+        "route_confirmation_disfluency_index": 3,
+        "eeg_load_proxy": 4,
+        "decision_point_enter_eeg_load_proxy": 5,
+        "sign_readable_eeg_load_proxy": 6,
+        "theta_alpha_ratio": 7,
+        "frontal_theta_4_7": 8,
+        "posterior_alpha_8_12": 9,
+        "decision_load_proxy": 10,
+        "behavior_load_proxy": 11,
         "navigation_inefficiency_proxy": 11,
         "decision_total_look_count": 12,
         "decision_look_balance_abs": 13,
@@ -2404,6 +2807,40 @@ def metric_priority(metric: str) -> tuple[int, str]:
         "duration_s": 24,
     }
     return (order.get(metric, 99), metric)
+
+
+def metric_meta(metric: str, fallback_label: str = "") -> dict[str, str]:
+    raw = METRIC_REGISTRY.get(metric, {})
+    tier = str(raw.get("tier") or "exploratory")
+    return {
+        "metric": metric,
+        "metricLabel": str(raw.get("label") or fallback_label or metric),
+        "tier": tier,
+        "tierLabel": METRIC_TIERS.get(tier, "探索性指标"),
+        "role": str(raw.get("role") or "探索性或补充指标"),
+        "reportRule": str(raw.get("report_rule") or "仅在与主指标和研究设计一致时作为补充说明。"),
+    }
+
+
+def build_metric_plan(metrics: list[str] | None = None) -> list[dict[str, str]]:
+    metric_keys = metrics or [
+        "route_confirmation_hesitation_index",
+        "route_decision_hesitation_index",
+        "eeg_information_processing_load_index",
+        "decision_point_enter_eeg_load_proxy",
+        "first_action_latency_s",
+        "decision_dwell_total_s",
+        "decision_scan_both_count",
+        "sign_readable_eeg_load_proxy",
+        "theta_alpha_ratio",
+        "route_confirmation_disfluency_index",
+        "prompt_to_first_confirmation_s",
+        "sign_readable_ratio",
+        "decision_point_coverage_proxy",
+        "decision_choice_accuracy_ratio",
+        "duration_s",
+    ]
+    return [metric_meta(metric) for metric in metric_keys]
 
 
 def contrast_direction_label(metric: str, estimate: float) -> str:
@@ -2582,8 +3019,10 @@ def analyze_xdf(document: dict[str, Any], path: Path) -> dict[str, Any]:
     marker_rows = parse_marker_stream(marker_stream) if marker_stream else []
     sessions = summarize_sessions(marker_rows)
     raw_primary_rows = select_primary_session(marker_rows)
-    primary_rows, duplicate_primary_marker_count = deduplicate_marker_rows(raw_primary_rows)
-    trial_window = get_trial_window(primary_rows)
+    raw_trial_window = get_trial_window(raw_primary_rows)
+    trial_window_rows = filter_rows_to_trial_window(raw_primary_rows, raw_trial_window)
+    primary_rows, duplicate_primary_marker_count = deduplicate_marker_rows(trial_window_rows)
+    trial_window = get_trial_window(primary_rows) or raw_trial_window
     event_counts = Counter(row.get("event", "<no_event>") for row in marker_rows)
 
     if marker_rows:
@@ -2594,6 +3033,8 @@ def analyze_xdf(document: dict[str, Any], path: Path) -> dict[str, Any]:
         tables.append(build_marker_availability_table(primary_rows, marker_rows, len(eeg_streams), eeg_report=None, duplicate_count=duplicate_primary_marker_count))
         charts.extend(build_single_behavior_charts(primary_rows, trial_window))
         primary_events = {row.get("event", "") for row in primary_rows}
+        if raw_trial_window and len(trial_window_rows) != len(raw_primary_rows):
+            notes.append(f"主 session 中有 {len(raw_primary_rows) - len(trial_window_rows)} 条 marker 位于 trial window 外，行为指标和事件窗已限制在任务时段内。")
         if duplicate_primary_marker_count:
             notes.append(f"主 trial 中检测到 {duplicate_primary_marker_count} 条疑似重复 Unity marker，行为计数和事件窗已使用去重后的 marker。")
         if not set(START_EVENTS) & primary_events:
@@ -2608,6 +3049,20 @@ def analyze_xdf(document: dict[str, Any], path: Path) -> dict[str, Any]:
     charts.extend(eeg_report["charts"])
     tables.extend(eeg_report["tables"])
     notes.extend(eeg_report["notes"])
+    qc_summary = build_run_qc_summary(
+        marker_stream=marker_stream,
+        eeg_stream=eeg_stream,
+        eeg_stream_count=len(eeg_streams),
+        marker_rows=marker_rows,
+        raw_primary_rows=raw_primary_rows,
+        primary_rows=primary_rows,
+        trial_window=trial_window,
+        duplicate_count=duplicate_primary_marker_count,
+        eeg_report=eeg_report,
+    )
+    tables.insert(1, qc_summary["table"])
+    tables.append(build_single_run_sensitivity_table(raw_primary_rows, trial_window_rows, primary_rows, duplicate_primary_marker_count, eeg_report))
+    notes.extend(qc_summary["notes"])
 
     valid_event_epochs = eeg_report["metrics"].get("valid_event_epochs", 0)
     session_label = format_session_label(primary_rows[0]) if primary_rows else "-"
@@ -2626,7 +3081,9 @@ def analyze_xdf(document: dict[str, Any], path: Path) -> dict[str, Any]:
         "title": f"{document['filename']} XDF EEG + Unity marker 分析",
         "kind": "XDF EEG+Marker",
         "summary": summary,
+        "keyFindings": build_single_run_key_findings(document, primary_rows, trial_window, eeg_report, qc_summary),
         "modelOverview": build_model_overview("single_xdf"),
+        "metricPlan": build_metric_plan(["route_confirmation_hesitation_index", "route_decision_hesitation_index", "eeg_information_processing_load_index", "decision_point_enter_eeg_load_proxy", "first_action_latency_s", "decision_dwell_total_s", "decision_scan_both_count", "sign_readable_ratio", "decision_choice_accuracy_ratio"]),
         "narrativeSections": build_single_xdf_narrative(document, streams, marker_rows, primary_rows, trial_window, eeg_report, notes, duplicate_primary_marker_count),
         "metrics": [
             {"label": "stream 数", "value": str(len(streams))},
@@ -2673,6 +3130,148 @@ def build_single_behavior_charts(rows: list[dict[str, Any]], window: dict[str, f
         build_event_timeline_chart(rows, window),
     ]
     return [chart for chart in charts if chart and chart.get("data")]
+
+
+def build_single_run_key_findings(
+    document: dict[str, Any],
+    primary_rows: list[dict[str, Any]],
+    trial_window: dict[str, float] | None,
+    eeg_report: dict[str, Any],
+    qc_summary: dict[str, Any],
+) -> list[dict[str, str]]:
+    counts = Counter(row.get("event", "") for row in primary_rows)
+    valid_epochs = int(to_float(eeg_report.get("metrics", {}).get("valid_event_epochs")) or 0) if isinstance(eeg_report.get("metrics"), dict) else 0
+    return [
+        {
+            "label": "QC 判定",
+            "value": str(qc_summary.get("overall", "需检查")),
+            "tone": "neutral" if qc_summary.get("overall") == "可进入批量分析" else "warning",
+            "text": f"{document.get('filename', '')} 的正式分析资格取决于起止 marker、EEG 覆盖和事件窗数量；详见 QC 表。",
+        },
+        {
+            "label": "trial window",
+            "value": fmt_seconds(trial_window.get("duration_s") if trial_window else None),
+            "tone": "neutral" if trial_window else "warning",
+            "text": "行为指标和 EEG 事件窗只使用 trial window 内 marker；缺少起止 marker 时报告会标记为估计窗口。",
+        },
+        {
+            "label": "核心 marker",
+            "value": f"sign {counts.get('sign_readable', 0)} / decision {counts.get('decision_point_enter', 0)}",
+            "tone": "neutral" if counts.get("sign_readable", 0) and counts.get("decision_point_enter", 0) else "warning",
+            "text": "sign_readable 和 decision_point_enter 是路径确认与决策点事件窗的核心输入。",
+        },
+        {
+            "label": "EEG 事件窗",
+            "value": str(valid_epochs),
+            "tone": "neutral" if valid_epochs >= 3 else "warning",
+            "text": "事件窗过少时，EEG 结果应降级为 QC 或探索性结果，不能作为正式主结论。",
+        },
+    ]
+
+
+def build_run_qc_summary(
+    *,
+    marker_stream: dict[str, Any] | None,
+    eeg_stream: dict[str, Any] | None,
+    eeg_stream_count: int,
+    marker_rows: list[dict[str, Any]],
+    raw_primary_rows: list[dict[str, Any]],
+    primary_rows: list[dict[str, Any]],
+    trial_window: dict[str, float] | None,
+    duplicate_count: int,
+    eeg_report: dict[str, Any],
+) -> dict[str, Any]:
+    events = {row.get("event", "") for row in primary_rows}
+    counts = Counter(row.get("event", "") for row in primary_rows)
+    valid_event_epochs = int(to_float(eeg_report.get("metrics", {}).get("valid_event_epochs")) or 0) if isinstance(eeg_report.get("metrics"), dict) else 0
+    duplicate_rate = duplicate_count / max(1, len(raw_primary_rows))
+    checks = [
+        (
+            "marker stream",
+            "通过" if marker_stream and marker_rows else "排除候选",
+            f"{len(marker_rows)} 条 marker",
+            "没有 Unity marker 时不能做路径确认、行为或事件窗分析。",
+        ),
+        (
+            "EEG stream",
+            "通过" if eeg_stream else "排除候选",
+            f"{eeg_stream_count} 条 EEG/Mitsar 候选",
+            "没有 EEG stream 时只能保留行为 QC，不能进入 EEG 主分析。",
+        ),
+        (
+            "trial window 起止",
+            "通过" if (set(START_EVENTS) & events and END_EVENT in events) else "警告",
+            f"start={bool(set(START_EVENTS) & events)}; complete={END_EVENT in events}; duration={fmt_seconds(trial_window.get('duration_s') if trial_window else None)}",
+            "正式统计优先使用 map_start/trial_start/session_start 到 evacuation_complete；缺少 completion 需记录排除或降级。",
+        ),
+        (
+            "核心事件覆盖",
+            "通过" if counts.get("sign_readable", 0) and counts.get("decision_point_enter", 0) else "警告",
+            f"sign_readable={counts.get('sign_readable', 0)}; decision_point_enter={counts.get('decision_point_enter', 0)}",
+            "核心事件缺失会影响路径确认和决策点事件窗解释。",
+        ),
+        (
+            "EEG 事件窗",
+            "通过" if valid_event_epochs >= 3 else ("警告" if valid_event_epochs else "排除候选"),
+            f"valid_event_epochs={valid_event_epochs}",
+            "事件窗不足时，H3 EEG 主结论应降级为探索性或仅做 trial-level 频带描述。",
+        ),
+        (
+            "重复 marker",
+            "通过" if duplicate_rate <= 0.2 else "警告",
+            f"{duplicate_count}/{len(raw_primary_rows)} ({fmt(duplicate_rate)})",
+            "只去除同一帧/同一时刻的疑似重复；反复查看、扫描和重复阅读保留为行为证据。",
+        ),
+    ]
+    severe = any(status == "排除候选" for _name, status, _value, _rule in checks)
+    warning = any(status == "警告" for _name, status, _value, _rule in checks)
+    overall = "排除候选/需人工复核" if severe else "可进入批量分析" if not warning else "可分析但需标注限制"
+    notes = [f"QC {name}: {status}。{rule}" for name, status, _value, rule in checks if status != "通过"]
+    return {
+        "overall": overall,
+        "table": {
+            "title": "单 run QC 判定与排除记录",
+            "columns": ["检查项", "状态", "当前记录", "处理规则"],
+            "rows": [[name, status, value, rule] for name, status, value, rule in checks],
+        },
+        "notes": notes,
+    }
+
+
+def build_single_run_sensitivity_table(
+    raw_primary_rows: list[dict[str, Any]],
+    trial_window_rows: list[dict[str, Any]],
+    primary_rows: list[dict[str, Any]],
+    duplicate_count: int,
+    eeg_report: dict[str, Any],
+) -> dict[str, Any]:
+    valid_event_epochs = int(to_float(eeg_report.get("metrics", {}).get("valid_event_epochs")) or 0) if isinstance(eeg_report.get("metrics"), dict) else 0
+    return {
+        "title": "单 run 敏感性检查",
+        "columns": ["检查项", "当前状态", "解释边界"],
+        "rows": [
+            [
+                "session 外 marker",
+                f"原始主 session {len(raw_primary_rows)} 条；trial window 内 {len(trial_window_rows)} 条",
+                "正式行为指标只使用任务窗口内 marker；窗口外 marker 保留在 session 表中用于排查。",
+            ],
+            [
+                "重复 marker",
+                f"去重后 {len(primary_rows)} 条；删除疑似重复 {duplicate_count} 条",
+                "重复删除规则不应根据显著性结果调整；扫描、左右查看和重复阅读属于行为证据。",
+            ],
+            [
+                "EEG 事件窗阈值",
+                f"有效事件窗 {valid_event_epochs}",
+                "少于 3 个事件窗时，事件锁定 EEG 结果建议标注为不稳定或探索性。",
+            ],
+            [
+                "主指标与探索指标",
+                "报告已分层",
+                "单 run 只做 QC 和特征提取；主假设需在被试内三条件和全样本层面检验。",
+            ],
+        ],
+    }
 
 
 def build_event_timeline_chart(rows: list[dict[str, Any]], window: dict[str, float] | None) -> dict[str, Any]:
@@ -3553,6 +4152,17 @@ def get_trial_window(rows: list[dict[str, Any]]) -> dict[str, float] | None:
     }
 
 
+def filter_rows_to_trial_window(rows: list[dict[str, Any]], window: dict[str, float] | None) -> list[dict[str, Any]]:
+    if not rows or not window:
+        return rows
+    start_ts = float(window.get("start_ts", rows[0].get("_xdf_ts", 0.0)))
+    end_ts = float(window.get("end_ts", rows[-1].get("_xdf_ts", start_ts)))
+    if end_ts < start_ts:
+        return rows
+    filtered = [row for row in rows if start_ts <= float(row.get("_xdf_ts", start_ts)) <= end_ts]
+    return filtered or rows
+
+
 def find_first_event(rows: list[dict[str, Any]], events: tuple[str, ...]) -> dict[str, Any] | None:
     event_set = set(events)
     for row in sorted(rows, key=lambda item: item["_xdf_ts"]):
@@ -3927,7 +4537,7 @@ def integrate_band(freqs: np.ndarray, psd: np.ndarray, low: float, high: float) 
     mask = (freqs >= low) & (freqs <= high)
     if not np.any(mask):
         return np.full(psd.shape[1], np.nan)
-    return np.trapz(psd[mask], freqs[mask], axis=0)
+    return np.trapezoid(psd[mask], freqs[mask], axis=0)
 
 
 def label_indices(labels: list[str], targets: set[str]) -> list[int]:
@@ -4167,6 +4777,23 @@ p { margin: 8px 0; }
 .metric span { display: block; color: var(--muted); font-size: 12px; font-weight: 800; }
 .metric strong { display: block; margin-top: 6px; font-size: 24px; }
 .metric p { color: var(--muted); font-size: 13px; }
+.finding-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+.finding-item {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--green);
+  border-radius: 8px;
+  background: #fbfdfc;
+}
+.finding-item.warning { border-left-color: #d49a32; }
+.finding-item.failed { border-left-color: var(--coral); }
+.finding-item span { display: block; color: var(--muted); font-size: 12px; font-weight: 800; }
+.finding-item strong { display: block; margin-top: 6px; font-size: 18px; }
+.finding-item p { margin-top: 8px; color: #31403d; }
 .narrative-grid { align-items: stretch; }
 .narrative-card p {
   margin: 10px 0;

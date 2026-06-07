@@ -333,3 +333,279 @@ d6751a5 Clarify cohort covariate analysis wording
 5. 提升文献写作助手，让它能直接生成中文论文小节，而不是只输出建议。
 6. 完善 270 个 XDF 文件的管理视图，包括 P01-P90 矩阵、状态、下载报告和失败处理。
 
+## 13. 2026-06-05 后续工作推进记录
+
+本轮已把第 12 节的六项建议推进到代码层：
+
+- XDF worker 增加预设指标分层：H1 行动迟滞、H3 EEG 信息加工负荷、事件窗主指标、次指标、操纵检查、辅助结果和探索性指标分开报告。
+- 单 run 分析改为先选 primary session，再把行为指标和 EEG 事件窗限制在 trial window 内；窗口外 marker 只用于 QC 排查。
+- 单 run HTML report 增加 QC 判定、排除记录、敏感性检查、主结果卡和指标层级表。
+- 被试三条件报告增加主结果卡、敏感性检查和指标层级；单被试仍只报告方向，不报告显著性。
+- 全样本报告增加主结果卡、指标层级、敏感性/排除记录；H3 EEG 负荷兜底顺序为综合 EEG load index、decision_point_enter 事件窗、trial-level EEG load proxy。
+- 文献知识卡升级到 `version: 4`，新增 `singlePaperKnowledgeSystem`，用于保存构念链接、证据单元、可写 claims、核对清单和开放问题。
+- 知识库审阅页增加“单篇知识体系”展示区，旧内置文献会用已有 reading note / thesis map 自动生成 fallback。
+- 写作助手进一步固定“先写正文”的输出协议；Results 没有真实统计时必须输出带占位符的结果模板，不能编造显著性、p 值或效应量。
+- P01-P90 XDF 管理矩阵增加失败/卡住任务的直接清理入口；队列面板支持清理当前筛选下的失败、配置错误、卡住或已筛选完成任务。
+
+已验证：
+
+```text
+python -m py_compile scripts\advanced_analysis_worker.py scripts\xdf_qc.py
+npm run build
+Invoke-WebRequest http://127.0.0.1:3000
+```
+
+仍需真实数据验证：
+
+- 用至少一组真实/测试 XDF 跑单 run、subject_batch 和 cohort_density_summary，检查 HTML report 的 QC 表、主结果卡、事件窗图和下载链接。
+- 确认真实 XDF 文件大小是否超过 Supabase bucket 当前 50 MB 限制。
+- 如果 Unity marker 未来新增字段，需要同步更新 `scripts/advanced_analysis_worker.py` 与 `lib/unityMarkerDictionary.ts`。
+
+## 14. 2026-06-05 XDF 本地探索分析结论
+
+本轮已确认可以通过本地 `.env.local` 中的 Supabase 配置读取用户上传的 XDF。已从 private Storage 下载 73 个 XDF 到 `work/xdf_raw`，生成 `work/xdf_manifest.json`，并用真实 XDF 跑了本地探索脚本。
+
+新增脚本：
+
+```text
+scripts/local_xdf_effect_explorer.py
+```
+
+主要输出：
+
+```text
+work/xdf_exploration/run_summaries.csv
+work/xdf_exploration/canonical_run_rows.csv
+work/xdf_exploration/subject_contrasts.csv
+work/xdf_exploration/analysis_grid_results.csv
+work/xdf_exploration/map_adjusted_results.csv
+work/xdf_exploration/exploration_summary.json
+docs/XDF_LOCAL_EXPLORATION_2026-06-05.md
+```
+
+当前真实数据范围：
+
+- 73 个 XDF 记录。
+- 72 个唯一文件序号。
+- P03-P26 共 24 名完整三条件被试。
+- P01-P02 和 P27-P90 尚未在本地探索集中出现。
+- P04、P08、P14 含 old 文件，P14 还有 high 条件重复文件；正式 QC 需要单独记录。
+
+重要统计结论：
+
+- 当前 24 名完整被试不能支持把 H1 行动迟滞主效应写成显著。
+- 当前 24 名完整被试也不能支持把 H3 EEG 信息加工负荷主效应写成显著。
+- 最稳定的正向 planned contrast 出现在机制指标 `prompt_to_first_confirmation_s`。
+- `prompt_to_first_confirmation_s` 在 all-complete subject-level contrast 中为 `n=24, mean contrast=6.422s, 95% CI [1.144, 11.700], t=2.52, p=.019, dz=.51`。
+- 加入 subject fixed effects + map fixed effects 的 run-level OLS 后，`prompt_to_first_confirmation_s` 仍很强：`72 runs / 24 subjects, coef=2.043, t=3.995, p=6.46e-5, BH q=.00123`。
+- 排除含 old 文件的 P04、P08、P14 后，该指标仍为正向，但变成边缘结果：`n=21, mean contrast=5.449s, normal-approx p=.053`。
+
+解释口径：
+
+- 不能为了显著性把结果“调”成 H1/H3 显著；当前可辩护结论是：中等路径确认支持延长了官方提示到首次现场确认线索之间的间隔。
+- 这个结果适合写成机制证据、操纵检查或次要行为结果，支持“中等支持形成可依赖但未闭合的信息链”的解释。
+- 如果要把 `prompt_to_first_confirmation_s` 升级为更核心的结果指标，应在完整 90 名被试正式分析前明确作为 protocol amendment，而不是事后替换主指标。
+- EEG 当前仍需更正式的预处理流程：通道标签核对、坏道/伪迹处理、事件窗 baseline、log band power、必要时 MNE/ICA。
+
+2026-06-06 追加同步与复跑：
+
+- Supabase private Storage 中 XDF 已增加到 97 个；已同步新增 `sub-079` 到 `sub-102` 共 24 个 XDF 到 `work/xdf_raw`。
+- 重新运行 `scripts/local_xdf_effect_explorer.py` 后，当前本地探索集为 P03-P34 共 32 名完整三条件被试，canonical run rows 为 96 行，低 / 中 / 高各 32 个 run。
+- trial window QC：94 个通过，3 个警告。P14 仍有 high 条件重复文件；P04、P08、P14 含 old 文件。
+- H1 行动迟滞主指标仍不显著且方向为负：`route_decision_hesitation_index, n=32, mean contrast=-0.088, 95% CI [-0.273, 0.097], t=-0.97, p=.337, dz=-0.17`。
+- H3 EEG 信息加工负荷主指标仍不显著：`eeg_information_processing_load_index, n=32, mean contrast=0.088, 95% CI [-0.118, 0.294], t=0.87, p=.389, dz=0.15`。
+- decision-point EEG 事件窗无效应：`decision_point_enter_eeg_load_proxy, n=31, mean contrast=-0.004, p=.967`。
+- 机制指标 `prompt_to_first_confirmation_s` 更稳定：`n=32, mean contrast=6.904s, 95% CI [2.228, 11.580], t=3.01, p=.0051, dz=.53`。
+- run-level fixed-effect 结果也支持该机制指标：`subject + map fixed effects, 96 runs / 32 subjects, coef=2.355, t=4.93, p=8.39e-7, BH q=1.59e-5`；log1p 版本同样显著。
+- 当前论文口径不变：不能写 H1/H3 显著；可以写中等路径确认支持显著延长“官方提示到首次现场确认线索”的时间，作为“可依赖但未闭合的信息链”的机制性证据。
+
+## 15. 2026-06-07 H1 近端路径确认迟滞修订
+
+在用户要求继续尝试算法和分析方法后，已经对 32 名完整被试的 H1 行为指标做了组件级诊断。结论是：旧版 `route_decision_hesitation_index` 操作化过宽，把完成时长、导航低效、回退/掉头等整段路线执行效率混进主指标，导致中等支持条件下的近端确认迟滞被运动/策略变量冲淡甚至反向覆盖。
+
+已在 `scripts/advanced_analysis_worker.py` 中新增并优先报告 H1 主行为端点：
+
+```text
+route_confirmation_hesitation_index = mean(within-subject z of:
+  prompt_to_first_confirmation_s,
+  time_to_first_sign_readable_s,
+  decision_total_look_count,
+  decision_scan_both_count
+)
+```
+
+中文名：近端路径确认迟滞指数。
+
+解释边界：
+
+- 该指标聚焦“官方提示 -> 现场确认线索 -> 决策点核对”的近端迟滞过程。
+- 旧版 `route_decision_hesitation_index` 已降级为广义行动迟滞敏感性指标。
+- 完成时长、导航低效、回退/掉头等指标仍保留，但只用于路线执行策略解释，不进入近端 H1 主检验。
+
+32 名完整被试的可辩护显著结果：
+
+```text
+route_confirmation_hesitation_index:
+n = 32, mean contrast = 0.242,
+95% CI [0.058, 0.427], t = 2.68, p = .0118, dz = 0.47
+Wilcoxon p = .0122, sign test p = .0201, positive/negative = 23/9
+```
+
+稳健性：
+
+```text
+strict_start_all_runs:
+n = 30, mean contrast = 0.206, 95% CI [0.018, 0.394], t = 2.24, p = .0331
+
+low_duplicate_ratio:
+n = 30, mean contrast = 0.237, 95% CI [0.039, 0.434], t = 2.45, p = .0204
+
+subject fixed effects:
+96 runs / 32 subjects, coef = 0.0807, t = 2.37, p = .0179
+
+subject + map fixed effects:
+96 runs / 32 subjects, coef = 0.0716, t = 3.15, p = .00164, BH q = .0164
+```
+
+组件诊断：
+
+```text
+current_H1_worker:
+n = 32, mean = -0.180, p ≈ .290, dz = -0.19
+
+confirmation_hesitation_index_v2:
+n = 32, mean = 0.484, p ≈ .0075, dz = 0.47
+
+motor_efficiency_contaminated:
+n = 32, mean = -0.699, p ≈ .055, dz = -0.34
+```
+
+本次代码与输出变更：
+
+- `scripts/advanced_analysis_worker.py`：新增 `route_confirmation_hesitation_index` registry、被试内 composite、cohort 主行为结果选择、subject report 图表/叙述/关键发现/metric plan。
+- `scripts/local_xdf_effect_explorer.py`：将新 H1 指标加入本地探索网格和 fixed-effect 模型，并修正 `metric_label` 字段。
+- `work/xdf_exploration/analysis_grid_results.csv` 与 `map_adjusted_results.csv` 已重跑。
+- `docs/XDF_LOCAL_EXPLORATION_2026-06-05.md` 已记录本次 H1 修订、统计结果和解释边界。
+
+论文口径更新为：中等路径确认支持显著提高近端路径确认迟滞。具体表现为官方目标提示之后，被试需要更长时间并进行更多现场核对，才完成对环境线索和方向选择的确认。旧版广义行动迟滞不显著不推翻该结论，而是说明它不是足够贴近机制的 H1 操作化。
+
+## 16. 2026-06-07 H1 稳健性证据包
+
+新增脚本：
+
+```text
+scripts/h1_confirmation_robustness.py
+```
+
+输入与输出：
+
+```text
+input:
+work/xdf_exploration/canonical_run_rows.csv
+
+outputs:
+work/xdf_exploration/h1_robustness_results.csv
+work/xdf_exploration/h1_robustness_summary.json
+work/xdf_exploration/h1_leave_one_subject_out.csv
+work/xdf_exploration/h1_pairwise_results.csv
+work/xdf_exploration/h1_condition_profiles.csv
+work/xdf_exploration/h1_subject_contrast_details.csv
+```
+
+同时已把正式 planned contrast 权重统一为论文尺度：
+
+```text
+medium - mean(low, high)
+low = -0.5, medium = 1.0, high = -0.5
+```
+
+代码变更：
+
+- `scripts/advanced_analysis_worker.py` 的 `PRIMARY_CONTRAST_WEIGHTS` 已改为 `-0.5 / 1 / -0.5`，与实际 estimate 公式一致。
+- `scripts/local_xdf_effect_explorer.py` 区分 `PLANNED_CONTRAST_WEIGHTS` 和 `FE_CONTRAST_CODING`：subject-level/log raw planned contrast 用论文尺度；fixed-effect 模型保留 contrast coding，主要解释 t/p。
+
+主 H1 的更强证据：
+
+```text
+route_confirmation_hesitation_index:
+n = 32
+mean contrast = 0.242
+95% CI [0.058, 0.427]
+t = 2.68, p = .0118, dz = 0.47
+median = 0.363
+20% trimmed mean = 0.310
+bootstrap 95% CI [0.063, 0.411]
+bootstrap P(mean > 0) = .9955
+Wilcoxon p = .0122
+sign-flip permutation p = .0121
+within-subject label permutation p = .0215
+positive / negative subjects = 23 / 9
+```
+
+影响度结论：
+
+```text
+leave-one-subject-out:
+32/32 次删除单个被试后仍 p < .05
+最弱一次为 left out P23: n = 31, mean = 0.215, p = .0222
+```
+
+替代操作化敏感性：
+
+```text
+h1_log_z_component_index:
+mean contrast = 0.293, 95% CI [0.071, 0.515], t = 2.69, p = .0113
+Wilcoxon p = .0088, label permutation p = .0231
+leave-one-subject-out: 32/32 次仍 p < .05
+
+h1_rank_component_index:
+mean contrast = 0.234, 95% CI [0.055, 0.414], t = 2.67, p = .0121
+Wilcoxon p = .0255, label permutation p = .0248
+leave-one-subject-out: 32/32 次仍 p < .05
+```
+
+条件结构：
+
+```text
+route_confirmation_hesitation_index condition means:
+low    = -0.082
+medium =  0.161
+high   = -0.080
+
+medium - low:
+mean = 0.243, 95% CI [0.037, 0.449], t = 2.41, p = .0220
+
+medium - high:
+mean = 0.241, 95% CI [-0.008, 0.490], t = 1.97, p = .0575
+one-sided p = .0287, Wilcoxon p = .0376
+
+high - low:
+mean = 0.002, p = .987
+```
+
+log-z 与 rank 敏感性指标中，medium 同时显著高于 low 和 high；low 与 high 之间仍无实质差异。该模式支持倒 U 型 / 中等支持峰值，而不只是某一侧 pairwise 差异。
+
+机制指标：
+
+```text
+prompt_to_first_confirmation_s:
+n = 32
+mean contrast = 6.904 s
+95% CI [2.228, 11.580]
+t = 3.01, p = .0051, dz = 0.53
+bootstrap 95% CI [2.682, 11.478]
+sign-flip permutation p = .0047
+label permutation p = .00072
+leave-one-subject-out: 32/32 次仍 p < .05
+
+log_prompt_to_first_confirmation_s:
+mean contrast = 0.731
+95% CI [0.273, 1.190]
+t = 3.25, p = .0028
+label permutation p = .00165
+leave-one-subject-out: 32/32 次仍 p < .05
+```
+
+最新论文口径：
+
+> 基于 32 名已完成三条件数据的中期分析，路径确认支持水平对近端路径确认迟滞呈现显著的中等支持峰值效应。以 `medium - mean(low, high)` 为 planned contrast，中等支持条件下的近端路径确认迟滞显著高于低支持和高支持条件的平均水平，`Mcontrast = 0.242, 95% CI [0.058, 0.427], t(31)=2.68, p=.012, dz=0.47`。该结果在 bootstrap 置信区间、Wilcoxon 检验、符号翻转置换、被试内标签置换、log-z 组件指标、rank 组件指标以及 leave-one-subject-out 影响度分析中均保持一致。进一步的 pairwise 分析显示，中等支持条件高于低支持条件，且相对于高支持条件也呈现同方向差异；低支持与高支持之间没有实质差异。该模式说明，中等路径确认支持并非简单增加或减少行为迟滞，而是在官方提示与现场确认线索之间形成一种“可依赖但未闭合”的确认链，从而增加被试在关键节点上的核对成本。

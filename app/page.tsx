@@ -1322,6 +1322,7 @@ function Workspace({
               );
             }}
             onDownloadReport={downloadJobHtmlReport}
+            onDeleteJob={(job) => deleteAnalysisJobs([job.id])}
           />
           <AnalysisPipelinePanel />
           <UnityMarkerDictionaryPanel />
@@ -1582,6 +1583,11 @@ function AnalysisQueueOverview({
   const latestJob = recentJobs[0] ?? null;
   const historyJobs = recentJobs.slice(1);
   const deletableJobs = recentJobs.filter((job) => job.status === "completed" || job.status === "failed" || job.status === "configuration_required" || isStaleJob(job));
+  const allDeletableJobs = jobs.filter((job) =>
+    filter === "completed"
+      ? job.status === "completed"
+      : job.status === "failed" || job.status === "configuration_required" || isStaleJob(job),
+  );
 
   const renderJobRow = (job: ResearchAnalysisJob) => {
     const reportArtifact = getJobHtmlReport(job);
@@ -1621,6 +1627,9 @@ function AnalysisQueueOverview({
         <div className="top-actions">
           <button className="secondary-button" disabled={!deletableJobs.length} onClick={() => onDeleteJobs(deletableJobs.map((job) => job.id))}>
             清理最近列表
+          </button>
+          <button className="secondary-button" disabled={!allDeletableJobs.length} onClick={() => onDeleteJobs(allDeletableJobs.map((job) => job.id))}>
+            清理当前筛选
           </button>
         </div>
       </div>
@@ -1685,6 +1694,7 @@ function XdfSubjectMatrixPanel({
   onRunAllComplete,
   onRunSubject,
   onDownloadReport,
+  onDeleteJob,
 }: {
   rows: XdfSubjectMatrixRow[];
   stats: XdfSubjectMatrixStats;
@@ -1694,6 +1704,7 @@ function XdfSubjectMatrixPanel({
   onRunAllComplete: () => void;
   onRunSubject: (row: XdfSubjectMatrixRow) => void;
   onDownloadReport: (job: ResearchAnalysisJob) => void;
+  onDeleteJob: (job: ResearchAnalysisJob) => void;
 }) {
   return (
     <section className="work-panel subject-matrix-panel">
@@ -1761,6 +1772,11 @@ function XdfSubjectMatrixPanel({
                         分析此被试
                       </button>
                     )}
+                    {row.failedJob && !row.activeJob && !row.completedJob ? (
+                      <button className="secondary-button" disabled={jobLoading} onClick={() => onDeleteJob(row.failedJob!)}>
+                        清理记录
+                      </button>
+                    ) : null}
                   </div>
                 </td>
               </tr>
@@ -2249,6 +2265,31 @@ type ArticleThesisWritingMap = {
   verificationTasks: string[];
 };
 
+type ArticleKnowledgeSystem = {
+  coreContribution: string;
+  constructLinks: Array<{
+    construct: string;
+    evidence: string;
+    thesisUse: string;
+    caution: string;
+  }>;
+  evidenceUnits: Array<{
+    topic: string;
+    evidence: string;
+    paperLocation: string;
+    thesisUse: string;
+    limitation: string;
+  }>;
+  thesisClaims: Array<{
+    claim: string;
+    supportLevel: string;
+    useInSection: string;
+    mustVerify: string;
+  }>;
+  verificationChecklist: string[];
+  openQuestions: string[];
+};
+
 type ArticleVerification = {
   sourceCode: string;
   sourceTitle: string;
@@ -2269,6 +2310,7 @@ type ArticleKnowledgeView = {
   articleRole: string;
   dossier: ArticleDossier;
   thesisMap: ArticleThesisWritingMap;
+  knowledgeSystem: ArticleKnowledgeSystem;
   verification: ArticleVerification;
   sections: ArticleKnowledgeSection[];
 };
@@ -2394,6 +2436,49 @@ function ArticleKnowledgeStructure({
                     </article>
                   ))}
                 </div>
+              </section>
+
+              <section className="article-dossier-section wide">
+                <span>单篇知识体系</span>
+                <h4>构念、证据单元和可写 claims</h4>
+                <p>{activeArticle.knowledgeSystem.coreContribution}</p>
+                {activeArticle.knowledgeSystem.constructLinks.length ? (
+                  <div className="construct-map-grid">
+                    {activeArticle.knowledgeSystem.constructLinks.map((item) => (
+                      <article className="construct-map-item" key={`${activeArticle.id}-ks-${item.construct}-${item.thesisUse.slice(0, 16)}`}>
+                        <span>{item.evidence}</span>
+                        <h5>{item.construct}</h5>
+                        <p>{item.thesisUse}</p>
+                        <small>{item.caution}</small>
+                      </article>
+                    ))}
+                  </div>
+                ) : null}
+                {activeArticle.knowledgeSystem.evidenceUnits.length ? (
+                  <dl className="dossier-definition-list compact">
+                    {activeArticle.knowledgeSystem.evidenceUnits.slice(0, 6).map((unit) => (
+                      <div key={`${activeArticle.id}-evidence-${unit.topic}`}>
+                        <dt>{unit.topic}</dt>
+                        <dd>
+                          {unit.evidence}
+                          <br />
+                          用法：{unit.thesisUse}
+                          <br />
+                          核对：{unit.paperLocation}；边界：{unit.limitation}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                ) : null}
+                {activeArticle.knowledgeSystem.thesisClaims.length ? (
+                  <ul>
+                    {activeArticle.knowledgeSystem.thesisClaims.slice(0, 6).map((claim) => (
+                      <li key={`${activeArticle.id}-claim-${claim.claim}`}>
+                        {claim.claim}（{claim.supportLevel}；用于：{claim.useInSection}；核对：{claim.mustVerify}）
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
               </section>
 
               <section className="article-dossier-section wide">
@@ -2835,7 +2920,7 @@ function buildLocalArticleDossierView({
   readingNote?: LocalArticleReadingNote;
   taskLens?: LocalArticleTaskLens;
   evidenceSnippets: Record<string, string | undefined>;
-}): Pick<ArticleKnowledgeView, "dossier" | "thesisMap" | "verification"> {
+}): Pick<ArticleKnowledgeView, "dossier" | "thesisMap" | "knowledgeSystem" | "verification"> {
   const extended = article as LocalArticleKnowledgeCard & {
     paperDossier?: LocalArticlePaperDossier;
     thesisWritingMap?: LocalArticleThesisWritingMap;
@@ -2880,6 +2965,14 @@ function buildLocalArticleDossierView({
   return {
     dossier: normalizeDossier(extended.paperDossier, fallbackDossier),
     thesisMap: normalizeThesisMap(extended.thesisWritingMap, fallbackThesisMap),
+    knowledgeSystem: buildFallbackKnowledgeSystem({
+      coreContribution: readingNote?.tldr || article.oneSentenceSummary,
+      constructs: fallbackThesisMap.constructs,
+      findings: article.keyFindings,
+      claims: article.metroRescueUse,
+      verificationTasks: fallbackThesisMap.verificationTasks,
+      openQuestions: readingNote?.followUpQuestions ?? [],
+    }),
     verification: {
       sourceCode: article.id,
       sourceTitle: article.title,
@@ -2903,12 +2996,13 @@ function buildDynamicArticleDossierView(
   entry: LiteratureKnowledgeEntry,
   id: string,
   taskLens: Required<LocalArticleTaskLens>,
-): Pick<ArticleKnowledgeView, "dossier" | "thesisMap" | "verification"> {
+): Pick<ArticleKnowledgeView, "dossier" | "thesisMap" | "knowledgeSystem" | "verification"> {
   const card = entry.card;
   if (!card) {
     return {
       dossier: emptyArticleDossier(),
       thesisMap: emptyThesisMap(),
+      knowledgeSystem: emptyKnowledgeSystem(),
       verification: emptyVerification(id),
     };
   }
@@ -2951,6 +3045,17 @@ function buildDynamicArticleDossierView(
   return {
     dossier: normalizeDossier(card.paperDossier, fallbackDossier),
     thesisMap: normalizeThesisMap(card.thesisWritingMap, fallbackThesisMap),
+    knowledgeSystem: normalizeKnowledgeSystem(
+      card.singlePaperKnowledgeSystem,
+      buildFallbackKnowledgeSystem({
+        coreContribution: card.oneSentenceTakeaway || card.abstractZh || card.researchQuestion,
+        constructs: fallbackThesisMap.constructs,
+        findings: card.keyFindings,
+        claims: card.candidateClaims ?? card.relevanceToMetroRescue,
+        verificationTasks: fallbackThesisMap.verificationTasks,
+        openQuestions: card.qualityCaveats ?? [],
+      }),
+    ),
     verification: {
       sourceCode: id,
       sourceTitle: card.title,
@@ -2996,6 +3101,18 @@ function normalizeThesisMap(input: LocalArticleThesisWritingMap | undefined, fal
   };
 }
 
+function normalizeKnowledgeSystem(input: LiteratureKnowledgeCard["singlePaperKnowledgeSystem"] | undefined, fallback: ArticleKnowledgeSystem): ArticleKnowledgeSystem {
+  if (!input) return fallback;
+  return {
+    coreContribution: input.coreContribution || fallback.coreContribution,
+    constructLinks: input.constructLinks?.length ? input.constructLinks : fallback.constructLinks,
+    evidenceUnits: input.evidenceUnits?.length ? input.evidenceUnits : fallback.evidenceUnits,
+    thesisClaims: input.thesisClaims?.length ? input.thesisClaims : fallback.thesisClaims,
+    verificationChecklist: input.verificationChecklist?.length ? input.verificationChecklist : fallback.verificationChecklist,
+    openQuestions: input.openQuestions?.length ? input.openQuestions : fallback.openQuestions,
+  };
+}
+
 function buildConstructViews(items: Array<{ construct?: string; use?: string; strength?: string }>): ArticleConstructUse[] {
   const constructs = items.map((item) => ({
     construct: item.construct || "相关构念",
@@ -3017,6 +3134,58 @@ function buildConstructViews(items: Array<{ construct?: string; use?: string; st
           caution: "不能写成已验证本研究主假设。",
         },
       ];
+}
+
+function buildFallbackKnowledgeSystem({
+  coreContribution,
+  constructs,
+  findings,
+  claims,
+  verificationTasks,
+  openQuestions,
+}: {
+  coreContribution?: string | null;
+  constructs: ArticleConstructUse[];
+  findings: string[];
+  claims: string[];
+  verificationTasks: string[];
+  openQuestions: string[];
+}): ArticleKnowledgeSystem {
+  return {
+    coreContribution: coreContribution || "该文献的核心贡献需要结合原文进一步核对。",
+    constructLinks: constructs.length
+      ? constructs.map((item) => ({
+          construct: item.construct,
+          evidence: item.support,
+          thesisUse: item.use,
+          caution: item.caution,
+        }))
+      : [
+          {
+            construct: "与本研究相关构念",
+            evidence: "尚未形成明确构念映射。",
+            thesisUse: "可作为背景或边界材料，正式写作前需回到原文核对。",
+            caution: "不能把相邻文献写成本研究结果。",
+          },
+        ],
+    evidenceUnits: compactStrings(findings).slice(0, 6).map((finding, index) => ({
+      topic: `证据单元 ${index + 1}`,
+      evidence: finding,
+      paperLocation: "待回原文核对页码/章节",
+      thesisUse: "用于文献综述、方法依据或讨论边界。",
+      limitation: "不能替代本研究 XDF/行为/EEG 统计结果。",
+    })),
+    thesisClaims: compactStrings(claims).slice(0, 6).map((claim) => ({
+      claim,
+      supportLevel: "文献支持/类比支持，需人工复核",
+      useInSection: "引言、文献综述、理论假设或讨论",
+      mustVerify: "核对作者、年份、页码、变量定义和原文语境。",
+    })),
+    verificationChecklist: compactStrings(verificationTasks).length
+      ? compactStrings(verificationTasks)
+      : ["正式引用前核对作者、年份、DOI、页码和原文语境。"],
+    openQuestions: compactStrings(openQuestions).slice(0, 6),
+  };
 }
 
 function buildFallbackWritingBlocks({
@@ -3113,6 +3282,17 @@ function emptyThesisMap(): ArticleThesisWritingMap {
     writingBlocks: [],
     overclaimWarnings: [],
     verificationTasks: [],
+  };
+}
+
+function emptyKnowledgeSystem(): ArticleKnowledgeSystem {
+  return {
+    coreContribution: "尚未生成单篇知识体系。",
+    constructLinks: [],
+    evidenceUnits: [],
+    thesisClaims: [],
+    verificationChecklist: [],
+    openQuestions: [],
   };
 }
 
