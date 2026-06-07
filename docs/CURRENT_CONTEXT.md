@@ -609,3 +609,387 @@ leave-one-subject-out: 32/32 次仍 p < .05
 最新论文口径：
 
 > 基于 32 名已完成三条件数据的中期分析，路径确认支持水平对近端路径确认迟滞呈现显著的中等支持峰值效应。以 `medium - mean(low, high)` 为 planned contrast，中等支持条件下的近端路径确认迟滞显著高于低支持和高支持条件的平均水平，`Mcontrast = 0.242, 95% CI [0.058, 0.427], t(31)=2.68, p=.012, dz=0.47`。该结果在 bootstrap 置信区间、Wilcoxon 检验、符号翻转置换、被试内标签置换、log-z 组件指标、rank 组件指标以及 leave-one-subject-out 影响度分析中均保持一致。进一步的 pairwise 分析显示，中等支持条件高于低支持条件，且相对于高支持条件也呈现同方向差异；低支持与高支持之间没有实质差异。该模式说明，中等路径确认支持并非简单增加或减少行为迟滞，而是在官方提示与现场确认线索之间形成一种“可依赖但未闭合”的确认链，从而增加被试在关键节点上的核对成本。
+
+## 17. 2026-06-07 指标冻结与 formal EEG 预处理
+
+本轮重点处理建议 1 和建议 3：
+
+- 建议 1：固定 H1 主指标、探索指标和解释边界。
+- 建议 3：把 EEG 从 HTML worker 的轻量 proxy 升级为正式 MNE-Python 预处理与事件窗分析。
+
+新增 protocol 文档：
+
+```text
+docs/H1_CONFIRMATION_HESITATION_PROTOCOL.md
+docs/EEG_PREPROCESSING_PROTOCOL.md
+```
+
+新增 formal EEG 脚本：
+
+```text
+scripts/eeg_mne_preprocessing.py
+```
+
+依赖更新：
+
+```text
+scripts/analysis_requirements.txt
+新增 mne==1.8.0
+```
+
+### H1 指标冻结
+
+H1 行为主端点正式冻结为：
+
+```text
+route_confirmation_hesitation_index
+```
+
+成分固定为：
+
+```text
+prompt_to_first_confirmation_s
+time_to_first_sign_readable_s
+decision_total_look_count
+decision_scan_both_count
+```
+
+计算规则固定为被试内 z 后平均；主 contrast 固定为：
+
+```text
+medium - mean(low, high)
+low = -0.5, medium = 1.0, high = -0.5
+```
+
+旧版 `route_decision_hesitation_index` 只作为广义行动迟滞敏感性指标，不再作为 H1 主指标。
+
+### EEG worker 修正
+
+发现并修复了一个影响 EEG 区域指标的底层问题：Mitsar XDF 的通道信息位于 `desc/channel`，旧解析只检查 `desc/channels/channel`，导致通道退化为 `Ch1...Ch31`。现已修正：
+
+```text
+Fp1-AA -> Fp1
+F3-AA  -> F3
+Pz-AA  -> Pz
+```
+
+并在 `normalize_channel_label` 中去掉常见参考后缀，使 F3/Fz/F4/FC1/FC2 和 P3/Pz/P4/O1/Oz/O2 能正确进入额区/后部 ROI。
+
+`scripts/advanced_analysis_worker.py` 中的网页端轻量 EEG 指标已降级为 screening/QC 口径；论文正式 H3 EEG 结果以后以 `scripts/eeg_mne_preprocessing.py` 的输出为准。
+
+### Formal EEG 预处理固定步骤
+
+正式 EEG 流程包括：
+
+```text
+XDF stream selection
+trial window selection
+marker deduplication
+Mitsar channel label normalization
+non-EEG channel exclusion
+bad-channel detection
+MNE RawArray
+standard_1020 montage
+50 Hz notch
+1-40 Hz band-pass
+bad-channel interpolation or drop
+average reference
+resample to 250 Hz
+event baseline -1.0..0.0 s
+post window decision_point_enter 0.0..2.0 s
+post window sign_readable 0.0..1.5 s
+Welch log band power
+artifact rejection by robust PTP MAD-z > 6
+subject-level medium - mean(low, high) contrast
+```
+
+输出文件：
+
+```text
+work/eeg_mne_preprocessing/formal_eeg_run_qc.csv
+work/eeg_mne_preprocessing/formal_eeg_run_features.csv
+work/eeg_mne_preprocessing/formal_eeg_event_summary.csv
+work/eeg_mne_preprocessing/formal_eeg_epoch_features.csv
+work/eeg_mne_preprocessing/formal_eeg_subject_contrasts.csv
+work/eeg_mne_preprocessing/formal_eeg_contrast_summary.csv
+work/eeg_mne_preprocessing/formal_eeg_condition_profiles.csv
+work/eeg_mne_preprocessing/formal_eeg_pairwise_results.csv
+work/eeg_mne_preprocessing/formal_eeg_robustness_results.csv
+work/eeg_mne_preprocessing/formal_eeg_leave_one_subject_out.csv
+work/eeg_mne_preprocessing/formal_eeg_report.html
+work/eeg_mne_preprocessing/formal_eeg_summary.json
+```
+
+### Formal EEG 全量本地试跑
+
+已对当前本地 97 个 XDF 全量试跑：
+
+```text
+python scripts/eeg_mne_preprocessing.py --raw-dir work/xdf_raw --out-dir work/eeg_mne_preprocessing --line-freq 50
+```
+
+QC：
+
+```text
+files_completed = 97 / 97
+files_failed = 0
+montage_set = 97 / 97
+region_fallback = 0 / 97
+decision_point_enter epochs = 419 accepted / 430 candidates
+sign_readable epochs = 1855 accepted / 1884 candidates
+formal contrast subjects = 32 for sign/trial endpoints, 31 for decision-point endpoint
+P27 high has 0 decision_point_enter candidate epoch, so decision-point formal endpoint n = 31
+```
+
+Formal H3 planned contrast 当前结果：
+
+```text
+decision_point_enter_formal_load_delta:
+n = 31
+mean contrast = 0.219
+95% CI [-0.009, 0.447]
+t = 1.96, p = .0588, dz = 0.35
+bootstrap 95% CI [0.0145, 0.4459]
+sign-flip p = .0593
+leave-one-subject-out: 10/31 次 p < .05
+
+decision_point_enter_frontal_theta_delta:
+n = 31
+mean contrast = 0.171
+95% CI [0.023, 0.318]
+t = 2.36, p = .0247, dz = 0.42
+bootstrap 95% CI [0.0317, 0.3120]
+sign-flip p = .0252
+Wilcoxon p = .0479
+leave-one-subject-out: 31/31 次 p < .05
+
+sign_readable_formal_load_delta:
+n = 32
+mean contrast ≈ 0
+p = .997
+```
+
+pairwise 结构：
+
+```text
+decision_point_enter_formal_load_delta:
+medium - high p = .0495
+medium - low p = .1366
+high - low p = .9717
+
+decision_point_enter_frontal_theta_delta:
+medium - low p = .0412
+medium - high p = .0635
+high - low p = .6123
+```
+
+论文解释口径：
+
+> EEG 正式预处理结果显示，中等路径确认支持在关键决策点附近呈现更高的额区 theta 增量，`Mcontrast = 0.171, 95% CI [0.023, 0.318], t(30)=2.36, p=.025, dz=0.42`。这与 H1 的近端路径确认迟滞结果方向一致，提示中等支持可能提高被试在目标提示、现场线索与方向选择之间进行整合的认知控制负荷。与此同时，综合 EEG load composite 为边缘结果，`p=.059`，因此 EEG 结论应写为“额区 theta 成分提供支持性生理证据”，而不是把整个 H3 composite 写成已显著成立。
+
+2026-06-07 追加展示改进：
+
+- `scripts/eeg_mne_preprocessing.py` 现在自动生成 formal EEG 证据包：condition profiles、pairwise、bootstrap、sign-flip、Wilcoxon、sign test、leave-one-subject-out 和 `formal_eeg_report.html`。
+- 对主效应展示的判断：H1 主效应已经足够清楚；H3 EEG composite 仍是边缘，但 planned secondary 的 decision-point frontal theta 更稳，31/31 次 leave-one-subject-out 仍 p < .05。
+- 方法判断：原 composite 把 frontal theta、posterior alpha 和全局 theta/alpha 合在一起，科学上可解释但会稀释当前最稳定的额区 theta 信号；因此论文中应把 composite 保留为 H3 综合端点，把 frontal theta 写成 planned physiological component/supporting evidence。
+
+## 18. 2026-06-07 神经工程管理 / 管科定位修正
+
+用户明确指出：本论文是神经工程管理、管理科学方向，不是医学或基础生物学论文。因此，本轮已经把 EEG 重新定位为管理信息设计的过程追踪证据，而不是医学/生物主结论。
+
+新增文档：
+
+```text
+docs/MANAGEMENT_SCIENCE_EVIDENCE_PROTOCOL.md
+```
+
+新增脚本：
+
+```text
+scripts/management_science_synthesis.py
+```
+
+默认输出：
+
+```text
+work/management_science_synthesis/management_evidence_report.html
+work/management_science_synthesis/management_evidence_report.md
+work/management_science_synthesis/management_evidence_synthesis.json
+work/management_science_synthesis/management_construct_evidence.csv
+work/management_science_synthesis/management_accuracy_status.csv
+work/management_science_synthesis/management_link_analysis.csv
+work/management_science_synthesis/management_implications.csv
+```
+
+用户给出的正式研究模型：
+
+```text
+X：路径确认支持水平
+Y：行动迟滞
+M1：感知可靠性，问卷测量
+M2：信息加工负荷，EEG 测量
+W：保护性行动指令清晰度，正式调节变量
+Y_aux：路径选择正确率，辅助因变量
+```
+
+启发式决策理论拆分：
+
+```text
+1. 理性权衡：
+并非所有决策都需要耗费大量时间寻找最佳方案。
+个体会在准确性收益与操作成本之间权衡。
+当继续搜索/确认的成本高于准确性提升收益时，采用启发式行动是合理的，但正确率可能较低。
+该过程对应 M1 感知可靠性。
+
+2. 认知局限：
+由于个人处理能力有限，个体很难在所有情境下做出完全理性的决策。
+因此，个体可能忽略部分信息，用更经济的方式完成判断和选择。
+该过程对应 M2 信息加工负荷。
+```
+
+主效应：
+
+```text
+路径确认支持水平对行动迟滞具有倒 U 型影响：
+medium > mean(low, high)
+```
+
+并行中介与分段主导：
+
+```text
+低支持 -> 中等支持：
+M1 感知可靠性主导。
+低支持下，继续依赖官方线索的操作成本高于准确性收益，个体倾向于终止官方确认并自主行动；
+中等支持下可靠性上升，准确性收益开始超过操作成本，个体愿意持续参考官方线索，因而搜索/核对增加，行动迟滞上升。
+
+中等支持 -> 高支持：
+M2 信息加工负荷主导。
+中等支持下线索可靠但未充分闭合，个体必须整合大量线索，认知负荷和行动迟滞最高；
+高支持下确认更容易，认知负荷下降，行动迟滞减少。
+```
+
+建模约束：
+
+```text
+可靠性机制和认知负荷的 X->M 具体假设可以根据问卷、EEG 和行为证据微调。
+但中介主导逻辑必须跟随主效应：
+low -> medium 阶段解释行动迟滞上升；
+medium -> high 阶段解释行动迟滞下降。
+```
+
+指标映射：
+
+```text
+X：low / medium / high route-confirmation support
+X 操纵维度：线索数量、线索连续性、关键决策点覆盖、首次可见 / 首次可读线索出现时机
+Y：route_confirmation_hesitation_index
+M1：perceived_reliability_score，问卷
+M2 formal EEG composite：decision_point_enter_formal_load_delta
+M2 planned secondary EEG：decision_point_enter_frontal_theta_delta
+W：protective_action_instruction_clarity_score，正式调节变量
+行为机制线索：prompt_to_first_confirmation_s，不替代 M1
+辅助因变量：路径选择正确率，decision_choice_accuracy_ratio / first_choice_correct / final_arrival_correct
+解释边界：route_decision_hesitation_index
+```
+
+问卷数据状态：
+
+```text
+用户已收集问卷，数据尚在整理。
+
+每个地图/路线任务完成后填写：
+1. 官方信息链整体感受：M1 感知可靠性。
+   题项包括官方路径确认线索可靠、准确支持路线判断、前后一致、值得继续依赖、沿线索继续判断可信。
+2. 沿途与 A3 出口相关的现场标识：X 操纵检查 / 确认链闭合感。
+   题项包括标识有效帮助完成 A3 寻路、选择前能及时看到、连续出现、不让长时间失去方向确认、关键分岔处帮助判断下一步方向。
+3. 路线判断正确性的主观把握：主观正确性/信心辅助变量。
+   题项包括路线选择有信心、过程中确信每次方向正确、认为路线判断可靠。
+
+完成全部三个地图后填写：
+4. 警报信息内容：W 保护性行动指令清晰度。
+5. 空间/寻路能力：个体差异协变量。
+6. 身体感受 / VR 不适：QC、敏感性分析或控制变量。
+```
+
+路径选择正确率的解释口径：
+
+```text
+正确率不是行动迟滞的替代主因变量，也不是中介。
+它用于解释速度-准确性权衡：低支持下被试可能用启发式搜索或其他环境线索快速行动，所以迟滞低但正确率应较低。
+随着路径确认支持水平提高，正确率预期逐步上升：Accuracy_low < Accuracy_medium <= Accuracy_high。
+正确率不应被写成倒 U 型。
+所有测试唯一正确出口为 A3；当前可用 exit_label == A3 推断最终路线正确性，其他出口均为错误。
+当前 32 名完整被试 / 96 个 canonical run 的最终正确性均值：low=0.469, medium=0.656, high=0.719。
+被试内辅助对比：high-low = 0.250, 95% CI [0.074, 0.426], p=.009；medium-low = 0.188, 95% CI [0.024, 0.351], p=.032；high-medium = 0.062, p=.161。
+```
+
+新增正式模型协议：
+
+```text
+docs/PARALLEL_MEDIATION_MODEL_PROTOCOL.md
+```
+
+当前已有数据支持：
+
+```text
+Y 主效应倒 U：
+route_confirmation_hesitation_index
+n = 32, mean contrast = 0.242, p = .0118
+
+行为机制线索：
+prompt_to_first_confirmation_s
+n = 32, mean contrast = 6.904 s, p = .0051
+
+M2 EEG 过程证据：
+decision_point_enter_frontal_theta_delta
+n = 31, mean contrast = 0.171, p = .0247
+```
+
+当前缺口：
+
+```text
+M1 感知可靠性问卷数据尚未接入。
+W 保护性行动指令清晰度问卷数据尚未接入。
+因此，不能声称完整并行中介已经检验成立。
+```
+
+补充链接分析：
+
+```text
+信息闭合缺口 -> 近端确认负担:
+Pearson r = .395, p = .025
+Spearman rho = .415, p = .018
+
+近端确认负担 -> 关键决策点额区 theta:
+Pearson r = -.140, p = .454
+Spearman rho = -.317, p = .083
+```
+
+解释：行为机制线索与行为主结果一致；但行为负担与 EEG theta 的被试间相关不显著，且 M1 问卷尚未接入，因此不能写正式中介。更合适的写法是：当前数据支持倒 U 主效应和 M2 过程证据；完整的 M1/M2 分段并行中介需要问卷数据后再检验。
+
+论文定位句：
+
+> 本文属于神经工程管理与应急管理交叉研究。脑电数据不被解释为医学或生物诊断指标，而是作为过程追踪证据，用于检验路径确认支持这种管理信息设计是否改变个体在关键决策点的确认成本与信息整合负担。
+
+## 19. 2026-06-07 研究决策短备忘
+
+为避免长上下文压缩后丢失研究口径，新增短文档：
+
+```text
+docs/RESEARCH_DECISION_MEMORY.md
+```
+
+后续继续分析、写作或接入问卷数据前，应优先阅读该文件。它集中记录：
+
+```text
+论文定位
+倒 U 主效应
+启发式决策的理性权衡 / 认知局限拆分
+M1/M2 分段并行中介逻辑
+X 操纵维度
+问卷题组分工
+W 正式调节变量
+A3 正确出口规则
+当前 H1 / M2 / 正确率辅助结果
+不能过度声称的边界
+```

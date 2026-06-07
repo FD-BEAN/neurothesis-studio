@@ -23,7 +23,7 @@ export const researchProject = {
         name: "路径确认支持水平",
         english: "Route-confirmation support level",
         role: "实验操纵变量",
-        dimensions: ["首次确认线索接近性", "确认链连续性", "关键决策点覆盖", "平均间距"],
+        dimensions: ["线索数量", "线索连续性", "关键决策点覆盖", "首次可见/首次可读线索出现时机"],
       },
       {
         id: "Y",
@@ -37,34 +37,34 @@ export const researchProject = {
         name: "路径判断准确率",
         english: "Wayfinding decision accuracy",
         role: "辅助因变量",
-        dimensions: ["首次方向选择是否正确", "决策点选择正确率", "最终是否到达正确目标"],
+        dimensions: ["首次方向选择是否正确", "决策点选择正确率", "最终是否到达正确目标", "当前可用 exit_label == A3 推断最终正确性"],
       },
       {
         id: "M1",
         name: "感知信息可靠性",
         english: "Perceived information reliability",
-        role: "中介变量，accuracy side",
-        dimensions: ["官方路径确认线索是否一致", "稳定", "可追踪", "值得继续依赖"],
+        role: "中介变量，理性权衡机制",
+        dimensions: ["官方路径确认线索是否一致", "稳定", "可追踪", "准确性收益是否值得继续确认成本"],
       },
       {
         id: "M2",
         name: "信息加工负荷",
         english: "Information-processing load",
-        role: "中介变量，effort side；EEG 表征",
-        dimensions: ["信息断裂", "不连贯", "目标-线索-方向匹配负担", "确认过程负荷"],
+        role: "中介变量，认知局限机制；EEG 表征",
+        dimensions: ["信息断裂", "不连贯", "目标-线索-方向匹配负担", "确认过程负荷", "有限处理能力下的信息整合负担"],
       },
       {
         id: "W",
         name: "保护性行动指令清晰度",
         english: "Protective action instruction clarity",
-        role: "调节变量",
+        role: "正式调节变量",
         dimensions: ["目标明确", "应依据的现场线索明确", "关键决策点确认规则明确"],
       },
     ],
     hypotheses: [
       "H1: 路径确认支持水平对行动迟滞具有倒 U 型影响，中等支持高于低支持和高支持。",
-      "H2: 从低支持到中等支持会增强感知信息可靠性，使个体更愿意继续参考和核对官方线索，从而提高行动迟滞。",
-      "H3: 中等支持下官方信息链处于可依赖但未闭合状态，个体需要更多目标-线索-方向匹配资源，表现为更高 EEG 信息加工负荷，并进一步导致更高行动迟滞。",
+      "H2: 从低支持到中等支持会增强感知信息可靠性，使准确性收益开始超过继续确认的操作成本，个体更愿意参考和核对官方线索，从而提高行动迟滞。",
+      "H3: 从中等支持到高支持会降低认知局限造成的信息整合负荷；中等支持下官方信息链处于可依赖但未闭合状态，个体需要更多目标-线索-方向匹配资源，表现为更高 EEG 信息加工负荷和更高行动迟滞。",
       "H4: 保护性行动指令清晰度调节路径确认支持对感知信息可靠性和 EEG 信息加工负荷的影响。",
       "H5: 路径确认支持水平正向影响路径判断准确率；高支持应在较低行动迟滞下实现较高准确率。",
     ],
@@ -161,17 +161,19 @@ export const researchProject = {
 };
 
 export const metroAiPrompt =
-  "请作为 Metro Rescue 中文论文写作者，基于文献知识库和已有 XDF 分析结果，直接写出论文正文：1) 路径确认信息链的研究问题与理论逻辑；2) 低/中/高路径确认支持的组内设计；3) 行动迟滞、路径判断准确率、感知信息可靠性、EEG 信息加工负荷与保护性行动指令清晰度的变量定义；4) 主假设 medium - mean(low, high) 的统计路线；5) 引言、文献综述、理论假设、研究方法、结果模板和讨论的中文正文；6) 目前不能过度声称的边界。";
+  "请作为 Metro Rescue 中文论文写作者，基于文献知识库和已有 XDF 分析结果，直接写出论文正文：1) 路径确认信息链的研究问题与启发式决策理论逻辑；2) 低/中/高路径确认支持的组内设计；3) 行动迟滞、路径判断准确率、感知信息可靠性、EEG 信息加工负荷与保护性行动指令清晰度的变量定义；4) 主假设 medium - mean(low, high) 的统计路线；5) 两个并行中介的来源：M1 对应准确性收益与操作成本的理性权衡，M2 对应认知局限下的信息整合负担；6) 引言、文献综述、理论假设、研究方法、结果模板和讨论的中文正文；7) 目前不能过度声称的边界。";
 
 export const projectWritingContext = [
   "Project: Metro Rescue, a VR subway evacuation wayfinding study with synchronized Unity LSL markers and EEG LabRecorder .xdf files.",
   "Current theoretical framing: the core construct is a route-confirmation information chain after an official target alert. The key question is whether official target reminders and subsequent on-site confirmation cues form a continuous, traceable, and confirmable chain for action.",
   "Participants/runs: target 90 subjects, each with 3 route-confirmation support runs: low, medium, high; expected 270 XDF files.",
-  "Manipulated X: route-confirmation support level, operationalized through first confirmation cue proximity, chain continuity, decision-point coverage, and cue spacing. Signature1/2/3 currently map to low/medium/high support unless a later condition table says otherwise.",
-  "Primary Y: route-decision hesitation, measured by initial action onset time, decision-point dwell time, repeated checking, stopping, scanning, U-turns, and backtracking. Auxiliary Y: wayfinding decision accuracy.",
-  "M1: perceived information reliability, the subjective belief that the official route-confirmation cues are consistent, stable, traceable, and worth relying on. M2: information-processing load, represented by EEG/event-window load features during target-cue-direction matching.",
-  "Moderator W: protective action instruction clarity, comparing vague target-only instruction versus clear instruction that links the target, official on-site cues, and decision-point confirmation rules.",
+  "Manipulated X dimensions are cue quantity, cue continuity, key decision-point coverage, and first visible/readable cue timing. Signature1/2/3 currently map to low/medium/high support unless a later condition table says otherwise.",
+  "Primary Y: route-decision hesitation, measured by initial action onset time, decision-point dwell time, repeated checking, stopping, scanning, U-turns, and backtracking. Auxiliary Y: wayfinding decision accuracy; the only correct final exit is A3, so exit_label == A3 can be used as final route correctness.",
+  "M1: perceived information reliability, representing the rational trade-off mechanism in heuristic decision-making: whether the expected accuracy gain from official route-confirmation cues is worth the additional confirmation cost. M2: information-processing load, representing the cognitive-limitation mechanism: the load imposed by target-cue-direction integration when the confirmation chain is reliable but not closed.",
+  "Moderator W is formal: protective action instruction clarity, measured by the post-all warning information content questionnaire or by the experimental clarity condition if available.",
+  "Questionnaire mapping: per-map official information-chain items form M1; per-map A3-related on-site signage items are manipulation checks/confirmation-chain closure; per-map subjective correctness items are confidence auxiliary variables; post-all warning information items form W; spatial ability is a covariate; VR discomfort is QC/sensitivity.",
   "Main hypothesis: medium route-confirmation support may produce the highest route-decision hesitation and EEG information-processing load, because the official information chain is reliable enough to keep checking but not closed enough to resolve the decision quickly.",
+  "Mediation logic: X-to-M assumptions can be refined as questionnaire, EEG, and behavior evidence accumulates, but mediator dominance must follow the main effect: M1 explains why hesitation rises from low to medium support; M2 explains why hesitation falls from medium to high support.",
   "Primary planned contrast: medium - mean(low, high), weights low:-1, medium:2, high:-1.",
   "Primary data products: subject-level support-level table, EEG load proxy, theta/alpha ratio, frontal theta, posterior alpha, behavior hesitation proxy, completion time, decision accuracy, and event-window features around sign_readable and decision_point_enter.",
   "Statistics: within-subject route-confirmation support model first; between-subject conclusions refer to differences across participants and require subject metadata. Do not claim significance unless cohort summary or user-provided results support it.",

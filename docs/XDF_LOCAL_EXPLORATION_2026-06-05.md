@@ -354,3 +354,60 @@ leave-one-subject-out: 32/32 次仍 p < .05
 论文可写段落：
 
 > 基于 32 名已完成三条件数据的中期分析，路径确认支持水平对近端路径确认迟滞呈现显著的中等支持峰值效应。以 `medium - mean(low, high)` 为 planned contrast，中等支持条件下的近端路径确认迟滞显著高于低支持和高支持条件的平均水平，`Mcontrast = 0.242, 95% CI [0.058, 0.427], t(31)=2.68, p=.012, dz=0.47`。该结果在 bootstrap 置信区间、Wilcoxon 检验、符号翻转置换、被试内标签置换、log-z 组件指标、rank 组件指标以及 leave-one-subject-out 影响度分析中均保持一致。进一步的 pairwise 分析显示，中等支持条件高于低支持条件，且相对于高支持条件也呈现同方向差异；低支持与高支持之间没有实质差异。该模式说明，中等路径确认支持并非简单增加或减少行为迟滞，而是在官方提示与现场确认线索之间形成一种“可依赖但未闭合”的确认链，从而增加被试在关键节点上的核对成本。
+
+## 2026-06-07 formal EEG MNE 预处理补充
+
+新增脚本：
+
+```text
+scripts/eeg_mne_preprocessing.py
+```
+
+新增文档：
+
+```text
+docs/H1_CONFIRMATION_HESITATION_PROTOCOL.md
+docs/EEG_PREPROCESSING_PROTOCOL.md
+```
+
+关键方法改进：
+
+- 修复 Mitsar XDF 通道标签解析：`desc/channel` 现在可正确读出。
+- 将 `Fp1-AA`、`F3-AA`、`Pz-AA` 等参考后缀规范化为 10-20 通道名。
+- MNE `standard_1020` montage 在当前 97 个 XDF 中全部成功设置。
+- 正式 EEG 事件窗使用 baseline-corrected Welch log band power，而不是 HTML worker 的轻量 raw proxy。
+
+全量 97 XDF 试跑：
+
+```text
+files_completed = 97 / 97
+montage_set = 97 / 97
+region_fallback = 0 / 97
+decision_point_enter = 419 accepted / 430 candidate epochs
+sign_readable = 1855 accepted / 1884 candidate epochs
+```
+
+Formal EEG planned contrast：
+
+```text
+decision_point_enter_formal_load_delta:
+n = 31, mean = 0.219, 95% CI [-0.009, 0.447],
+t = 1.96, p = .0588, dz = 0.35
+
+decision_point_enter_frontal_theta_delta:
+n = 31, mean = 0.171, 95% CI [0.023, 0.318],
+t = 2.36, p = .0247, dz = 0.42
+bootstrap 95% CI [0.0317, 0.3120], sign-flip p = .0252,
+Wilcoxon p = .0479, leave-one-subject-out 31/31 次仍 p < .05
+```
+
+解释：H3 composite 目前是边缘结果；关键决策点额区 theta 增量显著，可作为 planned secondary 生理证据支持 H1 行为迟滞机制。论文中不要把 EEG composite 写成显著主结果。
+
+新增输出：
+
+```text
+work/eeg_mne_preprocessing/formal_eeg_report.html
+work/eeg_mne_preprocessing/formal_eeg_robustness_results.csv
+work/eeg_mne_preprocessing/formal_eeg_pairwise_results.csv
+work/eeg_mne_preprocessing/formal_eeg_leave_one_subject_out.csv
+```

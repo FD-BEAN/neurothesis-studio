@@ -122,6 +122,7 @@ FINAL_CORRECTNESS_FIELDS = (
     "success",
     "correct_exit",
 )
+TARGET_EXIT_LABEL = "A3"
 INSTRUCTION_CLARITY_FIELDS = (
     "instruction_clarity",
     "clarity",
@@ -136,7 +137,7 @@ RELIABILITY_FIELDS = (
     "confidence",
     "information_reliability",
 )
-ANALYSIS_PIPELINE_VERSION = "metro-rescue-xdf-pipeline-2026-06-02"
+ANALYSIS_PIPELINE_VERSION = "metro-rescue-xdf-pipeline-2026-06-07"
 UNITY_MARKER_DICTIONARY = [
     ("map_start", "实验时段", "必需", "确定 trial 起点；建议字段 subject/session/map/signature/support_level/run_order。"),
     ("evacuation_complete", "实验时段", "必需", "确定 trial 终点，并记录 exit/final_correct/success/horizontal_distance_m。"),
@@ -177,15 +178,15 @@ METRIC_REGISTRY = {
     },
     "eeg_information_processing_load_index": {
         "label": "EEG 信息加工负荷指数",
-        "tier": "primary_eeg",
-        "role": "H3 EEG 主指标",
-        "report_rule": "作为 EEG 主结果优先报告；整合 trial-level 与事件窗 EEG 负荷代理指标。",
+        "tier": "screening_eeg",
+        "role": "H3 EEG 快速筛查指标",
+        "report_rule": "HTML worker 中仅作为快速 QC/探索性筛查；论文正式 H3 EEG 结果以 scripts/eeg_mne_preprocessing.py 的 MNE baseline-corrected 事件窗输出为准。",
     },
     "decision_point_enter_eeg_load_proxy": {
         "label": "decision_point_enter 事件窗 EEG 负荷",
-        "tier": "primary_eeg_window",
-        "role": "H3 事件窗主指标",
-        "report_rule": "优先用于解释关键决策点上的目标-线索-方向匹配负荷；事件窗数量不足时降级为探索性。",
+        "tier": "screening_eeg_window",
+        "role": "H3 事件窗快速筛查指标",
+        "report_rule": "用于网页端快速检查关键决策点 EEG 是否可用；正式论文使用 MNE 脚本中的 decision_point_enter_formal_load_delta 与计划生理成分。",
     },
     "first_action_latency_s": {
         "label": "首次行动启动延迟",
@@ -257,7 +258,7 @@ METRIC_REGISTRY = {
         "label": "路径判断准确率线索",
         "tier": "auxiliary_outcome",
         "role": "辅助因变量",
-        "report_rule": "用于解释 accuracy-effort trade-off；缺少 correctness 字段时不能报告正确率结论。",
+        "report_rule": "用于解释 accuracy-effort trade-off；优先使用 choice_correct/route_correct，缺失时可用最终出口 A3 作为路线正确性代理，并标注来源。",
     },
     "duration_s": {
         "label": "完成时间",
@@ -270,6 +271,8 @@ METRIC_TIERS = {
     "primary_behavior": "主指标：近端路径确认迟滞",
     "primary_eeg": "主指标：EEG 信息加工负荷",
     "primary_eeg_window": "主指标：EEG 事件窗",
+    "screening_eeg": "筛查：EEG 快速负荷 proxy",
+    "screening_eeg_window": "筛查：EEG 事件窗 proxy",
     "secondary_behavior": "次指标：行为机制",
     "secondary_eeg": "次指标：EEG 频带",
     "secondary_eeg_window": "次指标：EEG 事件窗",
@@ -1385,7 +1388,7 @@ def analyze_cohort_density(
     primary_behavior_result = primary_behavior_result or fallback_behavior_result
     primary_eeg_result = primary_eeg_result or fallback_decision_eeg_result or fallback_eeg_result
     behavior_text = format_primary_result("H1 近端路径确认迟滞", primary_behavior_result)
-    eeg_text = format_primary_result("H3 EEG 信息加工负荷", primary_eeg_result)
+    eeg_text = format_primary_result("H3 EEG 快速筛查", primary_eeg_result)
 
     notes = [
         "该报告只汇总已经完成的被试批量 XDF HTML/JSON 结果；未完成、失败或路径确认支持条件缺失的被试不会进入统计。",
@@ -1422,7 +1425,7 @@ def analyze_cohort_density(
             {"label": "被试信息匹配", "value": f"{len(matched_metadata_subjects)}/{len(metadata_subjects)}" if metadata_subjects else "未提供"},
             {"label": "协变量", "value": group_variable if group_levels else "未启用", "text": " / ".join(group_levels) if group_levels else ""},
             {"label": "H1 近端确认迟滞", "value": primary_behavior_result["conclusion"] if primary_behavior_result else "未形成", "text": behavior_text},
-            {"label": "H3 EEG 负荷", "value": primary_eeg_result["conclusion"] if primary_eeg_result else "未形成", "text": eeg_text},
+            {"label": "H3 EEG 快速筛查", "value": primary_eeg_result["conclusion"] if primary_eeg_result else "未形成", "text": eeg_text},
         ],
         "charts": [
             {
@@ -1483,7 +1486,7 @@ def analyze_cohort_density(
                 "rows": [
                     ["组内主假设", "对每名被试计算 medium - mean(low, high)，再做 one-sample test；等价 mixed model contrast 可作为稳健性检验。", "只有主指标方向、置信区间和 p 值同时支持时，才写作支持中等路径确认支持最高负荷假设。"],
                     ["个体差异/协变量", f"用被试信息表中的 {group_variable} 描述 subject-level contrast 差异；正式模型可写 Load ~ SupportLevel * {group_variable} + RunOrder + Map + (1 + SupportLevel | Subject)。", "2 名被试或变量水平样本过少时只描述趋势，不报告显著性结论。"],
-                    ["指标层级", "行动迟滞和 EEG 信息加工负荷作为主指标；准确率、确认链不流畅、停留/扫描/回退作为机制和操纵检查。", "探索性指标需与主指标分开报告，避免把所有指标都写成主结果。"],
+                    ["指标层级", "网页端行动迟滞指标用于 H1 汇总；网页端 EEG 指标只作为快速筛查，正式 H3 以 MNE formal EEG 输出为准。", "探索性指标需与主指标分开报告，避免把所有指标都写成主结果。"],
                     ["缺失与排除", "排除缺低/中/高条件、缺 completion marker、EEG 覆盖不足或事件窗过少的 run，并在审计记录中保留源文件。", "排除规则应在结果前说明，不能事后按显著性筛选。"],
                 ],
             },
@@ -1522,10 +1525,10 @@ def build_cohort_key_findings(
             "text": format_primary_result("H1 近端路径确认迟滞", primary_behavior_result),
         },
         {
-            "label": "H3 EEG 负荷",
+            "label": "H3 EEG 快速筛查",
             "value": primary_eeg_result["conclusion"] if primary_eeg_result else "未形成",
             "tone": cohort_result_tone(primary_eeg_result),
-            "text": format_primary_result("H3 EEG 信息加工负荷", primary_eeg_result),
+            "text": format_primary_result("H3 EEG 快速筛查", primary_eeg_result),
         },
         {
             "label": "协变量分析",
@@ -1570,9 +1573,9 @@ def build_cohort_sensitivity_table(
                 "报告 H1 时以该 n 为准；旧的路径决策迟滞指数作为广义行动迟滞敏感性指标保留。",
             ],
             [
-                "H3 主指标可用性",
+                "H3 网页端 EEG 筛查可用性",
                 f"{primary_eeg_n} 名被试有 EEG 信息加工负荷 contrast；decision_point 事件窗 {decision_eeg_n} 名",
-                "事件窗不足时优先说明 marker 覆盖和 EEG 对齐限制，不把 trial-level 频带强行写成事件窗结论。",
+                "正式 H3 EEG 以 MNE formal EEG 脚本输出为准；网页端事件窗不足时只说明 marker 覆盖和 EEG 对齐限制。",
             ],
             [
                 "被试信息匹配",
@@ -2444,6 +2447,7 @@ def extract_run_summary(document: dict[str, Any], report: dict[str, Any]) -> dic
             "decision_choice_correct_count",
             "decision_choice_total_count",
             "final_arrival_correct",
+            "accuracy_source",
         ],
     )
     eeg = extract_metric_table(
@@ -2510,6 +2514,7 @@ def extract_run_summary(document: dict[str, Any], report: dict[str, Any]) -> dic
         "decision_choice_correct_count": behavior.get("decision_choice_correct_count", "-"),
         "decision_choice_total_count": behavior.get("decision_choice_total_count", "-"),
         "final_arrival_correct": behavior.get("final_arrival_correct", "-"),
+        "accuracy_source": behavior.get("accuracy_source", "-"),
         "eeg_load_proxy": eeg.get("eeg_load_proxy", "-"),
         "theta_alpha_ratio": eeg.get("theta_alpha_ratio", "-"),
         "frontal_theta_4_7": eeg.get("frontal_theta_4_7", "-"),
@@ -3561,6 +3566,7 @@ def build_behavior_table(rows: list[dict[str, Any]], window: dict[str, float] | 
         ["decision_choice_correct_count", accuracy["decision_choice_correct_count"]],
         ["decision_choice_total_count", accuracy["decision_choice_total_count"]],
         ["final_arrival_correct", accuracy["final_arrival_correct"]],
+        ["accuracy_source", accuracy["accuracy_source"]],
     ]
     metrics.extend([[event, str(counts.get(event, 0))] for event in BEHAVIOR_EVENTS])
 
@@ -4306,15 +4312,43 @@ def marker_accuracy_summary(rows: list[dict[str, Any]], completion: dict[str, An
             "correct_exit",
         ),
     )
+    accuracy_source = "correctness_marker" if final_correct is not None or decision_values else "-"
+    if final_correct is None:
+        final_correct = final_exit_correctness(completion)
+        if final_correct is not None:
+            accuracy_source = f"exit_label={TARGET_EXIT_LABEL}"
     correct_count = sum(1 for value in decision_values if value)
     total_count = len(decision_values)
+    if total_count:
+        accuracy_ratio = safe_ratio(correct_count, total_count)
+    elif final_correct is not None:
+        accuracy_ratio = 1.0 if final_correct else 0.0
+        correct_count = 1 if final_correct else 0
+        total_count = 1
+    else:
+        accuracy_ratio = None
     return {
         "first_choice_correct": bool_label(first_choice),
-        "decision_choice_accuracy_ratio": fmt(safe_ratio(correct_count, total_count)) if total_count else "-",
+        "decision_choice_accuracy_ratio": fmt(accuracy_ratio) if accuracy_ratio is not None else "-",
         "decision_choice_correct_count": str(correct_count) if total_count else "-",
         "decision_choice_total_count": str(total_count) if total_count else "-",
         "final_arrival_correct": bool_label(final_correct),
+        "accuracy_source": accuracy_source,
     }
+
+
+def final_exit_correctness(completion: dict[str, Any] | None) -> bool | None:
+    if not completion:
+        return None
+    for key in ("exit", "exit_label", "final_exit", "arrival_exit", "arrived_exit", "target_exit"):
+        value = completion.get(key)
+        if value is None:
+            continue
+        text = str(value).strip().upper()
+        if not text:
+            continue
+        return text == TARGET_EXIT_LABEL
+    return None
 
 
 def marker_bool_value(row: dict[str, Any], keys: tuple[str, ...]) -> bool | None:
@@ -4550,11 +4584,13 @@ def extract_channel_labels(info: dict[str, Any], fallback_count: int) -> list[st
     desc = first_item(info.get("desc"))
     channels = first_item(desc.get("channels")) if isinstance(desc, dict) else None
     channel_items = channels.get("channel") if isinstance(channels, dict) else None
+    if channel_items is None and isinstance(desc, dict):
+        channel_items = desc.get("channel")
     for item in ensure_list(channel_items):
         if isinstance(item, dict):
             label = str(meta_value(item, "label", "") or meta_value(item, "name", "")).strip()
             if label:
-                labels.append(label)
+                labels.append(canonical_channel_label(label))
     if len(labels) < fallback_count:
         labels.extend([f"Ch{index + 1}" for index in range(len(labels), fallback_count)])
     return labels[:fallback_count]
@@ -4597,7 +4633,20 @@ def format_session_label(row: dict[str, Any]) -> str:
 
 
 def normalize_channel_label(label: str) -> str:
-    return "".join(ch for ch in str(label).lower() if ch.isalnum())
+    return "".join(ch for ch in canonical_channel_label(label).lower() if ch.isalnum())
+
+
+def canonical_channel_label(label: str) -> str:
+    text = str(label).strip()
+    lower = text.lower()
+    for separator in ("-", "_", " "):
+        if separator not in lower:
+            continue
+        first, rest = lower.split(separator, 1)
+        rest_token = rest.strip()
+        if rest_token in {"aa", "a1", "a2", "avg", "average", "ref", "reference"} or rest_token.startswith("ref"):
+            return text[: len(first)].strip()
+    return text
 
 
 def meta_value(info: dict[str, Any], key: str, default: Any = "") -> Any:
