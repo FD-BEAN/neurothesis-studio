@@ -526,6 +526,7 @@ XDF 命名与分析规则：
 - 每个地图后填写的“路线判断正确性的主观把握”题组用于主观正确性/信心辅助变量。
 - 完成全部三个地图后填写的“警报信息内容”题组用于 W 保护性行动指令清晰度。
 - 空间/寻路能力题组作为个体差异协变量；身体感受/VR 不适题组作为 QC、敏感性分析或控制变量。
+- `scripts/questionnaire_integration.py` 用于把问卷长表整理成量表分数、subject-level covariates 和 `questionnaire_segment_mediation_ready.csv`；正式执行细节见 `docs/FORMAL_ANALYSIS_AND_QUESTIONNAIRE_PLAN.md`。
 
 写作与知识卡要求：
 

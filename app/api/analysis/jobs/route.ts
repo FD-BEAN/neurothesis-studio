@@ -25,10 +25,11 @@ const DENSITY_ANALYSIS_DESIGN = {
   withinSubjectFactor: "route-confirmation support level",
   densityLevels: ["low", "medium", "high"],
   signatureMapping: { Signature1: "low", Signature2: "medium", Signature3: "high" },
-  primaryHypothesis: "medium route-confirmation support has the highest route-decision hesitation and information-processing load",
+  primaryEndpoint: "route_confirmation_hesitation_index",
+  primaryHypothesis: "medium route-confirmation support has the highest proximal route-confirmation hesitation",
   primaryContrast: {
     name: "medium_minus_low_high_mean",
-    weights: { low: -1, medium: 2, high: -1 },
+    weights: { low: -0.5, medium: 1, high: -0.5 },
   },
 };
 

@@ -1827,7 +1827,7 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
         notes.append("未能计算中等支持 planned contrast；通常是低/中/高路径确认支持没有全部识别，或对应指标缺失。")
     notes.append("单个被试报告只计算方向性 contrast，不报告显著性；显著性需要 90 名被试的 subject-level contrast 或 trial-level mixed-effects model。")
     notes.append("组内因素主轴为 route-confirmation support level；个体差异分析需要额外上传被试信息表，例如 sex、age、VR experience、空间能力、专业背景、实验顺序或 counterbalance。")
-    notes.append("正式主检验建议预注册为：中等路径确认支持下行动迟滞和信息加工负荷高于低/高支持平均，contrast weights = low:-1, medium:2, high:-1。")
+    notes.append("正式主检验建议预注册为：中等路径确认支持下行动迟滞高于低/高支持平均，contrast weights = low:-0.5, medium:1, high:-0.5；EEG 信息加工负荷作为 M2 过程证据单独报告。")
 
     return {
         "title": f"{subject_id} 被试批量 XDF 分析",

@@ -46,6 +46,73 @@ const EXPECTED_SUBJECT_COUNT = 90;
 const EXPECTED_RUNS_PER_SUBJECT = 3;
 const EXPECTED_XDF_COUNT = EXPECTED_SUBJECT_COUNT * EXPECTED_RUNS_PER_SUBJECT;
 
+type H1ConditionMean = {
+  level: DensityLevel;
+  value: number;
+};
+
+type H1EvidenceCard = {
+  label: string;
+  value: string;
+  detail: string;
+  tone: "primary" | "support" | "caution";
+};
+
+type H1SensitivityRow = {
+  label: string;
+  n: number;
+  contrast: string;
+  p: string;
+  status: string;
+};
+
+const h1ConditionMeans: H1ConditionMean[] = [
+  { level: "low", value: -0.082 },
+  { level: "medium", value: 0.161 },
+  { level: "high", value: -0.08 },
+];
+
+const h1EvidenceCards: H1EvidenceCard[] = [
+  {
+    label: "H1 主 planned contrast",
+    value: "0.242",
+    detail: "95% CI [0.058, 0.427]；双侧 p=.0118；sign-flip p=.012；Wilcoxon p=.012。",
+    tone: "primary",
+  },
+  {
+    label: "个体峰值诊断",
+    value: "17/32",
+    detail: "中等支持为个体三条件最高，binomial p=.016；medium > high 为 23/32，p=.010。",
+    tone: "support",
+  },
+  {
+    label: "地图校正模型",
+    value: "p=.0016",
+    detail: "subject FE + map FE：coef=.0716，q=.0164；说明主效应不是单纯地图差异。",
+    tone: "support",
+  },
+  {
+    label: "主指标冻结",
+    value: "固定",
+    detail: "Y = route_confirmation_hesitation_index；旧版广义效率指标只做边界敏感性。",
+    tone: "caution",
+  },
+];
+
+const h1ComponentSensitivityRows: H1SensitivityRow[] = [
+  { label: "删除 prompt_to_first_confirmation_s", n: 32, contrast: "0.165", p: ".228", status: "正向，说明 prompt 是核心成分" },
+  { label: "删除 time_to_first_sign_readable_s", n: 32, contrast: "0.381", p: ".004", status: "正向且 p<.05" },
+  { label: "删除 decision_total_look_count", n: 32, contrast: "0.351", p: ".018", status: "正向且 p<.05" },
+  { label: "删除 decision_scan_both_count", n: 32, contrast: "0.289", p: ".052", status: "正向趋势" },
+];
+
+const h1QcSensitivityRows: H1SensitivityRow[] = [
+  { label: "完整三条件", n: 32, contrast: "0.242", p: ".012", status: "正向且 p<.05" },
+  { label: "严格 trial start", n: 30, contrast: "0.206", p: ".033", status: "正向且 p<.05" },
+  { label: "低重复 marker 比例", n: 30, contrast: "0.237", p: ".020", status: "正向且 p<.05" },
+  { label: "EEG epochs >= 20", n: 27, contrast: "0.197", p: ".070", status: "正向趋势" },
+];
+
 type HtmlReportArtifact = {
   storagePath: string;
   filename?: string;
@@ -775,6 +842,20 @@ function Workspace({
     window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   }
 
+  function downloadSubjectMatrixCsv(rows = subjectMatrixRows) {
+    const csv = buildSubjectMatrixCsv(rows);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `metro-rescue-xdf-matrix-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    setJobMessage(`已导出 ${rows.length} 行被试 XDF 管理矩阵。`);
+  }
+
   async function runAiAssistant() {
     setAiState({ status: "loading", output: "" });
     const accessToken = session.access_token;
@@ -1303,6 +1384,7 @@ function Workspace({
             <StatusMetric label="已完成" value={xdfJobStats.completed} text="可下载 HTML 报告" />
             <StatusMetric label="失败/需处理" value={xdfJobStats.failed + xdfJobStats.stale} text="失败或太久没更新" tone="warn" />
           </div>
+          <H1EvidencePanel />
           <XdfSubjectMatrixPanel
             rows={filteredSubjectMatrixRows}
             stats={subjectMatrixStats}
@@ -1310,6 +1392,7 @@ function Workspace({
             jobLoading={jobLoading}
             onFilterChange={setSubjectMatrixFilter}
             onRunAllComplete={runAllCompleteSubjectBatches}
+            onDownloadCsv={() => downloadSubjectMatrixCsv(filteredSubjectMatrixRows)}
             onRunSubject={(row) => {
               const documentsForRun = densityLevels
                 .map((level) => row.documentsByDensity[level])
@@ -1503,6 +1586,117 @@ function StatusMetric({
   );
 }
 
+function H1EvidencePanel() {
+  return (
+    <section className="work-panel h1-evidence-panel" aria-label="H1 主效应证据包">
+      <div className="analysis-head">
+        <div>
+          <p className="eyebrow">H1 主效应证据包</p>
+          <h3>路径确认支持水平对行动迟滞的倒 U 型影响</h3>
+        </div>
+        <span className="status-pill compact">n=32 完整被试</span>
+      </div>
+      <div className="h1-evidence-summary">
+        {h1EvidenceCards.map((item) => (
+          <article className={`h1-evidence-card ${item.tone}`} key={item.label}>
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+            <p>{item.detail}</p>
+          </article>
+        ))}
+      </div>
+      <div className="h1-evidence-layout">
+        <article className="h1-chart-block">
+          <div>
+            <strong>三条件均值</strong>
+            <p>低支持和高支持接近，中等支持最高；正式主指标固定为近端路径确认迟滞指数。</p>
+          </div>
+          <H1ConditionMeanChart means={h1ConditionMeans} />
+        </article>
+        <article className="h1-stage-block">
+          <strong>相邻阶段解释</strong>
+          <dl>
+            <div>
+              <dt>低到中</dt>
+              <dd>medium - low = 0.243，双侧 p=.022。解释为可靠性上升后继续确认变得值得，迟滞上升。</dd>
+            </div>
+            <div>
+              <dt>中到高</dt>
+              <dd>medium - high = 0.241，方向性 p=.029，Wilcoxon p=.038。解释为确认链闭合后负荷下降，迟滞减少。</dd>
+            </div>
+            <div>
+              <dt>高 vs 低</dt>
+              <dd>high - low = 0.002，p=.987。该结果支持“中等峰值”而不是线性增加。</dd>
+            </div>
+          </dl>
+        </article>
+      </div>
+      <div className="h1-sensitivity-layout">
+        <H1SensitivityTable title="组件敏感性" rows={h1ComponentSensitivityRows} />
+        <H1SensitivityTable title="QC 敏感性" rows={h1QcSensitivityRows} />
+      </div>
+      <p className="muted compact-note h1-note">
+        论文写作顺序固定为：H1 主 planned contrast、三条件形状、个体峰值诊断、地图校正模型、相邻阶段、组件与 QC 敏感性。问卷 M1 和 EEG M2 用于解释机制，不替换 H1 主指标。
+      </p>
+    </section>
+  );
+}
+
+function H1ConditionMeanChart({ means }: { means: H1ConditionMean[] }) {
+  const min = Math.min(...means.map((item) => item.value), -0.1);
+  const max = Math.max(...means.map((item) => item.value), 0.18);
+  const span = max - min || 1;
+
+  return (
+    <div className="h1-mean-chart" aria-label="H1 三条件均值">
+      {means.map((item) => {
+        const zero = ((0 - min) / span) * 100;
+        const position = ((item.value - min) / span) * 100;
+        return (
+          <div className={`h1-mean-row ${item.level}`} key={item.level}>
+            <span>{densityLabels[item.level]}</span>
+            <div className="h1-mean-track">
+              <i className="zero-line" style={{ left: `${zero}%` }} />
+              <b style={{ left: `${position}%` }} />
+            </div>
+            <strong>{item.value.toFixed(3)}</strong>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function H1SensitivityTable({ title, rows }: { title: string; rows: H1SensitivityRow[] }) {
+  return (
+    <div className="h1-sensitivity-table">
+      <strong>{title}</strong>
+      <table>
+        <thead>
+          <tr>
+            <th>方案</th>
+            <th>n</th>
+            <th>contrast</th>
+            <th>p</th>
+            <th>结论</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.label}>
+              <td>{row.label}</td>
+              <td>{row.n}</td>
+              <td>{row.contrast}</td>
+              <td>{row.p}</td>
+              <td>{row.status}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function ThesisWritingBlueprintPanel() {
   return (
     <details className="writing-blueprint" open>
@@ -1692,6 +1886,7 @@ function XdfSubjectMatrixPanel({
   jobLoading,
   onFilterChange,
   onRunAllComplete,
+  onDownloadCsv,
   onRunSubject,
   onDownloadReport,
   onDeleteJob,
@@ -1702,6 +1897,7 @@ function XdfSubjectMatrixPanel({
   jobLoading: boolean;
   onFilterChange: (filter: SubjectMatrixFilter) => void;
   onRunAllComplete: () => void;
+  onDownloadCsv: () => void;
   onRunSubject: (row: XdfSubjectMatrixRow) => void;
   onDownloadReport: (job: ResearchAnalysisJob) => void;
   onDeleteJob: (job: ResearchAnalysisJob) => void;
@@ -1713,9 +1909,14 @@ function XdfSubjectMatrixPanel({
           <p className="eyebrow">270 个 XDF 管理矩阵</p>
           <h3>P01-P90 被试 × 低/中/高路径确认支持</h3>
         </div>
-        <button className="primary-button" disabled={jobLoading || stats.runnableSubjects < 1} onClick={onRunAllComplete}>
-          批量提交可分析被试（{stats.runnableSubjects}）
-        </button>
+        <div className="top-actions">
+          <button className="secondary-button" disabled={!rows.length} onClick={onDownloadCsv}>
+            下载矩阵 CSV
+          </button>
+          <button className="primary-button" disabled={jobLoading || stats.runnableSubjects < 1} onClick={onRunAllComplete}>
+            批量提交可分析被试（{stats.runnableSubjects}）
+          </button>
+        </div>
       </div>
       <div className="matrix-metrics" aria-label="XDF 数据矩阵摘要">
         <span>文件 {stats.uploadedRuns}/{EXPECTED_XDF_COUNT}</span>
@@ -3795,6 +3996,51 @@ function summarizeSubjectMatrix(rows: XdfSubjectMatrixRow[]): XdfSubjectMatrixSt
     completedSubjects: rows.filter((row) => row.completedJob).length,
     failedSubjects: rows.filter((row) => row.failedJob && !row.activeJob && !row.completedJob).length,
   };
+}
+
+function buildSubjectMatrixCsv(rows: XdfSubjectMatrixRow[]) {
+  const headers = [
+    "participant_id",
+    "subject_index",
+    "expected_low_sequence",
+    "expected_medium_sequence",
+    "expected_high_sequence",
+    "low_filename",
+    "medium_filename",
+    "high_filename",
+    "uploaded_run_count",
+    "missing_levels",
+    "matrix_status",
+    "latest_job_status",
+    "latest_job_updated_at",
+    "completed_report_available",
+  ];
+  const body = rows.map((row) => {
+    const values = [
+      row.subjectId,
+      row.subjectIndex,
+      row.expectedSequences.low,
+      row.expectedSequences.medium,
+      row.expectedSequences.high,
+      row.documentsByDensity.low?.filename ?? "",
+      row.documentsByDensity.medium?.filename ?? "",
+      row.documentsByDensity.high?.filename ?? "",
+      row.documents.length,
+      row.missingLevels.map((level) => densityLabels[level]).join(" / "),
+      getSubjectMatrixStatus(row),
+      row.latestJob?.status ?? "",
+      row.latestJob?.updated_at ?? "",
+      row.completedJob && getJobHtmlReport(row.completedJob) ? "yes" : "no",
+    ];
+    return values.map(csvCell).join(",");
+  });
+  return `\uFEFF${[headers.map(csvCell).join(","), ...body].join("\r\n")}\r\n`;
+}
+
+function csvCell(value: string | number | boolean | null | undefined) {
+  const text = String(value ?? "");
+  if (!/[",\r\n]/.test(text)) return text;
+  return `"${text.replace(/"/g, '""')}"`;
 }
 
 function filterSubjectMatrixRow(row: XdfSubjectMatrixRow, filter: SubjectMatrixFilter) {

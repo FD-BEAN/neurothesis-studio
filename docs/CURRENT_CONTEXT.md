@@ -1,6 +1,6 @@
 # NeuroThesis Studio 当前上下文
 
-更新时间：2026-06-05
+更新时间：2026-06-10
 
 这份文档用于保存当前项目上下文。以后如果 Codex 临时目录、聊天窗口或记忆状态变化，优先阅读本文件和 `docs/PROJECT_WIKI.md`。
 
@@ -992,4 +992,59 @@ W 正式调节变量
 A3 正确出口规则
 当前 H1 / M2 / 正确率辅助结果
 不能过度声称的边界
+```
+
+## 20. 2026-06-10 正式分析计划与问卷接入
+
+新增正式执行文档：
+
+```text
+docs/FORMAL_ANALYSIS_AND_QUESTIONNAIRE_PLAN.md
+```
+
+新增问卷接入脚本：
+
+```text
+scripts/questionnaire_integration.py
+```
+
+脚本默认读取：
+
+```text
+work/questionnaire/questionnaire_responses.csv
+```
+
+如果问卷原始 CSV 尚未整理好，脚本会先生成：
+
+```text
+work/questionnaire/questionnaire_template.csv
+work/questionnaire/questionnaire_codebook.csv
+```
+
+有真实问卷后，脚本输出：
+
+```text
+work/questionnaire/questionnaire_scale_scores.csv
+work/questionnaire/questionnaire_subject_covariates.csv
+work/questionnaire/questionnaire_segment_mediation_ready.csv
+work/questionnaire/questionnaire_analysis_summary.json
+```
+
+固定口径：
+
+```text
+M1 = perceived_reliability_score，只来自每个地图后的“官方信息链整体感受”题组。
+X 操纵检查 = route_closure_manipulation_check_score，来自 A3 现场标识题组，不替代 M1。
+主观信心 = subjective_route_confidence_score，不等于客观正确率。
+W = protective_action_instruction_clarity_score，来自完成全部三个地图后的警报信息题组。
+空间能力 = spatial_ability_score，作为协变量；第 6/7 项反向计分。
+VR 不适 = vr_discomfort_score，作为 QC / 敏感性或控制变量。
+```
+
+分析顺序继续固定：
+
+```text
+先报告 H1 主 planned contrast 和倒 U 形状；
+再报告正确率辅助、M2 EEG 过程证据；
+问卷接入后再检验 M1/M2 分段并行中介和 W 调节。
 ```

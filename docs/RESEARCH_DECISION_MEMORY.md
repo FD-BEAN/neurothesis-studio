@@ -1,8 +1,8 @@
 # Metro Rescue 研究决策备忘录
 
-更新日期：2026-06-07
+更新日期：2026-06-10
 
-用途：这是给后续分析和写作使用的“短上下文”。如果对项目口径不确定，先读本文件，再读 `CURRENT_CONTEXT.md`、`PARALLEL_MEDIATION_MODEL_PROTOCOL.md` 和 `MANAGEMENT_SCIENCE_EVIDENCE_PROTOCOL.md`。
+用途：这是给后续分析和写作使用的“短上下文”。如果对项目口径不确定，先读本文件，再读 `CURRENT_CONTEXT.md`、`PARALLEL_MEDIATION_MODEL_PROTOCOL.md`、`FORMAL_ANALYSIS_AND_QUESTIONNAIRE_PLAN.md` 和 `MANAGEMENT_SCIENCE_EVIDENCE_PROTOCOL.md`。
 
 ## 1. 论文定位
 
@@ -345,6 +345,7 @@ EEG 证明医学或生物学结论。
 docs/RESEARCH_DECISION_MEMORY.md
 docs/CURRENT_CONTEXT.md
 docs/PARALLEL_MEDIATION_MODEL_PROTOCOL.md
+docs/FORMAL_ANALYSIS_AND_QUESTIONNAIRE_PLAN.md
 docs/MANAGEMENT_SCIENCE_EVIDENCE_PROTOCOL.md
 docs/H1_CONFIRMATION_HESITATION_PROTOCOL.md
 docs/EEG_PREPROCESSING_PROTOCOL.md
@@ -359,6 +360,7 @@ scripts/h1_confirmation_robustness.py
 scripts/eeg_mne_preprocessing.py
 scripts/management_science_synthesis.py
 scripts/local_xdf_effect_explorer.py
+scripts/questionnaire_integration.py
 ```
 
 当前关键输出：
@@ -378,4 +380,9 @@ work/management_science_synthesis/management_h1_qc_sensitivity.csv
 work/management_science_synthesis/management_evidence_report.md
 work/management_science_synthesis/management_accuracy_status.csv
 work/management_science_synthesis/management_accuracy_contrasts.csv
+work/questionnaire/questionnaire_template.csv
+work/questionnaire/questionnaire_codebook.csv
+work/questionnaire/questionnaire_scale_scores.csv
+work/questionnaire/questionnaire_subject_covariates.csv
+work/questionnaire/questionnaire_segment_mediation_ready.csv
 ```

@@ -1225,10 +1225,247 @@ textarea {
 }
 
 .subject-matrix-panel,
-.analysis-pipeline-panel {
+.analysis-pipeline-panel,
+.h1-evidence-panel {
   margin-top: 16px;
   display: grid;
   gap: 16px;
+}
+
+.h1-evidence-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.h1-evidence-card {
+  min-height: 132px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.h1-evidence-card span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.h1-evidence-card strong {
+  color: var(--ink);
+  font-size: 1.55rem;
+  line-height: 1.05;
+}
+
+.h1-evidence-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.h1-evidence-card.primary {
+  border-color: #b8d8c4;
+  background: #f4fbf6;
+}
+
+.h1-evidence-card.primary strong {
+  color: var(--green);
+}
+
+.h1-evidence-card.support {
+  border-color: #b9d3e8;
+  background: #f6f9fc;
+}
+
+.h1-evidence-card.support strong {
+  color: var(--blue);
+}
+
+.h1-evidence-card.caution {
+  border-color: #ead1c8;
+  background: #fff8f5;
+}
+
+.h1-evidence-card.caution strong {
+  color: var(--coral);
+}
+
+.h1-evidence-layout,
+.h1-sensitivity-layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.95fr) minmax(0, 1.05fr);
+  gap: 14px;
+}
+
+.h1-chart-block,
+.h1-stage-block,
+.h1-sensitivity-table {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.h1-chart-block {
+  display: grid;
+  gap: 14px;
+}
+
+.h1-chart-block p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.h1-mean-chart {
+  display: grid;
+  gap: 12px;
+}
+
+.h1-mean-row {
+  display: grid;
+  grid-template-columns: 70px minmax(160px, 1fr) 58px;
+  gap: 10px;
+  align-items: center;
+}
+
+.h1-mean-row span,
+.h1-mean-row strong {
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.h1-mean-row span {
+  color: var(--muted);
+}
+
+.h1-mean-row strong {
+  color: var(--ink);
+  text-align: right;
+}
+
+.h1-mean-track {
+  position: relative;
+  height: 18px;
+  border-radius: 999px;
+  background: #edf3f3;
+}
+
+.h1-mean-track .zero-line {
+  position: absolute;
+  top: -4px;
+  width: 2px;
+  height: 26px;
+  background: #8ba1a7;
+}
+
+.h1-mean-track b {
+  position: absolute;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(23, 32, 42, 0.16);
+  transform: translate(-50%, -50%);
+}
+
+.h1-mean-row.low .h1-mean-track b {
+  background: var(--blue);
+}
+
+.h1-mean-row.medium .h1-mean-track b {
+  background: var(--green);
+}
+
+.h1-mean-row.high .h1-mean-track b {
+  background: var(--coral);
+}
+
+.h1-stage-block {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.h1-stage-block dl {
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.h1-stage-block dl div {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.h1-stage-block dl div:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.h1-stage-block dt {
+  color: var(--blue);
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.h1-stage-block dd {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.h1-sensitivity-table {
+  overflow: auto;
+}
+
+.h1-sensitivity-table > strong {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.h1-sensitivity-table table {
+  width: 100%;
+  min-width: 520px;
+  border-collapse: collapse;
+}
+
+.h1-sensitivity-table th,
+.h1-sensitivity-table td {
+  padding: 8px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+  font-size: 0.82rem;
+}
+
+.h1-sensitivity-table th {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
+.h1-sensitivity-table td {
+  color: var(--ink);
+}
+
+.h1-sensitivity-table td:last-child {
+  color: var(--muted);
+  min-width: 132px;
+}
+
+.h1-note {
+  max-width: 980px;
 }
 
 .matrix-metrics {
@@ -2403,6 +2640,9 @@ textarea {
   .batch-controls,
   .batch-layout,
   .metadata-grid,
+  .h1-evidence-summary,
+  .h1-evidence-layout,
+  .h1-sensitivity-layout,
   .pipeline-stage-grid,
   .marker-dictionary-grid,
   .literature-card-blueprint-grid,
@@ -2471,5 +2711,13 @@ textarea {
 
   .bar-row strong {
     text-align: left;
+  }
+
+  .h1-mean-row {
+    grid-template-columns: 58px minmax(120px, 1fr) 52px;
+  }
+
+  .h1-stage-block dl div {
+    grid-template-columns: 1fr;
   }
 }
