@@ -39,6 +39,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Create management-science evidence synthesis for the evacuation thesis.")
     parser.add_argument("--h1-summary", type=Path, default=Path("work/xdf_exploration/h1_robustness_summary.json"))
     parser.add_argument("--h1-subjects", type=Path, default=Path("work/xdf_exploration/h1_subject_contrast_details.csv"))
+    parser.add_argument("--h1-profiles", type=Path, default=Path("work/xdf_exploration/h1_condition_profiles.csv"))
+    parser.add_argument("--h1-pairwise", type=Path, default=Path("work/xdf_exploration/h1_pairwise_results.csv"))
+    parser.add_argument("--component-sensitivity", type=Path, default=Path("work/xdf_exploration/h1_component_sensitivity.csv"))
+    parser.add_argument("--analysis-grid", type=Path, default=Path("work/xdf_exploration/analysis_grid_results.csv"))
+    parser.add_argument("--map-adjusted", type=Path, default=Path("work/xdf_exploration/map_adjusted_results.csv"))
     parser.add_argument("--eeg-robustness", type=Path, default=Path("work/eeg_mne_preprocessing/formal_eeg_robustness_results.csv"))
     parser.add_argument("--eeg-subjects", type=Path, default=Path("work/eeg_mne_preprocessing/formal_eeg_subject_contrasts.csv"))
     parser.add_argument("--canonical-runs", type=Path, default=Path("work/xdf_exploration/canonical_run_rows.csv"))
@@ -49,6 +54,11 @@ def main() -> None:
 
     h1_summary = read_json(args.h1_summary)
     h1_subjects = read_csv(args.h1_subjects)
+    h1_profiles = read_optional_csv(args.h1_profiles)
+    h1_pairwise = read_optional_csv(args.h1_pairwise)
+    component_sensitivity = read_optional_csv(args.component_sensitivity)
+    analysis_grid = read_optional_csv(args.analysis_grid)
+    map_adjusted = read_optional_csv(args.map_adjusted)
     eeg_robustness = read_csv(args.eeg_robustness)
     eeg_subjects = read_csv(args.eeg_subjects)
     canonical_rows = read_optional_csv(args.canonical_runs)
@@ -56,12 +66,38 @@ def main() -> None:
     accuracy_rows = build_accuracy_rows(canonical_rows)
     accuracy_contrast_rows = build_accuracy_contrast_rows(canonical_rows)
     link_rows = build_link_rows(h1_subjects, eeg_subjects)
+    h1_figures = build_h1_figures(h1_subjects, h1_profiles)
+    h1_qc_rows = build_h1_qc_sensitivity_rows(analysis_grid)
+    h1_component_rows = build_h1_component_sensitivity_rows(component_sensitivity)
+    h1_primary_rows = build_h1_primary_display_rows(
+        h1_summary,
+        h1_profiles,
+        h1_pairwise,
+        map_adjusted,
+        h1_component_rows,
+        h1_qc_rows,
+    )
     construct_rows = build_construct_rows(h1_summary, eeg_robustness, accuracy_rows)
     implication_rows = build_implication_rows(h1_summary, eeg_robustness, link_rows, accuracy_rows)
-    paper_sections = build_paper_sections(h1_summary, eeg_robustness, link_rows, accuracy_rows, accuracy_contrast_rows)
+    paper_sections = build_paper_sections(
+        h1_summary,
+        eeg_robustness,
+        link_rows,
+        accuracy_rows,
+        accuracy_contrast_rows,
+        h1_profiles,
+        h1_pairwise,
+        map_adjusted,
+        h1_component_rows,
+        h1_qc_rows,
+    )
 
     payload = {
         "positioning": "neuro-engineering management / management science",
+        "h1_primary_result": h1_primary_rows,
+        "h1_component_sensitivity": h1_component_rows,
+        "h1_qc_sensitivity": h1_qc_rows,
+        "h1_figures": h1_figures,
         "constructs": construct_rows,
         "accuracy_auxiliary_outcome": accuracy_rows,
         "accuracy_contrasts": accuracy_contrast_rows,
@@ -71,6 +107,10 @@ def main() -> None:
     }
 
     write_json(args.out_dir / "management_evidence_synthesis.json", payload)
+    write_csv(args.out_dir / "management_h1_primary_result.csv", h1_primary_rows)
+    write_csv(args.out_dir / "management_h1_component_sensitivity.csv", h1_component_rows)
+    write_csv(args.out_dir / "management_h1_qc_sensitivity.csv", h1_qc_rows)
+    write_figure_svgs(args.out_dir, h1_figures)
     write_csv(args.out_dir / "management_construct_evidence.csv", construct_rows)
     write_csv(args.out_dir / "management_accuracy_status.csv", accuracy_rows)
     write_csv(args.out_dir / "management_accuracy_contrasts.csv", accuracy_contrast_rows)
@@ -78,8 +118,81 @@ def main() -> None:
     write_csv(args.out_dir / "management_implications.csv", implication_rows)
     write_markdown(args.out_dir / "management_evidence_report.md", payload)
     write_html(args.out_dir / "management_evidence_report.html", payload)
+    write_h1_markdown(args.out_dir / "h1_primary_effect_report.md", payload)
+    write_h1_html(args.out_dir / "h1_primary_effect_report.html", payload)
 
     print(json.dumps({"out_dir": str(args.out_dir), "constructs": len(construct_rows), "links": len(link_rows), "accuracy_rows": len(accuracy_rows), "accuracy_contrasts": len(accuracy_contrast_rows)}, ensure_ascii=False, indent=2))
+
+
+def build_h1_primary_display_rows(
+    h1_summary: dict[str, Any],
+    h1_profiles: list[dict[str, str]],
+    h1_pairwise: list[dict[str, str]],
+    map_adjusted: list[dict[str, str]],
+    component_sensitivity: list[dict[str, Any]],
+    qc_sensitivity: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    primary = h1_summary.get("primary_result", {})
+    profile_text = h1_profile_sentence(h1_profiles)
+    medium_low = h1_pairwise_evidence(h1_pairwise, "medium_minus_low")
+    medium_high = h1_pairwise_evidence(h1_pairwise, "medium_minus_high")
+    high_low = h1_pairwise_evidence(h1_pairwise, "high_minus_low")
+    shape_text = h1_shape_evidence(h1_summary)
+    map_adjusted_text = h1_map_adjusted_evidence(map_adjusted)
+    component_text = h1_component_sensitivity_evidence(component_sensitivity)
+    qc_text = h1_qc_sensitivity_evidence(qc_sensitivity)
+    return [
+        {
+            "item": "三条件均值形状",
+            "evidence": profile_text,
+            "interpretation": "低支持和高支持的近端确认迟滞接近，中等支持最高，直接对应倒 U 型主效应。",
+        },
+        {
+            "item": "H1 主 planned contrast",
+            "evidence": format_primary_h1_evidence(primary),
+            "interpretation": "这是论文主效应的第一报告项；机制、正确率和 EEG 都应围绕它解释。",
+        },
+        {
+            "item": "个体峰值形状诊断",
+            "evidence": shape_text,
+            "interpretation": "该诊断直接回答“中等支持是否更常成为个体层面的迟滞峰值”，用于补强倒 U 形状而非替换 planned contrast。",
+        },
+        {
+            "item": "地图校正主模型",
+            "evidence": map_adjusted_text,
+            "interpretation": "run-level 固定效应模型用于说明 H1 不是单纯由地图或被试固定差异造成；正式结论仍以被试层 planned contrast 为主。",
+        },
+        {
+            "item": "组件敏感性",
+            "evidence": component_text,
+            "interpretation": "leave-one-component-out 用于检查 H1 是否被单一组件驱动；该表应作为构念稳健性证据。",
+        },
+        {
+            "item": "QC 敏感性",
+            "evidence": qc_text,
+            "interpretation": "不同质量过滤条件下方向保持一致，说明 H1 不是由单一清洗阈值造成。",
+        },
+        {
+            "item": "低支持 -> 中等支持",
+            "evidence": medium_low,
+            "interpretation": "中等支持显著高于低支持，支持“可靠性上升后继续确认变得值得，迟滞上升”的第一阶段。",
+        },
+        {
+            "item": "中等支持 -> 高支持",
+            "evidence": medium_high,
+            "interpretation": "中等支持高于高支持；该相邻差异在方向性 planned 检验和非参数检验中支持下降趋势。",
+        },
+        {
+            "item": "高支持 vs 低支持",
+            "evidence": high_low,
+            "interpretation": "高支持与低支持几乎持平，说明主结果不是线性增加，而是中等支持峰值。",
+        },
+        {
+            "item": "稳健性",
+            "evidence": h1_sensitivity_sentence(h1_summary),
+            "interpretation": "主效应不依赖单一参数检验或单一被试；旧版广义路线效率只作边界/敏感性。",
+        },
+    ]
 
 
 def build_construct_rows(h1_summary: dict[str, Any], eeg_robustness: list[dict[str, str]], accuracy_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -99,6 +212,14 @@ def build_construct_rows(h1_summary: dict[str, Any], eeg_robustness: list[dict[s
             "status": "实验设计因素",
         },
         {
+            "construct": "近端确认负担",
+            "role": "因变量 / H1 行为主结果；报告时优先于机制和辅助结果",
+            "operationalization": H1_METRIC,
+            "evidence": format_primary_h1_evidence(primary),
+            "management_interpretation": "中等支持增加被试把信息支持转化为路线选择时的核对、确认和查看成本；该指标聚焦官方线索确认过程，不混入整段路线执行效率。",
+            "status": "主效应支持",
+        },
+        {
             "construct": "感知可靠性",
             "role": "中介一；低支持 -> 中等支持阶段主导",
             "operationalization": "perceived_reliability_score，问卷测量",
@@ -113,14 +234,6 @@ def build_construct_rows(h1_summary: dict[str, Any], eeg_robustness: list[dict[s
             "evidence": format_effect(mechanism, value_key="mean_contrast", p_key="p_two_sided", ci_low_key="ci95_low", ci_high_key="ci95_high"),
             "management_interpretation": "中等支持延长官方提示到现场确认之间的间隔，说明其形成了“可依赖但未闭合”的信息链；但感知可靠性仍必须由问卷直接测量。",
             "status": "支持，但不是正式中介一",
-        },
-        {
-            "construct": "近端确认负担",
-            "role": "因变量 / 行为主结果",
-            "operationalization": H1_METRIC,
-            "evidence": format_effect(primary, value_key="mean_contrast", p_key="p_two_sided", ci_low_key="ci95_low", ci_high_key="ci95_high"),
-            "management_interpretation": "中等支持增加被试把信息支持转化为路线选择时的核对、确认和查看成本。",
-            "status": "支持",
         },
         {
             "construct": "路径选择正确率",
@@ -435,6 +548,276 @@ def build_link_rows(h1_subjects: list[dict[str, str]], eeg_subjects: list[dict[s
     return rows
 
 
+def build_h1_component_sensitivity_rows(component_rows: list[dict[str, str]]) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    for row in component_rows:
+        if row.get("role") != "component_sensitivity":
+            continue
+        mean_value = number(row.get("mean_contrast"))
+        p_value = number(row.get("p_two_sided"))
+        out.append(
+            {
+                "dropped_component": row.get("dropped_component", ""),
+                "kept_components": row.get("components", ""),
+                "n": row.get("n", ""),
+                "mean_contrast": fmt_num(row.get("mean_contrast")),
+                "ci95": f"[{fmt_num(row.get('ci95_low'))}, {fmt_num(row.get('ci95_high'))}]",
+                "p_two_sided": fmt_p(row.get("p_two_sided")),
+                "wilcoxon_p": fmt_p(row.get("wilcoxon_p_two_sided")),
+                "signflip_p": fmt_p(row.get("signflip_p_two_sided")),
+                "label_permutation_p": fmt_p(row.get("label_permutation_p_two_sided")),
+                "status": evidence_status(mean_value, p_value),
+            }
+        )
+    return out
+
+
+def build_h1_qc_sensitivity_rows(analysis_grid: list[dict[str, str]]) -> list[dict[str, Any]]:
+    order = ["all_complete", "strict_start_all_runs", "low_duplicate_ratio", "eeg_epochs_ge_20"]
+    by_filter = {
+        row.get("filter"): row
+        for row in analysis_grid
+        if row.get("analysis") == "subject_contrast" and row.get("metric") == H1_METRIC
+    }
+    rows: list[dict[str, Any]] = []
+    for filter_name in order:
+        row = by_filter.get(filter_name)
+        if not row:
+            continue
+        mean_value = number(row.get("mean_contrast"))
+        p_value = number(row.get("p"))
+        rows.append(
+            {
+                "filter": filter_name,
+                "n": row.get("n", ""),
+                "mean_contrast": fmt_num(row.get("mean_contrast")),
+                "ci95": f"[{fmt_num(row.get('ci95_low'))}, {fmt_num(row.get('ci95_high'))}]",
+                "p_two_sided": fmt_p(row.get("p")),
+                "wilcoxon_p": fmt_p(row.get("wilcoxon_p")),
+                "sign_p": fmt_p(row.get("sign_p")),
+                "positive_count": row.get("positive_count", ""),
+                "negative_count": row.get("negative_count", ""),
+                "status": evidence_status(mean_value, p_value),
+            }
+        )
+    return rows
+
+
+def evidence_status(mean_value: float | None, p_value: float | None) -> str:
+    if mean_value is None:
+        return "无法判断"
+    if mean_value <= 0:
+        return "方向不一致"
+    if p_value is not None and p_value < 0.05:
+        return "正向且 p<.05"
+    if p_value is not None and p_value < 0.10:
+        return "正向趋势"
+    return "正向但未达显著"
+
+
+def build_h1_figures(h1_subjects: list[dict[str, str]], h1_profiles: list[dict[str, str]]) -> dict[str, str]:
+    subject_values = h1_subject_value_rows(h1_subjects)
+    return {
+        "condition_means": svg_condition_means(h1_profiles),
+        "subject_spaghetti": svg_subject_spaghetti(subject_values),
+        "contrast_distribution": svg_contrast_distribution(subject_values),
+    }
+
+
+def write_figure_svgs(out_dir: Path, figures: dict[str, str]) -> None:
+    for name, svg in figures.items():
+        if svg:
+            (out_dir / f"{name}.svg").write_text(svg, encoding="utf-8")
+
+
+def h1_subject_value_rows(h1_subjects: list[dict[str, str]]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for row in h1_subjects:
+        low = number(row.get(f"{H1_METRIC}_low"))
+        medium = number(row.get(f"{H1_METRIC}_medium"))
+        high = number(row.get(f"{H1_METRIC}_high"))
+        contrast = number(row.get(f"{H1_METRIC}_contrast"))
+        if low is None or medium is None or high is None or contrast is None:
+            continue
+        rows.append(
+            {
+                "subject": row.get("subject", ""),
+                "low": low,
+                "medium": medium,
+                "high": high,
+                "contrast": contrast,
+            }
+        )
+    return rows
+
+
+def svg_condition_means(h1_profiles: list[dict[str, str]]) -> str:
+    rows = [find_h1_profile(h1_profiles, level) for level in SUPPORT_ORDER]
+    if any(not row for row in rows):
+        return ""
+    means = [number(row.get("mean")) for row in rows]
+    lows = [number(row.get("ci95_low")) for row in rows]
+    highs = [number(row.get("ci95_high")) for row in rows]
+    if any(value is None for value in [*means, *lows, *highs]):
+        return ""
+    width, height = 760, 360
+    left, right, top, bottom = 70, 34, 42, 292
+    y_min, y_max = padded_range([float(value) for value in [*lows, *highs, 0.0]], 0.08)
+    xs = [150, 380, 610]
+    y0 = y_pos(0.0, y_min, y_max, top, bottom)
+    parts = [svg_open(width, height, "H1 三条件均值与 95% CI")]
+    parts.append(svg_line(left, y0, width - right, y0, "#94a3b8", 1, "4 4"))
+    parts.append(svg_axis(left, top, bottom, width - right))
+    points = []
+    for index, level in enumerate(SUPPORT_ORDER):
+        x = xs[index]
+        mean = float(means[index])
+        ci_low = float(lows[index])
+        ci_high = float(highs[index])
+        y_mean = y_pos(mean, y_min, y_max, top, bottom)
+        y_low = y_pos(ci_low, y_min, y_max, top, bottom)
+        y_high = y_pos(ci_high, y_min, y_max, top, bottom)
+        color = "#0f766e" if level == "medium" else "#64748b"
+        parts.append(svg_line(x, y_low, x, y_high, color, 3))
+        parts.append(svg_line(x - 13, y_low, x + 13, y_low, color, 2))
+        parts.append(svg_line(x - 13, y_high, x + 13, y_high, color, 2))
+        parts.append(f'<circle cx="{x}" cy="{y_mean:.2f}" r="7" fill="{color}" />')
+        parts.append(svg_text(x, bottom + 28, SUPPORT_LABELS[level], 13, "#334155", "middle"))
+        parts.append(svg_text(x, y_mean - 14, fmt_num(mean), 12, color, "middle"))
+        points.append((x, y_mean))
+    parts.append(svg_polyline(points, "#0f766e", 2.5))
+    parts.append(svg_y_labels(left, top, bottom, y_min, y_max))
+    parts.append("</svg>")
+    return "\n".join(parts)
+
+
+def svg_subject_spaghetti(subject_rows: list[dict[str, Any]]) -> str:
+    if not subject_rows:
+        return ""
+    width, height = 760, 390
+    left, right, top, bottom = 70, 34, 42, 318
+    values = [float(row[level]) for row in subject_rows for level in SUPPORT_ORDER]
+    y_min, y_max = padded_range([*values, 0.0], 0.08)
+    xs = {"low": 150, "medium": 380, "high": 610}
+    means = {level: float(np.mean([row[level] for row in subject_rows])) for level in SUPPORT_ORDER}
+    parts = [svg_open(width, height, "H1 被试内三条件轨迹")]
+    y0 = y_pos(0.0, y_min, y_max, top, bottom)
+    parts.append(svg_line(left, y0, width - right, y0, "#94a3b8", 1, "4 4"))
+    parts.append(svg_axis(left, top, bottom, width - right))
+    for row in subject_rows:
+        points = [(xs[level], y_pos(float(row[level]), y_min, y_max, top, bottom)) for level in SUPPORT_ORDER]
+        is_peak = row["medium"] > row["low"] and row["medium"] > row["high"]
+        parts.append(svg_polyline(points, "#14b8a6" if is_peak else "#cbd5e1", 1.2, 0.60 if is_peak else 0.42))
+    mean_points = [(xs[level], y_pos(means[level], y_min, y_max, top, bottom)) for level in SUPPORT_ORDER]
+    parts.append(svg_polyline(mean_points, "#0f766e", 4))
+    for level in SUPPORT_ORDER:
+        x = xs[level]
+        parts.append(f'<circle cx="{x}" cy="{y_pos(means[level], y_min, y_max, top, bottom):.2f}" r="6" fill="#0f766e" />')
+        parts.append(svg_text(x, bottom + 28, SUPPORT_LABELS[level], 13, "#334155", "middle"))
+    parts.append(svg_text(width - right, top + 16, "绿色线：个体 medium peak；粗线：均值", 12, "#475569", "end"))
+    parts.append(svg_y_labels(left, top, bottom, y_min, y_max))
+    parts.append("</svg>")
+    return "\n".join(parts)
+
+
+def svg_contrast_distribution(subject_rows: list[dict[str, Any]]) -> str:
+    if not subject_rows:
+        return ""
+    contrasts = [float(row["contrast"]) for row in subject_rows]
+    width, height = 760, 340
+    left, right, top, bottom = 70, 34, 42, 270
+    x_min, x_max = padded_range([*contrasts, 0.0], 0.08)
+    bins = 12
+    step = (x_max - x_min) / bins if x_max > x_min else 1.0
+    counts = [0] * bins
+    for value in contrasts:
+        index = min(bins - 1, max(0, int((value - x_min) / step)))
+        counts[index] += 1
+    max_count = max(counts) if counts else 1
+    parts = [svg_open(width, height, "H1 subject-level planned contrast 分布")]
+    x0 = x_pos(0.0, x_min, x_max, left, width - right)
+    parts.append(svg_line(x0, top, x0, bottom, "#94a3b8", 1, "4 4"))
+    parts.append(svg_axis(left, top, bottom, width - right))
+    plot_width = width - left - right
+    bar_width = plot_width / bins * 0.78
+    for index, count in enumerate(counts):
+        x_center = left + (index + 0.5) * plot_width / bins
+        bar_h = 0 if max_count == 0 else count / max_count * (bottom - top - 22)
+        y = bottom - bar_h
+        fill = "#0f766e" if x_center >= x0 else "#94a3b8"
+        parts.append(f'<rect x="{x_center - bar_width/2:.2f}" y="{y:.2f}" width="{bar_width:.2f}" height="{bar_h:.2f}" fill="{fill}" opacity="0.84" />')
+    mean_contrast = float(np.mean(contrasts))
+    x_mean = x_pos(mean_contrast, x_min, x_max, left, width - right)
+    parts.append(svg_line(x_mean, top, x_mean, bottom, "#b45309", 2))
+    parts.append(svg_text(x_mean, top + 16, f"mean={fmt_num(mean_contrast)}", 12, "#b45309", "middle"))
+    parts.append(svg_text(left, bottom + 28, fmt_num(x_min), 12, "#334155", "middle"))
+    parts.append(svg_text(x0, bottom + 28, "0", 12, "#334155", "middle"))
+    parts.append(svg_text(width - right, bottom + 28, fmt_num(x_max), 12, "#334155", "middle"))
+    parts.append("</svg>")
+    return "\n".join(parts)
+
+
+def svg_open(width: int, height: int, title: str) -> str:
+    return (
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img">'
+        f'<rect width="100%" height="100%" fill="#ffffff" />'
+        f'{svg_text(width / 2, 24, title, 16, "#172033", "middle", "600")}'
+    )
+
+
+def svg_axis(left: float, top: float, bottom: float, right: float) -> str:
+    return svg_line(left, top, left, bottom, "#334155", 1.2) + svg_line(left, bottom, right, bottom, "#334155", 1.2)
+
+
+def svg_y_labels(left: float, top: float, bottom: float, y_min: float, y_max: float) -> str:
+    labels = []
+    for value in (y_min, 0.0, y_max):
+        if value < y_min - 1e-9 or value > y_max + 1e-9:
+            continue
+        y = y_pos(value, y_min, y_max, top, bottom)
+        labels.append(svg_text(left - 10, y + 4, fmt_num(value), 11, "#475569", "end"))
+    return "".join(labels)
+
+
+def svg_text(x: float, y: float, text: str, size: int, color: str, anchor: str = "start", weight: str = "400") -> str:
+    return f'<text x="{x:.2f}" y="{y:.2f}" fill="{color}" font-family="Arial, Microsoft YaHei, sans-serif" font-size="{size}" font-weight="{weight}" text-anchor="{anchor}">{html.escape(str(text))}</text>'
+
+
+def svg_line(x1: float, y1: float, x2: float, y2: float, color: str, width: float, dash: str = "") -> str:
+    dash_attr = f' stroke-dasharray="{dash}"' if dash else ""
+    return f'<line x1="{x1:.2f}" y1="{y1:.2f}" x2="{x2:.2f}" y2="{y2:.2f}" stroke="{color}" stroke-width="{width}"{dash_attr} />'
+
+
+def svg_polyline(points: list[tuple[float, float]], color: str, width: float, opacity: float = 1.0) -> str:
+    point_text = " ".join(f"{x:.2f},{y:.2f}" for x, y in points)
+    return f'<polyline points="{point_text}" fill="none" stroke="{color}" stroke-width="{width}" stroke-linecap="round" stroke-linejoin="round" opacity="{opacity}" />'
+
+
+def padded_range(values: list[float], min_pad: float) -> tuple[float, float]:
+    clean = [float(value) for value in values if math.isfinite(float(value))]
+    if not clean:
+        return -1.0, 1.0
+    lo = min(clean)
+    hi = max(clean)
+    span = hi - lo
+    pad = max(min_pad, span * 0.12)
+    if span == 0:
+        pad = max(min_pad, abs(hi) * 0.2, 0.1)
+    return lo - pad, hi + pad
+
+
+def y_pos(value: float, y_min: float, y_max: float, top: float, bottom: float) -> float:
+    if y_max <= y_min:
+        return (top + bottom) / 2
+    return bottom - (value - y_min) / (y_max - y_min) * (bottom - top)
+
+
+def x_pos(value: float, x_min: float, x_max: float, left: float, right: float) -> float:
+    if x_max <= x_min:
+        return (left + right) / 2
+    return left + (value - x_min) / (x_max - x_min) * (right - left)
+
+
 def build_implication_rows(h1_summary: dict[str, Any], eeg_robustness: list[dict[str, str]], link_rows: list[dict[str, Any]], accuracy_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     primary = h1_summary.get("primary_result", {})
     mechanism = h1_summary.get("mechanism_result", {})
@@ -473,13 +856,33 @@ def build_implication_rows(h1_summary: dict[str, Any], eeg_robustness: list[dict
     ]
 
 
-def build_paper_sections(h1_summary: dict[str, Any], eeg_robustness: list[dict[str, str]], link_rows: list[dict[str, Any]], accuracy_rows: list[dict[str, Any]], accuracy_contrast_rows: list[dict[str, Any]]) -> dict[str, str]:
+def build_paper_sections(
+    h1_summary: dict[str, Any],
+    eeg_robustness: list[dict[str, str]],
+    link_rows: list[dict[str, Any]],
+    accuracy_rows: list[dict[str, Any]],
+    accuracy_contrast_rows: list[dict[str, Any]],
+    h1_profiles: list[dict[str, str]],
+    h1_pairwise: list[dict[str, str]],
+    map_adjusted: list[dict[str, str]],
+    component_sensitivity: list[dict[str, Any]],
+    qc_sensitivity: list[dict[str, Any]],
+) -> dict[str, str]:
     primary = h1_summary.get("primary_result", {})
     mechanism = h1_summary.get("mechanism_result", {})
     eeg_composite = find_row(eeg_robustness, "metric", EEG_COMPOSITE)
     eeg_theta = find_row(eeg_robustness, "metric", EEG_THETA)
     link_text = "; ".join(f"{row['link']}: r={row['pearson_r']}, p={row['pearson_p']}" for row in link_rows)
     accuracy_text = accuracy_paper_sentence(accuracy_rows, accuracy_contrast_rows)
+    profile_text = h1_profile_sentence(h1_profiles)
+    medium_low = find_h1_pairwise(h1_pairwise, "medium_minus_low")
+    medium_high = find_h1_pairwise(h1_pairwise, "medium_minus_high")
+    high_low = find_h1_pairwise(h1_pairwise, "high_minus_low")
+    shape_text = h1_shape_evidence(h1_summary)
+    map_adjusted_text = h1_map_adjusted_evidence(map_adjusted)
+    component_text = h1_component_sensitivity_evidence(component_sensitivity)
+    qc_text = h1_qc_sensitivity_evidence(qc_sensitivity)
+    sensitivity_text = h1_sensitivity_sentence(h1_summary)
     return {
         "theoretical_positioning": (
             "本文属于神经工程管理与应急管理交叉研究。脑电数据不被解释为医学或生物诊断指标，"
@@ -487,11 +890,29 @@ def build_paper_sections(h1_summary: dict[str, Any], eeg_robustness: list[dict[s
             "低支持到中等支持阶段由感知可靠性主导，体现准确性收益与操作成本之间的理性权衡；中等支持到高支持阶段由信息加工负荷主导，体现认知局限下的信息整合负担。"
             "路径选择正确率被定位为辅助因变量，用于解释低支持条件下速度较快但可能准确性较低的速度-准确性权衡。"
         ),
+        "primary_h1_paragraph": (
+            "主效应应作为论文结果的第一层结论报告。"
+            f"当前 H1 主指标（{H1_METRIC}）的三条件均值为：{profile_text}。"
+            f"以 medium - mean(low, high) 为 planned contrast，{format_primary_h1_evidence(primary)}。"
+            f"{shape_text}。{map_adjusted_text}。"
+            f"{component_text}。{qc_text}。"
+            f"相邻阶段上，低支持到中等支持的差异为 {h1_pairwise_short(medium_low)}；"
+            f"中等支持到高支持的差异为 {h1_pairwise_short(medium_high)}；"
+            f"高支持与低支持的差异为 {h1_pairwise_short(high_low)}。"
+            f"{sensitivity_text}"
+        ),
         "results_paragraph": (
-            f"路径确认支持水平对近端确认负担呈现显著的中等支持峰值效应。以 medium - mean(low, high) 为 planned contrast，"
-            f"近端路径确认迟滞指数的 contrast 为 {fmt_num(primary.get('mean_contrast'))}, "
+            f"路径确认支持水平对近端确认负担呈现显著的中等支持峰值效应。{profile_text}。"
+            f"主 planned contrast 为 {fmt_num(primary.get('mean_contrast'))}, "
             f"95% CI [{fmt_num(primary.get('ci95_low'))}, {fmt_num(primary.get('ci95_high'))}], "
-            f"p={fmt_p(primary.get('p_two_sided'))}。行为机制线索显示，提示到首次现场确认线索的延迟同样显著增加，"
+            f"p={fmt_p(primary.get('p_two_sided'))}。{shape_text}。{map_adjusted_text}。"
+            f"{component_text}。{qc_text}。相邻对比进一步显示，"
+            f"中等支持高于低支持，p={fmt_p(medium_low.get('p_two_sided'))}；"
+            f"中等支持高于高支持，双侧 p={fmt_p(medium_high.get('p_two_sided'))}，"
+            f"方向性 p={fmt_p(medium_high.get('p_one_sided_positive'))}；"
+            f"高支持与低支持几乎没有差异，p={fmt_p(high_low.get('p_two_sided'))}。"
+            f"{sensitivity_text}"
+            f"行为机制线索显示，提示到首次现场确认线索的延迟同样显著增加，"
             f"mean contrast={fmt_num(mechanism.get('mean_contrast'))} s, p={fmt_p(mechanism.get('p_two_sided'))}；"
             "该结果支持“可靠但未闭合”的解释，但不能替代问卷测得的感知可靠性。"
             f"{accuracy_text}"
@@ -623,6 +1044,166 @@ def link_interpretation(label: str, stats: dict[str, float | None]) -> str:
     return f"{strength}{direction}，{significance}；该链接用于机制一致性描述，不替代 planned contrast。"
 
 
+def find_h1_profile(h1_profiles: list[dict[str, str]], density: str) -> dict[str, str]:
+    return next(
+        (
+            row
+            for row in h1_profiles
+            if row.get("metric") == H1_METRIC and normalize_support_level(row.get("density")) == density
+        ),
+        {},
+    )
+
+
+def find_h1_pairwise(h1_pairwise: list[dict[str, str]], comparison: str) -> dict[str, str]:
+    return next(
+        (
+            row
+            for row in h1_pairwise
+            if row.get("metric") == H1_METRIC and row.get("comparison") == comparison
+        ),
+        {},
+    )
+
+
+def find_metric(rows: list[dict[str, Any]], metric: str) -> dict[str, Any]:
+    return next((row for row in rows if row.get("metric") == metric), {})
+
+
+def h1_profile_sentence(h1_profiles: list[dict[str, str]]) -> str:
+    pieces = []
+    for level in SUPPORT_ORDER:
+        row = find_h1_profile(h1_profiles, level)
+        if not row:
+            continue
+        pieces.append(f"{SUPPORT_LABELS[level]}={fmt_num(row.get('mean'))}")
+    if len(pieces) == len(SUPPORT_ORDER):
+        return "、".join(pieces)
+    return "低/中/高条件均值待生成"
+
+
+def h1_pairwise_evidence(h1_pairwise: list[dict[str, str]], comparison: str) -> str:
+    return h1_pairwise_short(find_h1_pairwise(h1_pairwise, comparison))
+
+
+def h1_pairwise_short(row: dict[str, Any]) -> str:
+    if not row:
+        return "-"
+    return (
+        f"mean diff={fmt_num(row.get('mean_contrast'))}, "
+        f"95% CI [{fmt_num(row.get('ci95_low'))}, {fmt_num(row.get('ci95_high'))}], "
+        f"双侧 p={fmt_p(row.get('p_two_sided'))}, "
+        f"方向性 p={fmt_p(row.get('p_one_sided_positive'))}, "
+        f"Wilcoxon p={fmt_p(row.get('wilcoxon_p_two_sided'))}"
+    )
+
+
+def h1_shape_evidence(h1_summary: dict[str, Any]) -> str:
+    shape = h1_summary.get("shape_result") or {}
+    if not shape:
+        return "个体峰值形状诊断待生成"
+    n = shape.get("n", "-")
+    return (
+        "个体峰值诊断显示，"
+        f"中等支持为三条件最高的被试为 {shape.get('medium_peak_count', '-')}/{n}"
+        f"（{fmt_percent(shape.get('medium_peak_ratio'))}），"
+        f"相对随机排序基线 p={fmt_p(shape.get('medium_peak_binomial_p_one_sided_p0_1_over_3'))}；"
+        f"medium>low 为 {shape.get('medium_gt_low_count', '-')}/{n}, "
+        f"p={fmt_p(shape.get('medium_gt_low_binomial_p_one_sided_p0_0_5'))}；"
+        f"medium>high 为 {shape.get('medium_gt_high_count', '-')}/{n}, "
+        f"p={fmt_p(shape.get('medium_gt_high_binomial_p_one_sided_p0_0_5'))}"
+    )
+
+
+def h1_map_adjusted_evidence(map_adjusted: list[dict[str, str]]) -> str:
+    map_fe = find_h1_model_row(map_adjusted, "ols_subject_fe_map_fe", "raw")
+    subject_fe = find_h1_model_row(map_adjusted, "ols_subject_fe", "raw")
+    if not map_fe and not subject_fe:
+        return "地图校正固定效应模型待生成"
+    chunks: list[str] = []
+    if map_fe:
+        chunks.append(
+            "subject FE + map FE 模型显示 H1 倒 U 系数="
+            f"{fmt_num(map_fe.get('coef'))}, SE={fmt_num(map_fe.get('se'))}, "
+            f"t={fmt_num(map_fe.get('t'))}, p={fmt_p(map_fe.get('p'))}, "
+            f"q={fmt_p(map_fe.get('q_bh'))}, n={map_fe.get('n_runs', '-')} runs/{map_fe.get('n_subjects', '-')} subjects"
+        )
+    if subject_fe:
+        chunks.append(
+            "仅 subject FE 模型同样支持该方向，"
+            f"coef={fmt_num(subject_fe.get('coef'))}, p={fmt_p(subject_fe.get('p'))}"
+        )
+    return "；".join(chunks)
+
+
+def h1_component_sensitivity_evidence(rows: list[dict[str, Any]]) -> str:
+    if not rows:
+        return "组件敏感性检验待生成"
+    positive = sum(1 for row in rows if (number(row.get("mean_contrast")) or 0.0) > 0)
+    significant = sum(1 for row in rows if (number(row.get("p_two_sided")) or 1.0) < 0.05)
+    trend_or_better = sum(1 for row in rows if (number(row.get("p_two_sided")) or 1.0) < 0.10)
+    weakest = max((number(row.get("p_two_sided")) or 1.0 for row in rows), default=None)
+    return (
+        f"leave-one-component-out 显示，删去任一组件后 {positive}/{len(rows)} 个替代指数仍为正向，"
+        f"{significant}/{len(rows)} 个达到 p<.05，{trend_or_better}/{len(rows)} 个达到 p<.10，"
+        f"最弱双侧 p={fmt_p(weakest)}"
+    )
+
+
+def h1_qc_sensitivity_evidence(rows: list[dict[str, Any]]) -> str:
+    if not rows:
+        return "QC 敏感性检验待生成"
+    positive = sum(1 for row in rows if (number(row.get("mean_contrast")) or 0.0) > 0)
+    significant = sum(1 for row in rows if (number(row.get("p_two_sided")) or 1.0) < 0.05)
+    trend_or_better = sum(1 for row in rows if (number(row.get("p_two_sided")) or 1.0) < 0.10)
+    return (
+        f"QC 敏感性显示，{positive}/{len(rows)} 个过滤方案保持正向，"
+        f"{significant}/{len(rows)} 个 p<.05，{trend_or_better}/{len(rows)} 个 p<.10"
+    )
+
+
+def find_h1_model_row(rows: list[dict[str, str]], analysis: str, transform: str) -> dict[str, str]:
+    return next(
+        (
+            row
+            for row in rows
+            if row.get("metric") == H1_METRIC
+            and row.get("analysis") == analysis
+            and row.get("transform") == transform
+        ),
+        {},
+    )
+
+
+def format_primary_h1_evidence(primary: dict[str, Any]) -> str:
+    return (
+        f"planned contrast={fmt_num(primary.get('mean_contrast'))}, "
+        f"95% CI [{fmt_num(primary.get('ci95_low'))}, {fmt_num(primary.get('ci95_high'))}], "
+        f"p={fmt_p(primary.get('p_two_sided'))}; "
+        f"bootstrap CI [{fmt_num(primary.get('bootstrap_ci95_low'))}, {fmt_num(primary.get('bootstrap_ci95_high'))}], "
+        f"sign-flip p={fmt_p(primary.get('signflip_p_two_sided'))}, "
+        f"Wilcoxon p={fmt_p(primary.get('wilcoxon_p_two_sided'))}, "
+        f"leave-one-subject-out={primary.get('loo_p_lt_05_count', '-')}/{primary.get('loo_n_tests', '-')} p<.05"
+    )
+
+
+def h1_sensitivity_sentence(h1_summary: dict[str, Any]) -> str:
+    top_rows = h1_summary.get("top_rows") or []
+    log_z = find_metric(top_rows, "h1_log_z_component_index")
+    rank = find_metric(top_rows, "h1_rank_component_index")
+    legacy = h1_summary.get("legacy_result", {})
+    pieces = []
+    if log_z:
+        pieces.append(f"log-z 构件敏感性 p={fmt_p(log_z.get('p_two_sided'))}")
+    if rank:
+        pieces.append(f"rank 构件敏感性 p={fmt_p(rank.get('p_two_sided'))}")
+    if legacy:
+        pieces.append(f"旧版广义路线效率 p={fmt_p(legacy.get('p_two_sided'))}，仅作边界/敏感性")
+    if not pieces:
+        return ""
+    return "稳健性上，" + "；".join(pieces) + "。"
+
+
 def accuracy_paper_sentence(accuracy_rows: list[dict[str, Any]], accuracy_contrast_rows: list[dict[str, Any]]) -> str:
     if not accuracy_rows or not accuracy_has_valid_runs(accuracy_rows):
         return (
@@ -652,7 +1233,7 @@ def format_effect(row: dict[str, Any], *, value_key: str, p_key: str, ci_low_key
 def read_csv(path: Path) -> list[dict[str, str]]:
     if not path.exists():
         raise SystemExit(f"Missing input: {path}")
-    with path.open(encoding="utf-8", newline="") as handle:
+    with path.open(encoding="utf-8-sig", newline="") as handle:
         return list(csv.DictReader(handle))
 
 
@@ -692,6 +1273,24 @@ def write_markdown(path: Path, payload: dict[str, Any]) -> None:
         "## 理论定位",
         sections["theoretical_positioning"],
         "",
+        "## 主结果：倒 U 型行动迟滞",
+        sections["primary_h1_paragraph"],
+        "",
+        markdown_table(payload["h1_primary_result"]),
+        "",
+        "## H1 图形",
+        "![H1 三条件均值与 95% CI](condition_means.svg)",
+        "",
+        "![H1 被试内三条件轨迹](subject_spaghetti.svg)",
+        "",
+        "![H1 planned contrast 分布](contrast_distribution.svg)",
+        "",
+        "## H1 组件敏感性",
+        markdown_table(payload["h1_component_sensitivity"]),
+        "",
+        "## H1 QC 敏感性",
+        markdown_table(payload["h1_qc_sensitivity"]),
+        "",
         "## 构念与证据",
         markdown_table(payload["constructs"]),
         "",
@@ -720,6 +1319,43 @@ def write_markdown(path: Path, payload: dict[str, Any]) -> None:
     path.write_text("\n".join(lines), encoding="utf-8")
 
 
+def write_h1_markdown(path: Path, payload: dict[str, Any]) -> None:
+    sections = payload["paper_sections"]
+    lines = [
+        "# H1 主效应证据报告",
+        "",
+        "## 结论",
+        sections["primary_h1_paragraph"],
+        "",
+        "## 证据链",
+        markdown_table(payload["h1_primary_result"]),
+        "",
+        "## 图形",
+        "![H1 三条件均值与 95% CI](condition_means.svg)",
+        "",
+        "![H1 被试内三条件轨迹](subject_spaghetti.svg)",
+        "",
+        "![H1 planned contrast 分布](contrast_distribution.svg)",
+        "",
+        "## 组件敏感性",
+        markdown_table(payload["h1_component_sensitivity"]),
+        "",
+        "## QC 敏感性",
+        markdown_table(payload["h1_qc_sensitivity"]),
+        "",
+        "## 论文结果段",
+        sections["results_paragraph"],
+        "",
+        "## 报告口径",
+        "- H1 主指标固定为 `route_confirmation_hesitation_index`。",
+        "- 机制线索、正确率和 EEG 只用于解释主效应，不替代主因变量。",
+        "- 旧版 `route_decision_hesitation_index` 只作为广义路线执行效率的边界敏感性指标。",
+        "- 主结果按三条件均值、planned contrast、个体峰值诊断、地图校正模型、相邻阶段和稳健性顺序报告。",
+        "",
+    ]
+    path.write_text("\n".join(lines), encoding="utf-8")
+
+
 def write_html(path: Path, payload: dict[str, Any]) -> None:
     sections = payload["paper_sections"]
     doc = f"""<!doctype html>
@@ -732,6 +1368,9 @@ def write_html(path: Path, payload: dict[str, Any]) -> None:
     h1 {{ font-size: 28px; margin-bottom: 8px; }}
     h2 {{ font-size: 20px; margin-top: 28px; border-bottom: 1px solid #d9e3e0; padding-bottom: 6px; }}
     .note {{ background: #f4f8f7; border-left: 4px solid #779f97; padding: 12px 14px; margin: 16px 0; }}
+    .primary {{ background: #fffdf6; border: 1px solid #eadfb9; padding: 14px 16px; margin: 18px 0 20px; }}
+    .figures {{ display: grid; grid-template-columns: 1fr; gap: 18px; margin: 16px 0 20px; }}
+    .figure {{ border: 1px solid #d9e3e0; padding: 10px; overflow-x: auto; }}
     table {{ width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }}
     th, td {{ border: 1px solid #d9e3e0; padding: 7px 8px; text-align: left; vertical-align: top; }}
     th {{ background: #edf4f2; color: #173d38; }}
@@ -740,6 +1379,15 @@ def write_html(path: Path, payload: dict[str, Any]) -> None:
 <body>
   <h1>神经工程管理证据综合报告</h1>
   <div class="note">{escape(sections["theoretical_positioning"])}</div>
+  <h2>主结果：倒 U 型行动迟滞</h2>
+  <div class="primary">{escape(sections["primary_h1_paragraph"])}</div>
+  {html_table(payload["h1_primary_result"])}
+  <h2>H1 图形</h2>
+  {html_figures(payload["h1_figures"])}
+  <h2>H1 组件敏感性</h2>
+  {html_table(payload["h1_component_sensitivity"])}
+  <h2>H1 QC 敏感性</h2>
+  {html_table(payload["h1_qc_sensitivity"])}
   <h2>构念与证据</h2>
   {html_table(payload["constructs"])}
   <h2>辅助因变量：路径选择正确率</h2>
@@ -762,6 +1410,53 @@ def write_html(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(doc, encoding="utf-8")
 
 
+def write_h1_html(path: Path, payload: dict[str, Any]) -> None:
+    sections = payload["paper_sections"]
+    doc = f"""<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>H1 Primary Effect Report</title>
+  <style>
+    body {{ font-family: Arial, 'Microsoft YaHei', sans-serif; margin: 32px; color: #172033; line-height: 1.62; }}
+    h1 {{ font-size: 28px; margin-bottom: 8px; }}
+    h2 {{ font-size: 20px; margin-top: 28px; border-bottom: 1px solid #d9e3e0; padding-bottom: 6px; }}
+    .primary {{ background: #fffdf6; border: 1px solid #eadfb9; padding: 14px 16px; margin: 18px 0 20px; }}
+    .figures {{ display: grid; grid-template-columns: 1fr; gap: 18px; margin: 16px 0 20px; }}
+    .figure {{ border: 1px solid #d9e3e0; padding: 10px; overflow-x: auto; }}
+    table {{ width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }}
+    th, td {{ border: 1px solid #d9e3e0; padding: 7px 8px; text-align: left; vertical-align: top; }}
+    th {{ background: #edf4f2; color: #173d38; }}
+    code {{ background: #f4f6f6; padding: 1px 4px; border-radius: 3px; }}
+  </style>
+</head>
+<body>
+  <h1>H1 主效应证据报告</h1>
+  <h2>结论</h2>
+  <div class="primary">{escape(sections["primary_h1_paragraph"])}</div>
+  <h2>证据链</h2>
+  {html_table(payload["h1_primary_result"])}
+  <h2>图形</h2>
+  {html_figures(payload["h1_figures"])}
+  <h2>组件敏感性</h2>
+  {html_table(payload["h1_component_sensitivity"])}
+  <h2>QC 敏感性</h2>
+  {html_table(payload["h1_qc_sensitivity"])}
+  <h2>论文结果段</h2>
+  <p>{escape(sections["results_paragraph"])}</p>
+  <h2>报告口径</h2>
+  <ul>
+    <li>H1 主指标固定为 <code>{escape(H1_METRIC)}</code>。</li>
+    <li>机制线索、正确率和 EEG 只用于解释主效应，不替代主因变量。</li>
+    <li>旧版 <code>{escape(LEGACY_METRIC)}</code> 只作为广义路线执行效率的边界敏感性指标。</li>
+    <li>主结果按三条件均值、planned contrast、个体峰值诊断、地图校正模型、相邻阶段和稳健性顺序报告。</li>
+  </ul>
+</body>
+</html>
+"""
+    path.write_text(doc, encoding="utf-8")
+
+
 def markdown_table(rows: list[dict[str, Any]]) -> str:
     if not rows:
         return "-"
@@ -770,6 +1465,24 @@ def markdown_table(rows: list[dict[str, Any]]) -> str:
     for row in rows:
         out.append("| " + " | ".join(str(row.get(field, "")).replace("\n", " ") for field in fields) + " |")
     return "\n".join(out)
+
+
+def html_figures(figures: dict[str, str]) -> str:
+    if not figures:
+        return "<p>-</p>"
+    labels = {
+        "condition_means": "H1 三条件均值与 95% CI",
+        "subject_spaghetti": "H1 被试内三条件轨迹",
+        "contrast_distribution": "H1 planned contrast 分布",
+    }
+    blocks = []
+    for key in ("condition_means", "subject_spaghetti", "contrast_distribution"):
+        svg = figures.get(key)
+        if svg:
+            blocks.append(f'<div class="figure" aria-label="{escape(labels.get(key, key))}">{svg}</div>')
+    if not blocks:
+        return "<p>-</p>"
+    return '<div class="figures">' + "".join(blocks) + "</div>"
 
 
 def html_table(rows: list[dict[str, Any]]) -> str:
@@ -817,6 +1530,13 @@ def fmt_p(value: Any) -> str:
     if numeric < 0.001:
         return "<.001"
     return f"{numeric:.3f}"
+
+
+def fmt_percent(value: Any) -> str:
+    numeric = number(value)
+    if numeric is None:
+        return "-"
+    return f"{numeric * 100:.1f}%"
 
 
 def escape(value: Any) -> str:

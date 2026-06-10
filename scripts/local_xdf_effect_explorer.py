@@ -515,13 +515,73 @@ def top_results(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if numeric(row.get("p")) is not None and row.get("analysis") == "subject_contrast"
     ]
     ranked.sort(key=lambda row: (float(row["p"]), -abs(float(row.get("mean_contrast") or 0.0))))
-    return ranked[:12]
+    priority_keys = [
+        ("all_complete", "route_confirmation_hesitation_index"),
+        ("low_duplicate_ratio", "route_confirmation_hesitation_index"),
+        ("strict_start_all_runs", "route_confirmation_hesitation_index"),
+        ("all_complete", "prompt_to_first_confirmation_s"),
+    ]
+    prioritized: list[dict[str, Any]] = []
+    used: set[tuple[str, str, str]] = set()
+    for filter_name, metric in priority_keys:
+        match = next(
+            (
+                row
+                for row in ranked
+                if row.get("filter") == filter_name
+                and row.get("metric") == metric
+                and row.get("analysis") == "subject_contrast"
+            ),
+            None,
+        )
+        if match:
+            key = (str(match.get("filter")), str(match.get("analysis")), str(match.get("metric")))
+            prioritized.append(match)
+            used.add(key)
+    for row in ranked:
+        key = (str(row.get("filter")), str(row.get("analysis")), str(row.get("metric")))
+        if key not in used:
+            prioritized.append(row)
+            used.add(key)
+        if len(prioritized) >= 12:
+            break
+    return prioritized[:12]
 
 
 def top_fixed_effect_results(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     ranked = [row for row in rows if numeric(row.get("p")) is not None]
     ranked.sort(key=lambda row: (float(row["p"]), -abs(float(row.get("coef") or 0.0))))
-    return ranked[:12]
+    priority_keys = [
+        ("ols_subject_fe_map_fe", "raw", "route_confirmation_hesitation_index"),
+        ("ols_subject_fe", "raw", "route_confirmation_hesitation_index"),
+        ("ols_subject_fe_map_fe", "raw", "prompt_to_first_confirmation_s"),
+        ("ols_subject_fe", "raw", "prompt_to_first_confirmation_s"),
+    ]
+    prioritized: list[dict[str, Any]] = []
+    used: set[tuple[str, str, str]] = set()
+    for analysis, transform, metric in priority_keys:
+        match = next(
+            (
+                row
+                for row in ranked
+                if row.get("analysis") == analysis
+                and row.get("transform") == transform
+                and row.get("metric") == metric
+            ),
+            None,
+        )
+        if match:
+            key = (str(match.get("analysis")), str(match.get("transform")), str(match.get("metric")))
+            prioritized.append(match)
+            used.add(key)
+    for row in ranked:
+        key = (str(row.get("analysis")), str(row.get("transform")), str(row.get("metric")))
+        if key not in used:
+            prioritized.append(row)
+            used.add(key)
+        if len(prioritized) >= 12:
+            break
+    return prioritized[:12]
 
 
 def planned_contrast(values: dict[str, float]) -> float:

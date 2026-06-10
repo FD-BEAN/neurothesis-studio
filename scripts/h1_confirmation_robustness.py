@@ -51,6 +51,7 @@ def main() -> None:
     loo_rows: list[dict[str, Any]] = []
     pairwise_rows: list[dict[str, Any]] = []
     profile_rows: list[dict[str, Any]] = []
+    shape_rows: list[dict[str, Any]] = []
 
     for spec in metric_specs:
         matrix = metric_matrix(subjects, spec["value_fn"])
@@ -71,15 +72,24 @@ def main() -> None:
         robustness_rows.append(robust)
         loo_rows.extend(leave_one_out_rows(spec["name"], contrasts))
         pairwise_rows.extend(pairwise_summary_rows(spec["name"], matrix, args.resamples, rng))
+        if spec["name"] == PRIMARY_METRIC:
+            shape_rows.append(inverted_u_shape_summary(spec["name"], matrix))
+
+    component_sensitivity_rows = build_component_sensitivity_rows(subjects, args.resamples, args.permutations, rng)
+    robustness_rows.extend(component_sensitivity_rows)
 
     write_csv(args.out_dir / "h1_robustness_results.csv", robustness_rows)
     write_json(args.out_dir / "h1_robustness_results.json", robustness_rows)
+    write_csv(args.out_dir / "h1_component_sensitivity.csv", component_sensitivity_rows)
+    write_json(args.out_dir / "h1_component_sensitivity.json", component_sensitivity_rows)
     write_csv(args.out_dir / "h1_leave_one_subject_out.csv", loo_rows)
     write_json(args.out_dir / "h1_leave_one_subject_out.json", loo_rows)
     write_csv(args.out_dir / "h1_pairwise_results.csv", pairwise_rows)
     write_json(args.out_dir / "h1_pairwise_results.json", pairwise_rows)
     write_csv(args.out_dir / "h1_condition_profiles.csv", profile_rows)
     write_json(args.out_dir / "h1_condition_profiles.json", profile_rows)
+    write_csv(args.out_dir / "h1_shape_diagnostics.csv", shape_rows)
+    write_json(args.out_dir / "h1_shape_diagnostics.json", shape_rows)
 
     summary = {
         "input": str(args.input),
@@ -90,10 +100,9 @@ def main() -> None:
         "primary_result": next((row for row in robustness_rows if row.get("metric") == PRIMARY_METRIC), None),
         "mechanism_result": next((row for row in robustness_rows if row.get("metric") == "prompt_to_first_confirmation_s"), None),
         "legacy_result": next((row for row in robustness_rows if row.get("metric") == LEGACY_METRIC), None),
-        "top_rows": sorted(
-            robustness_rows,
-            key=lambda row: numeric_or_inf(row.get("p_two_sided")),
-        )[:8],
+        "shape_result": shape_rows[0] if shape_rows else None,
+        "component_sensitivity": component_sensitivity_rows,
+        "top_rows": prioritized_robustness_rows(robustness_rows),
     }
     write_json(args.out_dir / "h1_robustness_summary.json", summary)
     print(json.dumps(to_jsonable(summary), ensure_ascii=False, indent=2), flush=True)
@@ -151,6 +160,27 @@ def build_metric_specs() -> list[dict[str, Any]]:
             "value_fn": lambda row: number(row.get(LEGACY_METRIC)),
         },
     ]
+
+
+def prioritized_robustness_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Keep the planned H1 result first; p-sorted mechanism rows are secondary."""
+    metric_order = [
+        PRIMARY_METRIC,
+        "h1_log_z_component_index",
+        "h1_rank_component_index",
+        "prompt_to_first_confirmation_s",
+        "log_prompt_to_first_confirmation_s",
+        "decision_scan_both_count",
+        LEGACY_METRIC,
+    ]
+    by_metric = {str(row.get("metric")): row for row in rows}
+    ordered: list[dict[str, Any]] = [by_metric[metric] for metric in metric_order if metric in by_metric]
+    used = {str(row.get("metric")) for row in ordered}
+    remaining = sorted(
+        (row for row in rows if str(row.get("metric")) not in used),
+        key=lambda row: numeric_or_inf(row.get("p_two_sided")),
+    )
+    return (ordered + remaining)[:8]
 
 
 def read_csv(path: Path) -> list[dict[str, str]]:
@@ -274,6 +304,61 @@ def rank_component_matrix(subjects: dict[str, dict[str, dict[str, str]]]) -> dic
         if scores:
             matrix[subject] = {level: float(np.mean(scores[level])) for level in DENSITY_LEVELS}
     return matrix
+
+
+def z_component_matrix(
+    subjects: dict[str, dict[str, dict[str, str]]],
+    components: tuple[str, ...],
+) -> dict[str, dict[str, float]]:
+    matrix: dict[str, dict[str, float]] = {}
+    for subject, by_density in subjects.items():
+        scores = {level: [] for level in DENSITY_LEVELS}
+        for metric in components:
+            values = {level: number(by_density[level].get(metric)) for level in DENSITY_LEVELS}
+            if any(value is None for value in values.values()):
+                scores = {}
+                break
+            arr = np.asarray([values[level] for level in DENSITY_LEVELS], dtype=float)
+            sd = float(np.std(arr, ddof=0))
+            if sd <= 0:
+                z_values = {level: 0.0 for level in DENSITY_LEVELS}
+            else:
+                mean = float(np.mean(arr))
+                z_values = {level: float((values[level] - mean) / sd) for level in DENSITY_LEVELS}
+            for level in DENSITY_LEVELS:
+                scores[level].append(z_values[level])
+        if scores:
+            matrix[subject] = {level: float(np.mean(scores[level])) for level in DENSITY_LEVELS}
+    return matrix
+
+
+def build_component_sensitivity_rows(
+    subjects: dict[str, dict[str, dict[str, str]]],
+    resamples: int,
+    permutations: int,
+    rng: np.random.Generator,
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for dropped in PRIMARY_COMPONENTS:
+        kept = tuple(component for component in PRIMARY_COMPONENTS if component != dropped)
+        matrix = z_component_matrix(subjects, kept)
+        if not matrix:
+            continue
+        contrasts = {subject: planned_contrast(values) for subject, values in matrix.items()}
+        robust = robust_summary(f"h1_drop_{dropped}_index", contrasts, resamples, permutations, rng)
+        robust.update(
+            {
+                "label": f"H1 leave-one-component-out, drop {dropped}",
+                "role": "component_sensitivity",
+                "components": "+".join(kept),
+                "dropped_component": dropped,
+                "kept_component_count": len(kept),
+            }
+        )
+        robust.update(label_permutation_summary(matrix, permutations, rng))
+        robust.update(leave_one_out_summary(robust["metric"], contrasts))
+        rows.append(robust)
+    return rows
 
 
 def average_ranks(values: list[float | None]) -> list[float]:
@@ -518,21 +603,83 @@ def pairwise_summary_rows(
     return rows
 
 
+def inverted_u_shape_summary(metric: str, matrix: dict[str, dict[str, float]]) -> dict[str, Any]:
+    n = len(matrix)
+    medium_peak_count = 0
+    medium_gt_low_count = 0
+    medium_gt_high_count = 0
+    high_gt_low_count = 0
+    low_gt_high_count = 0
+    both_adjacent_count = 0
+    planned_positive_count = 0
+    high_low_diffs: list[float] = []
+    for values in matrix.values():
+        low = values["low"]
+        medium = values["medium"]
+        high = values["high"]
+        medium_gt_low = medium > low
+        medium_gt_high = medium > high
+        if medium_gt_low:
+            medium_gt_low_count += 1
+        if medium_gt_high:
+            medium_gt_high_count += 1
+        if high > low:
+            high_gt_low_count += 1
+        if low > high:
+            low_gt_high_count += 1
+        if medium_gt_low and medium_gt_high:
+            medium_peak_count += 1
+            both_adjacent_count += 1
+        if planned_contrast(values) > 0:
+            planned_positive_count += 1
+        high_low_diffs.append(high - low)
+    return {
+        "metric": metric,
+        "n": n,
+        "medium_peak_count": medium_peak_count,
+        "medium_peak_ratio": medium_peak_count / n if n else "",
+        "medium_peak_binomial_p_one_sided_p0_1_over_3": binomial_tail_p(medium_peak_count, n, 1.0 / 3.0) if n else "",
+        "medium_gt_low_count": medium_gt_low_count,
+        "medium_gt_low_ratio": medium_gt_low_count / n if n else "",
+        "medium_gt_low_binomial_p_one_sided_p0_0_5": binomial_tail_p(medium_gt_low_count, n, 0.5) if n else "",
+        "medium_gt_high_count": medium_gt_high_count,
+        "medium_gt_high_ratio": medium_gt_high_count / n if n else "",
+        "medium_gt_high_binomial_p_one_sided_p0_0_5": binomial_tail_p(medium_gt_high_count, n, 0.5) if n else "",
+        "both_adjacent_count": both_adjacent_count,
+        "both_adjacent_ratio": both_adjacent_count / n if n else "",
+        "planned_positive_count": planned_positive_count,
+        "planned_positive_ratio": planned_positive_count / n if n else "",
+        "high_gt_low_count": high_gt_low_count,
+        "low_gt_high_count": low_gt_high_count,
+        "high_low_mean_diff": float(np.mean(high_low_diffs)) if high_low_diffs else "",
+        "high_low_abs_mean_diff": float(np.mean(np.abs(high_low_diffs))) if high_low_diffs else "",
+    }
+
+
 def condition_profile_rows(metric: str, matrix: dict[str, dict[str, float]]) -> list[dict[str, Any]]:
     rows = []
     for level in DENSITY_LEVELS:
         arr = np.asarray([values[level] for values in matrix.values()], dtype=float)
+        mean_summary = parametric_t_summary(arr)
         rows.append(
             {
                 "metric": metric,
                 "density": level,
                 "n": len(arr),
                 "mean": float(np.mean(arr)) if len(arr) else "",
+                "ci95_low": mean_summary.get("ci95_low", ""),
+                "ci95_high": mean_summary.get("ci95_high", ""),
                 "sd": float(np.std(arr, ddof=1)) if len(arr) > 1 else "",
                 "median": float(np.median(arr)) if len(arr) else "",
             }
         )
     return rows
+
+
+def binomial_tail_p(successes: int, n: int, p0: float) -> float:
+    if n <= 0:
+        return math.nan
+    return float(sum(math.comb(n, k) * (p0**k) * ((1.0 - p0) ** (n - k)) for k in range(successes, n + 1)))
 
 
 def trimmed_mean(arr: np.ndarray, proportion: float) -> float:

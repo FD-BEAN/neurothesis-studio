@@ -189,9 +189,9 @@ low = 0.469
 medium = 0.656
 high = 0.719
 
-high - low = 0.250, 95% CI [0.074, 0.426], p = .009
-medium - low = 0.188, 95% CI [0.024, 0.351], p = .032
-high - medium = 0.062, 95% CI [-0.023, 0.148], p = .161
+high - low = 0.250, 95% CI [0.067, 0.433], p = .009
+medium - low = 0.188, 95% CI [0.018, 0.357], p = .032
+high - medium = 0.062, 95% CI [-0.026, 0.151], p = .161
 ```
 
 解释：方向符合辅助假设，支持“低支持快但不准；支持提高后正确率上升”的速度-准确性权衡解释。
@@ -207,6 +207,81 @@ mean contrast = 0.242
 95% CI [0.058, 0.427]
 p = .0118
 leave-one-subject-out: 32/32 次仍 p < .05
+```
+
+三条件均值和相邻阶段：
+
+```text
+low = -0.082
+medium = 0.161
+high = -0.080
+
+medium - low = 0.243, p = .022
+medium - high = 0.241, two-sided p = .057, directional p = .029, Wilcoxon p = .038
+high - low = 0.002, p = .987
+```
+
+倒 U 形状诊断：
+
+```text
+中等支持为三条件最高：17/32，被试比例 53.1%，随机排序基线 p = .016
+medium > low：21/32，p = .055
+medium > high：23/32，p = .010
+planned contrast > 0：23/32
+```
+
+地图校正 run-level 主模型：
+
+```text
+Subject FE + Map FE:
+coef = 0.0716
+SE = 0.0227
+t = 3.148
+p = .0016
+BH q = .0164
+n = 96 runs / 32 subjects
+
+Subject FE only:
+coef = 0.0807
+p = .0179
+```
+
+组件敏感性：
+
+```text
+leave-one-component-out:
+删任一组件后 4/4 个替代指数保持正向。
+2/4 个达到 p < .05。
+3/4 个达到 p < .10。
+
+删掉 prompt_to_first_confirmation_s 后效应明显变弱：
+mean contrast = 0.165
+p = .228
+
+解释：prompt_to_first_confirmation_s 是 H1 近端确认迟滞的核心成分。
+这不是坏事，说明主效应主要来自官方提示到现场确认线索之间的确认迟滞，而不是泛泛路线效率。
+```
+
+QC 敏感性：
+
+```text
+all_complete: n = 32, contrast = 0.242, p = .012
+strict_start_all_runs: n = 30, contrast = 0.206, p = .033
+low_duplicate_ratio: n = 30, contrast = 0.237, p = .020
+eeg_epochs_ge_20: n = 27, contrast = 0.197, p = .070
+
+4/4 个 QC 方案方向为正。
+3/4 个 QC 方案 p < .05。
+4/4 个 QC 方案 p < .10。
+```
+
+报告展示规则：
+
+```text
+必须先报告 H1 主结果：三条件均值 -> planned contrast -> 个体峰值诊断 -> 地图校正模型 -> 相邻阶段 -> 稳健性。
+行为机制线索、正确率和 EEG 都放在 H1 之后，用来解释主效应。
+不要按 p 值排序把 prompt_to_first_confirmation_s 或 log 单项机制指标排到 H1 前面。
+旧版 route_decision_hesitation_index 只作为广义路线执行效率 / 边界敏感性，不与 H1 主指标并列竞争。
 ```
 
 行为机制线索：
@@ -291,7 +366,15 @@ scripts/local_xdf_effect_explorer.py
 ```text
 work/xdf_exploration/canonical_run_rows.csv
 work/xdf_exploration/h1_robustness_summary.json
+work/xdf_exploration/h1_shape_diagnostics.csv
 work/eeg_mne_preprocessing/formal_eeg_report.html
+work/management_science_synthesis/h1_primary_effect_report.md
+work/management_science_synthesis/h1_primary_effect_report.html
+work/management_science_synthesis/condition_means.svg
+work/management_science_synthesis/subject_spaghetti.svg
+work/management_science_synthesis/contrast_distribution.svg
+work/management_science_synthesis/management_h1_component_sensitivity.csv
+work/management_science_synthesis/management_h1_qc_sensitivity.csv
 work/management_science_synthesis/management_evidence_report.md
 work/management_science_synthesis/management_accuracy_status.csv
 work/management_science_synthesis/management_accuracy_contrasts.csv
