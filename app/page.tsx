@@ -42,10 +42,12 @@ type SubjectMatrixFilter = "all" | "ready" | "missing" | "completed" | "active" 
 
 const RESEARCH_FILE_ACCEPT = ".pdf,.doc,.docx,.csv,.tsv,.xlsx,.txt,.md,.svg,.png,.jpg,.jpeg,.json,.jsonl,.py,.m,.ipynb";
 const XDF_FILE_ACCEPT = ".xdf";
-const EXPECTED_SUBJECT_COUNT = 90;
+const EXPECTED_SUBJECT_COUNT = 100;
 const EXPECTED_RUNS_PER_SUBJECT = 3;
 const EXPECTED_XDF_COUNT = EXPECTED_SUBJECT_COUNT * EXPECTED_RUNS_PER_SUBJECT;
+const EXPECTED_SUBJECT_RANGE_LABEL = `P01-P${String(EXPECTED_SUBJECT_COUNT).padStart(2, "0")}`;
 const XDF_BULK_UPLOAD_CONCURRENCY = 4;
+const xdfUploadRelativePaths = new WeakMap<File, string>();
 
 type UploadProgress = {
   total: number;
@@ -67,6 +69,35 @@ type UploadBatchSnapshot = {
   uploaded: number;
   failed: number;
   currentFile?: string;
+};
+
+type XdfUploadFile = File & {
+  uploadRelativePath?: string;
+  webkitRelativePath?: string;
+};
+
+type BrowserFileSystemFileHandle = {
+  kind: "file";
+  name: string;
+  getFile: () => Promise<File>;
+};
+
+type BrowserFileSystemDirectoryHandle = {
+  kind: "directory";
+  name: string;
+  values: () => AsyncIterable<BrowserFileSystemHandle>;
+};
+
+type BrowserFileSystemHandle = BrowserFileSystemFileHandle | BrowserFileSystemDirectoryHandle;
+
+type WindowWithDirectoryPicker = Window & {
+  showDirectoryPicker?: (options?: { id?: string; mode?: "read" }) => Promise<BrowserFileSystemDirectoryHandle>;
+};
+
+type XdfDirectoryScanResult = {
+  files: XdfUploadFile[];
+  inspectedFiles: number;
+  visitedDirectories: number;
 };
 
 type AnalysisGuideItem = {
@@ -191,7 +222,7 @@ const analysisGuideSections: AnalysisGuideSection[] = [
     note: "这一块只解决文件组织问题：哪个文件属于哪个被试、哪个条件、能不能提交分析。",
     items: [
       {
-        field: "P01-P90",
+        field: EXPECTED_SUBJECT_RANGE_LABEL,
         meaning: "分析层面的被试编号。",
         method: "sub001/sub002/sub003 归为 P01，sub004/sub005/sub006 归为 P02，以此类推。",
         caveat: "sub001 是文件序号，不是被试编号。",
@@ -216,7 +247,7 @@ const analysisGuideSections: AnalysisGuideSection[] = [
       },
       {
         field: "下载矩阵 CSV",
-        meaning: "导出 P01-P90 的文件、缺失条件、任务状态和报告可用性。",
+        meaning: `导出 ${EXPECTED_SUBJECT_RANGE_LABEL} 的文件、缺失条件、任务状态和报告可用性。`,
         method: "前端把当前筛选后的矩阵转成 CSV。",
         caveat: "这个 CSV 是管理清单，不是统计结果表。",
       },
@@ -589,7 +620,7 @@ const writingWorkflowPresets: Array<{
     section: "analysis-plan",
     output: "structured",
     prompt:
-      "请写一份可放入论文或预注册说明的中文统计分析计划：90 名被试、每人 3 个路径确认支持 run；sub001/sub002/sub003 归为 P01，sub004/sub005/sub006 归为 P02；Signature1/2/3 分别映射为低/中/高路径确认支持；主检验为 medium - mean(low, high)。请说明组内模型、可选被试协变量需要哪些字段、事件窗 EEG 指标、行动迟滞指标、路径判断准确率和多重比较策略。",
+      `请写一份可放入论文或预注册说明的中文统计分析计划：${EXPECTED_SUBJECT_COUNT} 名被试、每人 ${EXPECTED_RUNS_PER_SUBJECT} 个路径确认支持 run；sub001/sub002/sub003 归为 P01，sub004/sub005/sub006 归为 P02；Signature1/2/3 分别映射为低/中/高路径确认支持；主检验为 medium - mean(low, high)。请说明组内模型、可选被试协变量需要哪些字段、事件窗 EEG 指标、行动迟滞指标、路径判断准确率和多重比较策略。`,
   },
   {
     label: "结果模板",
@@ -613,7 +644,7 @@ const writingWorkflowPresets: Array<{
     section: "discussion",
     output: "audit",
     prompt:
-      "请像审稿人一样检查当前写作思路：研究问题是否清楚、文献证据是否足够、变量定义是否一致、route-confirmation support 与 Signature 命名是否混用、EEG 指标解释是否过度、行动迟滞和准确率是否被区分、统计模型是否匹配 90×3 的组内设计。请给出可执行修改清单。",
+      `请像审稿人一样检查当前写作思路：研究问题是否清楚、文献证据是否足够、变量定义是否一致、route-confirmation support 与 Signature 命名是否混用、EEG 指标解释是否过度、行动迟滞和准确率是否被区分、统计模型是否匹配 ${EXPECTED_SUBJECT_COUNT}×${EXPECTED_RUNS_PER_SUBJECT} 的组内设计。请给出可执行修改清单。`,
   },
 ];
 
@@ -992,14 +1023,61 @@ function Workspace({
   async function handleXdfUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? []);
     if (!files.length) return;
-    const xdfFiles = files.filter(isXdfUploadFile);
-    const skippedCount = files.length - xdfFiles.length;
+    await uploadXdfFiles(files);
+    event.target.value = "";
+  }
+
+  async function handleXdfDirectoryPickerUpload() {
+    const showDirectoryPicker = (window as WindowWithDirectoryPicker).showDirectoryPicker;
+    if (!showDirectoryPicker) {
+      setXdfUploadState("warning");
+      setXdfUploadProgress(null);
+      setXdfUploadMessage("当前浏览器不支持递归目录扫描。可以先用“上传 XDF 文件夹”；Chrome 和 Edge 通常支持自动扫描多层子文件夹。");
+      return;
+    }
+
+    try {
+      const rootDirectory = await showDirectoryPicker({ id: "xdf-recursive-root", mode: "read" });
+      setXdfUploadState("uploading");
+      setXdfUploadProgress(null);
+      setXdfUploadMessage(`正在扫描“${rootDirectory.name}”及其所有子文件夹，自动寻找 .xdf 文件。`);
+
+      const scanResult = await collectXdfFilesFromDirectory(rootDirectory);
+      const skippedCount = scanResult.inspectedFiles - scanResult.files.length;
+      if (!scanResult.files.length) {
+        setXdfUploadState("error");
+        setXdfUploadProgress(null);
+        setXdfUploadMessage(
+          `已扫描 ${scanResult.visitedDirectories} 个文件夹、${scanResult.inspectedFiles} 个文件，但没有找到 .xdf 文件。`,
+        );
+        return;
+      }
+
+      setXdfUploadMessage(
+        `已扫描 ${scanResult.visitedDirectories} 个文件夹、${scanResult.inspectedFiles} 个文件，找到 ${scanResult.files.length} 个 XDF，开始上传。`,
+      );
+      await uploadXdfFiles(scanResult.files, skippedCount);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        setXdfUploadState("idle");
+        setXdfUploadProgress(null);
+        setXdfUploadMessage("");
+        return;
+      }
+      setXdfUploadState("error");
+      setXdfUploadProgress(null);
+      setXdfUploadMessage(error instanceof Error ? `扫描文件夹失败：${error.message}` : "扫描文件夹失败。");
+    }
+  }
+
+  async function uploadXdfFiles(files: File[], precomputedSkippedCount = 0) {
+    const xdfFiles = files.filter(isXdfUploadFile).sort(compareXdfUploadFiles);
+    const skippedCount = precomputedSkippedCount + files.length - xdfFiles.length;
 
     if (!xdfFiles.length) {
       setXdfUploadState("error");
       setXdfUploadProgress(null);
       setXdfUploadMessage("没有识别到 .xdf 文件。可以一次选择多个 XDF，或直接选择包含 XDF 的文件夹。");
-      event.target.value = "";
       return;
     }
 
@@ -1036,7 +1114,6 @@ function Workspace({
       );
     }
 
-    event.target.value = "";
     await loadDocuments();
   }
 
@@ -1060,7 +1137,7 @@ function Workspace({
           uploaded += 1;
         } catch (error) {
           failures.push({
-            filename: file.name,
+            filename: getUploadFileDisplayName(file),
             message: error instanceof Error ? error.message : "上传失败",
           });
         } finally {
@@ -1069,7 +1146,7 @@ function Workspace({
             completed: uploaded + failures.length,
             uploaded,
             failed: failures.length,
-            currentFile: file.name,
+            currentFile: getUploadFileDisplayName(file),
           });
         }
       }
@@ -1096,7 +1173,7 @@ function Workspace({
       storage_path: storagePath,
       mime_type: file.type || null,
       size_bytes: file.size,
-      notes: "",
+      notes: buildUploadNotes(file),
     });
 
     if (insertError) {
@@ -1676,6 +1753,9 @@ function Workspace({
                 <input {...xdfFolderInputProps} />
                 上传 XDF 文件夹
               </label>
+              <button className="secondary-button" type="button" disabled={xdfUploadDisabled} onClick={handleXdfDirectoryPickerUpload}>
+                递归扫描大文件夹
+              </button>
             </div>
           </div>
           {xdfUploadMessage ? <p className={`notice ${xdfUploadState}`}>{xdfUploadMessage}</p> : null}
@@ -2284,8 +2364,8 @@ function XdfSubjectMatrixPanel({
     <section className="work-panel subject-matrix-panel">
       <div className="analysis-head">
         <div>
-          <p className="eyebrow">270 个 XDF 管理矩阵</p>
-          <h3>P01-P90 被试 × 低/中/高路径确认支持</h3>
+          <p className="eyebrow">{EXPECTED_XDF_COUNT} 个 XDF 管理矩阵</p>
+          <h3>{EXPECTED_SUBJECT_RANGE_LABEL} 被试 × 低/中/高路径确认支持</h3>
         </div>
         <div className="top-actions">
           <button className="secondary-button" disabled={!rows.length} onClick={onDownloadCsv}>
@@ -2482,12 +2562,12 @@ function SubjectBatchPanel({
         </span>
       </div>
       <p className="muted">
-        正式数据按 90 名被试 × 3 个路径确认支持条件组织。sub001/sub002/sub003 归为 P01，sub004/sub005/sub006 归为 P02，以此类推；Signature1/2/3 分别对应低/中/高路径确认支持。报告包含被试内条件表和主 planned contrast：中等支持 - 低/高支持平均。
+        正式数据按 {EXPECTED_SUBJECT_COUNT} 名被试 × {EXPECTED_RUNS_PER_SUBJECT} 个路径确认支持条件组织。sub001/sub002/sub003 归为 P01，sub004/sub005/sub006 归为 P02，以此类推；Signature1/2/3 分别对应低/中/高路径确认支持。报告包含被试内条件表和主 planned contrast：中等支持 - 低/高支持平均。
       </p>
       <div className="design-strip" aria-label="分析设计">
-        <span>90 被试</span>
+        <span>{EXPECTED_SUBJECT_COUNT} 被试</span>
         <span>3 路径确认支持条件</span>
-        <span>270 个 XDF</span>
+        <span>{EXPECTED_XDF_COUNT} 个 XDF</span>
         <span>组内因素：support level</span>
         <span>主假设：中等支持迟滞最高</span>
       </div>
@@ -3797,7 +3877,7 @@ function buildFallbackWritingBlocks({
     {
       section: "讨论与边界",
       purpose: "避免把相邻文献误写成本研究结果。",
-      draft: `需要说明的是，${sourceLabel}的作用主要在于${use || "提供理论、方法或背景参照"}。${boundary || "它不能替代本研究基于 90 名被试、270 个实验 run 的全样本 planned contrast 和协变量分析。"} 因此，正式写作时应把文献证据、项目假设和真实实验结果分层陈述。`,
+      draft: `需要说明的是，${sourceLabel}的作用主要在于${use || "提供理论、方法或背景参照"}。${boundary || `它不能替代本研究基于 ${EXPECTED_SUBJECT_COUNT} 名被试、${EXPECTED_XDF_COUNT} 个实验 run 的全样本 planned contrast 和协变量分析。`} 因此，正式写作时应把文献证据、项目假设和真实实验结果分层陈述。`,
     },
   ];
 }
@@ -4256,8 +4336,68 @@ function getResearchUploadCollection(filename: string, mimeType: string) {
   return "documents";
 }
 
+async function collectXdfFilesFromDirectory(rootDirectory: BrowserFileSystemDirectoryHandle): Promise<XdfDirectoryScanResult> {
+  const files: XdfUploadFile[] = [];
+  let inspectedFiles = 0;
+  let visitedDirectories = 0;
+  const pendingDirectories: Array<{ handle: BrowserFileSystemDirectoryHandle; path: string }> = [
+    { handle: rootDirectory, path: rootDirectory.name },
+  ];
+
+  while (pendingDirectories.length) {
+    const directory = pendingDirectories.pop();
+    if (!directory) break;
+    visitedDirectories += 1;
+
+    for await (const entry of directory.handle.values()) {
+      const entryPath = `${directory.path}/${entry.name}`;
+      if (entry.kind === "directory") {
+        pendingDirectories.push({ handle: entry, path: entryPath });
+        continue;
+      }
+
+      inspectedFiles += 1;
+      if (!isXdfFilename(entry.name)) continue;
+
+      const file = (await entry.getFile()) as XdfUploadFile;
+      xdfUploadRelativePaths.set(file, entryPath);
+      files.push(file);
+    }
+  }
+
+  return { files, inspectedFiles, visitedDirectories };
+}
+
 function isXdfUploadFile(file: File) {
-  return getDocumentExtension(file.name) === "xdf";
+  return isXdfFilename(file.name);
+}
+
+function isXdfFilename(filename: string) {
+  return getDocumentExtension(filename) === "xdf";
+}
+
+function compareXdfUploadFiles(a: File, b: File) {
+  const sequenceA = inferXdfSequenceIndexFromUploadName(a);
+  const sequenceB = inferXdfSequenceIndexFromUploadName(b);
+  if (sequenceA !== sequenceB) return sequenceA - sequenceB;
+  return getUploadFileDisplayName(a).localeCompare(getUploadFileDisplayName(b), "zh-CN", { numeric: true });
+}
+
+function inferXdfSequenceIndexFromUploadName(file: File) {
+  const displayName = getUploadFileDisplayName(file);
+  const sequenceMatch = displayName.match(/(?:^|[^0-9])(?:sub|file)[-_]?0*(\d{1,4})(?=[^0-9]|$)/i);
+  if (sequenceMatch?.[1]) return Number(sequenceMatch[1]);
+  return Number.MAX_SAFE_INTEGER;
+}
+
+function getUploadFileDisplayName(file: File) {
+  const xdfFile = file as XdfUploadFile;
+  return xdfUploadRelativePaths.get(file) || xdfFile.uploadRelativePath || xdfFile.webkitRelativePath || file.name;
+}
+
+function buildUploadNotes(file: File) {
+  const displayName = getUploadFileDisplayName(file);
+  return displayName && displayName !== file.name ? `source_relative_path: ${displayName}` : "";
 }
 
 function buildLatestJobByDocumentId(jobs: ResearchAnalysisJob[]) {

@@ -18,9 +18,9 @@ type DeleteJobsBody = {
 
 const DEFAULT_WORKFLOW = "analysis-worker.yml";
 const DENSITY_ANALYSIS_DESIGN = {
-  expectedSubjects: 90,
+  expectedSubjects: 100,
   runsPerSubject: 3,
-  expectedTotalRuns: 270,
+  expectedTotalRuns: 300,
   fileCodingRule: "001/002/003 = participant P01; 004/005/006 = P02; each triplet is one within-subject route-confirmation support set",
   withinSubjectFactor: "route-confirmation support level",
   densityLevels: ["low", "medium", "high"],

@@ -250,7 +250,7 @@ Wilcoxon p = .0479
 leave-one-subject-out: 31/31 次 p < .05
 ```
 
-解释边界：formal load composite 作为 H3 事件窗综合端点目前是边缘结果；decision-point frontal theta 是预先保留的生理成分证据，可以作为支持“中等支持增加关键决策点加工负荷”的 planned secondary EEG 结果报告。不能把该次成分事后改写成唯一主 EEG 端点，除非在最终 90 名被试数据锁定前明确写成 protocol amendment，并保留 composite 的结果。
+解释边界：formal load composite 作为 H3 事件窗综合端点目前是边缘结果；decision-point frontal theta 是预先保留的生理成分证据，可以作为支持“中等支持增加关键决策点加工负荷”的 planned secondary EEG 结果报告。不能把该次成分事后改写成唯一主 EEG 端点，除非在最终 100 名被试数据锁定前明确写成 protocol amendment，并保留 composite 的结果。
 
 pairwise 结构：
 

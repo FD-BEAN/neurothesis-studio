@@ -159,7 +159,7 @@ export const analysisPipelineStages = [
   },
   {
     title: "全样本组内检验",
-    detail: "汇总 P01-P90 的 subject-level contrast，检验中等路径确认支持是否带来更高行动迟滞和 EEG 负荷。",
+    detail: "汇总 P01-P100 的 subject-level contrast，检验中等路径确认支持是否带来更高行动迟滞和 EEG 负荷。",
   },
   {
     title: "个体差异与调节分析",

@@ -1024,7 +1024,7 @@ function buildChineseWritingBlocks(source, curated, taskLens, readingNote, linke
     {
       section: "理论假设",
       purpose: "把文献证据转写为本研究假设的理论依据，而不是当作本研究结果。",
-      draft: `结合${sourceLabel}提供的证据，可以将路径确认支持理解为一种影响信息加工负荷和行动迟滞的情境条件。对于本研究而言，该文献更适合支持“路径确认信息链会改变决策过程”的理论前提；至于中等支持条件是否产生最高负荷，仍需由 90 名被试、每名 3 个 run 的 XDF 数据进行组内 planned contrast 检验。`,
+      draft: `结合${sourceLabel}提供的证据，可以将路径确认支持理解为一种影响信息加工负荷和行动迟滞的情境条件。对于本研究而言，该文献更适合支持“路径确认信息链会改变决策过程”的理论前提；至于中等支持条件是否产生最高负荷，仍需由 100 名被试、每名 3 个 run 的 XDF 数据进行组内 planned contrast 检验。`,
     },
     {
       section: "方法与指标",

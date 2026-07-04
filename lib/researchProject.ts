@@ -5,9 +5,9 @@ export const researchProject = {
   design: {
     maps: ["Metro1", "Metro2", "Metro3"],
     densityLevels: ["低路径确认支持", "中路径确认支持", "高路径确认支持"],
-    expectedSubjects: 90,
+    expectedSubjects: 100,
     runsPerSubject: 3,
-    expectedRuns: 270,
+    expectedRuns: 300,
     withinSubjectFactor: "Route-confirmation support level",
     primaryHypothesis: "中等路径确认支持可能产生最高行动迟滞和最高信息加工负荷。",
     primaryContrast: "medium - mean(low, high)",
@@ -80,7 +80,7 @@ export const researchProject = {
     {
       id: "fig-2",
       title: "实验条件结构",
-      use: "说明 90 名被试 × 3 个路径确认支持条件的组内设计",
+      use: "说明 100 名被试 × 3 个路径确认支持条件的组内设计",
       caption: "每名被试完成低、中、高路径确认支持 3 个 VR 地铁撤离 run；正式统计以 Route-confirmation support level 为组内因素，主检验为中等支持相对低/高支持平均的 planned contrast。",
     },
     {
@@ -166,7 +166,7 @@ export const metroAiPrompt =
 export const projectWritingContext = [
   "Project: Metro Rescue, a VR subway evacuation wayfinding study with synchronized Unity LSL markers and EEG LabRecorder .xdf files.",
   "Current theoretical framing: the core construct is a route-confirmation information chain after an official target alert. The key question is whether official target reminders and subsequent on-site confirmation cues form a continuous, traceable, and confirmable chain for action.",
-  "Participants/runs: target 90 subjects, each with 3 route-confirmation support runs: low, medium, high; expected 270 XDF files.",
+  "Participants/runs: target 100 subjects, each with 3 route-confirmation support runs: low, medium, high; expected 300 XDF files.",
   "Manipulated X dimensions are cue quantity, cue continuity, key decision-point coverage, and first visible/readable cue timing. Signature1/2/3 currently map to low/medium/high support unless a later condition table says otherwise.",
   "Primary Y is proximal route-confirmation hesitation, operationalized as route_confirmation_hesitation_index from prompt_to_first_confirmation_s, time_to_first_sign_readable_s, decision_total_look_count, and decision_scan_both_count. Legacy broad route-decision hesitation is only a sensitivity or boundary metric. Auxiliary Y: wayfinding decision accuracy; the only correct final exit is A3, so exit_label == A3 can be used as final route correctness.",
   "M1: perceived information reliability, representing the rational trade-off mechanism in heuristic decision-making: whether the expected accuracy gain from official route-confirmation cues is worth the additional confirmation cost. M2: information-processing load, representing the cognitive-limitation mechanism: the load imposed by target-cue-direction integration when the confirmation chain is reliable but not closed.",

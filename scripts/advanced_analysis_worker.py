@@ -1411,16 +1411,16 @@ def analyze_cohort_density(
         "metricPlan": build_metric_plan(),
         "narrativeSections": build_cohort_narrative(unique_subjects, primary_behavior_result, primary_eeg_result, summary_rows, group_variable, group_levels, between_rows),
         "design": {
-            "expected_subjects": 90,
+            "expected_subjects": 100,
             "runs_per_subject": 3,
-            "expected_total_runs": 270,
+            "expected_total_runs": 300,
             "file_coding_rule": "001/002/003 = participant P01; 004/005/006 = P02; each triplet is one within-subject route-confirmation support set",
             "within_subject_factor": "route-confirmation support level",
             "signature_mapping": {"Signature1": "low", "Signature2": "medium", "Signature3": "high"},
             "primary_contrast": "medium - mean(low, high)",
         },
         "metrics": [
-            {"label": "已纳入被试", "value": f"{len(unique_subjects)}/90"},
+            {"label": "已纳入被试", "value": f"{len(unique_subjects)}/100"},
             {"label": "contrast 行", "value": str(len(subject_rows))},
             {"label": "被试信息匹配", "value": f"{len(matched_metadata_subjects)}/{len(metadata_subjects)}" if metadata_subjects else "未提供"},
             {"label": "协变量", "value": group_variable if group_levels else "未启用", "text": " / ".join(group_levels) if group_levels else ""},
@@ -1564,7 +1564,7 @@ def build_cohort_sensitivity_table(
         "rows": [
             [
                 "正式样本量",
-                f"{len(unique_subjects)}/90 名被试",
+                f"{len(unique_subjects)}/100 名被试",
                 "样本量不足时只写 pilot 或流程检查；正式显著性结论等待完整 subject-level contrast。",
             ],
             [
@@ -1580,7 +1580,7 @@ def build_cohort_sensitivity_table(
             [
                 "被试信息匹配",
                 f"{len(matched_metadata_subjects)}/{len(metadata_subjects)}" if metadata_subjects else "未提供",
-                "协变量编号应使用 P01-P90；不匹配时不做个体差异解释。",
+                "协变量编号应使用 P01-P100；不匹配时不做个体差异解释。",
             ],
             [
                 "多指标解释",
@@ -1825,7 +1825,7 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
         notes.append("部分 run 缺少可识别的完成时长；正式统计前需要确认 map_start/trial_start 到 evacuation_complete 的窗口。")
     if not contrast_rows:
         notes.append("未能计算中等支持 planned contrast；通常是低/中/高路径确认支持没有全部识别，或对应指标缺失。")
-    notes.append("单个被试报告只计算方向性 contrast，不报告显著性；显著性需要 90 名被试的 subject-level contrast 或 trial-level mixed-effects model。")
+    notes.append("单个被试报告只计算方向性 contrast，不报告显著性；显著性需要 100 名被试的 subject-level contrast 或 trial-level mixed-effects model。")
     notes.append("组内因素主轴为 route-confirmation support level；个体差异分析需要额外上传被试信息表，例如 sex、age、VR experience、空间能力、专业背景、实验顺序或 counterbalance。")
     notes.append("正式主检验建议预注册为：中等路径确认支持下行动迟滞高于低/高支持平均，contrast weights = low:-0.5, medium:1, high:-0.5；EEG 信息加工负荷作为 M2 过程证据单独报告。")
 
@@ -1835,9 +1835,9 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
         "subjectId": subject_id,
         "sourceDocumentIds": [document["id"] for document in documents],
         "design": {
-            "expected_subjects": 90,
+            "expected_subjects": 100,
             "runs_per_subject": 3,
-            "expected_total_runs": 270,
+            "expected_total_runs": 300,
             "file_coding_rule": "001/002/003 = participant P01; 004/005/006 = P02; each triplet is one within-subject route-confirmation support set",
             "within_subject_factor": "route-confirmation support level",
             "density_levels": list(DENSITY_LEVELS),
@@ -1972,10 +1972,10 @@ def analyze_subject_batch(batch: dict[str, Any], documents: list[dict[str, Any]]
             },
             build_subject_sensitivity_table(run_rows, contrast_json),
             {
-                "title": "90 被试全样本统计模型建议",
+                "title": "100 被试全样本统计模型建议",
                 "columns": ["分析层级", "模型/检验", "解释口径"],
                 "rows": [
-                    ["被试内主检验", "对每名被试计算 contrast = medium - (low + high) / 2，再对 90 个 contrast 做 one-sample test 或等价 mixed model contrast", "直接回答中等支持是否显著高于低/高支持平均"],
+                    ["被试内主检验", "对每名被试计算 contrast = medium - (low + high) / 2，再对 100 个 contrast 做 one-sample test 或等价 mixed model contrast", "直接回答中等支持是否显著高于低/高支持平均"],
                     ["trial/run-level mixed model", "Load ~ SupportLevel + RunOrder + Map + (1 + SupportLevel | Subject)", "SupportLevel 是组内固定效应；Subject 是随机效应"],
                     ["个体差异/调节", "Load ~ SupportLevel * ParticipantCovariate + RunOrder + Map + (1 + SupportLevel | Subject)", "协变量需要来自被试信息表；重点看 SupportLevel 与该变量的交互"],
                     ["多指标控制", "EEG load proxy、theta/alpha、frontal theta、posterior alpha、completion time、behavior_load_proxy 分开报告；主指标优先，其他作为 convergent evidence", "避免把多个探索性指标都写成主结论"],
@@ -2175,7 +2175,7 @@ def build_subject_core_profile_chart(run_rows: list[dict[str, str]]) -> dict[str
         "wide": True,
         "xLabel": "路径确认支持条件",
         "yLabel": "被试内标准化指数",
-        "caption": "用于直接观察主假设方向：中等支持条件下，行动迟滞和 EEG 加工负荷是否高于低/高支持。该图显示单名被试的方向性模式，全样本显著性需要汇总 90 名被试后检验。",
+        "caption": "用于直接观察主假设方向：中等支持条件下，行动迟滞和 EEG 加工负荷是否高于低/高支持。该图显示单名被试的方向性模式，全样本显著性需要汇总 100 名被试后检验。",
     }
 
 
@@ -2360,7 +2360,7 @@ def build_subject_batch_narrative(subject_id: str, run_rows: list[dict[str, str]
         {
             "title": "论文写作口径",
             "paragraphs": [
-                "单个被试报告只能用于质控、特征检查和方向性观察，不能直接写成统计显著。正式结果应在 90 名被试层面汇总每人的 medium - mean(low, high) contrast，并进行 one-sample test 或 mixed-effects contrast。",
+                "单个被试报告只能用于质控、特征检查和方向性观察，不能直接写成统计显著。正式结果应在 100 名被试层面汇总每人的 medium - mean(low, high) contrast，并进行 one-sample test 或 mixed-effects contrast。",
                 f"路径判断准确率的 contrast 为 {contrast_sentence(accuracy_contrast)}。低支持条件下如果迟滞较低且准确率较低，可作为 accuracy–effort trade-off 的结果线索；如果准确率字段缺失，需要在 Unity marker 中补写 choice_correct 或 route_correct。",
                 f"保护性行动指令清晰度当前识别为：{' / '.join(clarity_levels) if clarity_levels else '待补 marker/metadata'}。后续加入 VR 经验、专业背景、性别或指令清晰度时，应在被试/run 信息表中显式记录，再检验 SupportLevel × ParticipantCovariate 或 SupportLevel × Clarity 交互。",
             ],
@@ -3373,7 +3373,7 @@ def build_single_xdf_narrative(
             "title": "EEG 事件窗",
             "paragraphs": [
                 "EEG 频带和事件窗指标用于描述任务期间的信息加工负荷。报告优先关注 sign_readable 和 decision_point_enter 附近的事件窗，因为它们最接近目标—线索—方向匹配过程。",
-                "正式分析应在同一被试的低、中、高路径确认支持条件之间比较这些指标，再进入 90 名被试层面的 planned contrast 或 mixed-effects model。",
+                "正式分析应在同一被试的低、中、高路径确认支持条件之间比较这些指标，再进入 100 名被试层面的 planned contrast 或 mixed-effects model。",
             ],
         },
         {

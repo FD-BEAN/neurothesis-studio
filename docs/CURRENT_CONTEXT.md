@@ -88,9 +88,9 @@ a248711 Clarify between-participant analysis wording
 
 正式实验预期：
 
-- 90 名被试。
+- 100 名被试。
 - 每名被试 3 个实验 run。
-- 总计 270 个 XDF 文件。
+- 总计 300 个 XDF 文件。
 
 文件编号规则：
 
@@ -101,7 +101,7 @@ sub007 / sub008 / sub009 = P03
 ...
 ```
 
-不要把 `sub003` 写成被试编号。`sub001` 到 `sub270` 是实验文件序号；分析层面的被试编号应使用 `P01` 到 `P90`。
+不要把 `sub003` 写成被试编号。`sub001` 到 `sub300` 是实验文件序号；分析层面的被试编号应使用 `P01` 到 `P100`。
 
 条件映射：
 
@@ -141,7 +141,7 @@ medium = 2
 high = -1
 ```
 
-单名被试只做方向性观察，不能报告显著性。正式显著性需要汇总 P01-P90 的 subject-level contrast。
+单名被试只做方向性观察，不能报告显著性。正式显著性需要汇总 P01-P100 的 subject-level contrast。
 
 推荐主分析：
 
@@ -149,7 +149,7 @@ high = -1
 contrast_i = medium_i - (low_i + high_i) / 2
 ```
 
-然后对 90 名被试的 `contrast_i` 做 one-sample test，或在 mixed-effects model 中检验等价 contrast。
+然后对 100 名被试的 `contrast_i` 做 one-sample test，或在 mixed-effects model 中检验等价 contrast。
 
 推荐 run/trial-level 模型：
 
@@ -183,7 +183,7 @@ XDF 分析应服务正式论文，而不是只做简单文件预览。
    把同一被试低 / 中 / 高 3 个 XDF 合并，生成 subject-level support table。
 
 3. 全样本主分析  
-   汇总 P01-P90 的 `medium - mean(low, high)`，检验主假设。
+   汇总 P01-P100 的 `medium - mean(low, high)`，检验主假设。
 
 4. 事件窗分析  
    围绕 `sign_readable`、`decision_point_enter`、`audio_play` 等 marker 提取 EEG 和行为指标。
@@ -238,7 +238,7 @@ XDF 分析应服务正式论文，而不是只做简单文件预览。
 - 不要过度解释功能。
 - 不要把 dashboard 做成很刻意的产品广告。
 - XDF 分析结果不要在 dashboard 里长篇展示，生成可下载 HTML report。
-- 大量文件管理应以文件和被试矩阵为中心，方便处理 270 个 XDF。
+- 大量文件管理应以文件和被试矩阵为中心，方便处理 300 个 XDF。
 
 ## 9. 文献知识库和写作助手
 
@@ -285,7 +285,7 @@ XDF 高级分析 worker 在：
 scripts/advanced_analysis_worker.py
 ```
 
-XDF 命名和 P01-P90 规则在：
+XDF 命名和 P01-P100 规则在：
 
 ```text
 lib/xdfNaming.ts
@@ -331,7 +331,7 @@ d6751a5 Clarify cohort covariate analysis wording
 3. 固定主指标和探索指标，避免多指标选择造成结果解释风险。
 4. 重构文献知识卡，让每篇文章都有更强的单篇知识体系。
 5. 提升文献写作助手，让它能直接生成中文论文小节，而不是只输出建议。
-6. 完善 270 个 XDF 文件的管理视图，包括 P01-P90 矩阵、状态、下载报告和失败处理。
+6. 完善 300 个 XDF 文件的管理视图，包括 P01-P100 矩阵、状态、下载报告和失败处理。
 
 ## 13. 2026-06-05 后续工作推进记录
 
@@ -345,7 +345,7 @@ d6751a5 Clarify cohort covariate analysis wording
 - 文献知识卡升级到 `version: 4`，新增 `singlePaperKnowledgeSystem`，用于保存构念链接、证据单元、可写 claims、核对清单和开放问题。
 - 知识库审阅页增加“单篇知识体系”展示区，旧内置文献会用已有 reading note / thesis map 自动生成 fallback。
 - 写作助手进一步固定“先写正文”的输出协议；Results 没有真实统计时必须输出带占位符的结果模板，不能编造显著性、p 值或效应量。
-- P01-P90 XDF 管理矩阵增加失败/卡住任务的直接清理入口；队列面板支持清理当前筛选下的失败、配置错误、卡住或已筛选完成任务。
+- P01-P100 XDF 管理矩阵增加失败/卡住任务的直接清理入口；队列面板支持清理当前筛选下的失败、配置错误、卡住或已筛选完成任务。
 
 已验证：
 
@@ -388,7 +388,7 @@ docs/XDF_LOCAL_EXPLORATION_2026-06-05.md
 - 73 个 XDF 记录。
 - 72 个唯一文件序号。
 - P03-P26 共 24 名完整三条件被试。
-- P01-P02 和 P27-P90 尚未在本地探索集中出现。
+- P01-P02 和 P27-P100 尚未在本地探索集中出现。
 - P04、P08、P14 含 old 文件，P14 还有 high 条件重复文件；正式 QC 需要单独记录。
 
 重要统计结论：
@@ -404,7 +404,7 @@ docs/XDF_LOCAL_EXPLORATION_2026-06-05.md
 
 - 不能为了显著性把结果“调”成 H1/H3 显著；当前可辩护结论是：中等路径确认支持延长了官方提示到首次现场确认线索之间的间隔。
 - 这个结果适合写成机制证据、操纵检查或次要行为结果，支持“中等支持形成可依赖但未闭合的信息链”的解释。
-- 如果要把 `prompt_to_first_confirmation_s` 升级为更核心的结果指标，应在完整 90 名被试正式分析前明确作为 protocol amendment，而不是事后替换主指标。
+- 如果要把 `prompt_to_first_confirmation_s` 升级为更核心的结果指标，应在完整 100 名被试正式分析前明确作为 protocol amendment，而不是事后替换主指标。
 - EEG 当前仍需更正式的预处理流程：通道标签核对、坏道/伪迹处理、事件窗 baseline、log band power、必要时 MNE/ICA。
 
 2026-06-06 追加同步与复跑：

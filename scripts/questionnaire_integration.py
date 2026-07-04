@@ -600,7 +600,7 @@ def write_codebook(path: Path) -> None:
         {
             "column": "participant_id",
             "scale": "identifier",
-            "role": "P01-P90 被试编号；sub001 会被换算为 P01。",
+            "role": "P01-P100 被试编号；sub001 会被换算为 P01。",
             "coding": "P03",
         },
         {

@@ -120,7 +120,7 @@ git push origin main
 - 研究资料库上传只接收文献、笔记、脚本、表格和一般研究材料，不接收 `.xdf`。
 - LabRecorder `.xdf` 只在“数据分析与写作”的 XDF 上传入口上传，并进入 `xdf-raw` 存储分区。
 - 页面主列表不把 XDF 混入研究资料库；XDF 的数量、选择、批量分析、任务状态和 HTML 报告下载都在数据分析模块管理。
-- 这样避免 270 个实验 XDF 文件把文献/笔记资料库淹没，也避免把 PDF 文献入库和实验数据分析两个工作流混在一起。
+- 这样避免 300 个实验 XDF 文件把文献/笔记资料库淹没，也避免把 PDF 文献入库和实验数据分析两个工作流混在一起。
 
 ## 研究内容结构
 
@@ -170,7 +170,7 @@ git push origin main
 
 - 当前核心假设应表述为路径确认支持假设：中等路径确认支持可能带来最高行动迟滞和 EEG 信息加工负荷，而不是简单的线性“支持越高越顺畅”。
 - 论文里不要直接写成已经证明中等支持更高；应写成 planned contrast，并等待 EEG/行为数据支持。
-- 正式实验结构：90 名被试 × 3 个路径确认支持条件（低 / 中 / 高）= 270 个 LabRecorder XDF run。
+- 正式实验结构：100 名被试 × 3 个路径确认支持条件（低 / 中 / 高）= 300 个 LabRecorder XDF run。
 - 组内因素：`Route-confirmation support level`。每名被试应尽量同时提交 3 个 XDF，使 worker 能生成被试内条件表。
 - 主 planned contrast：`medium - mean(low, high)`，权重为 `low:-1, medium:2, high:-1`。同时报告 medium-low 与 medium-high 的方向和置信区间。
 - 建议 trial/run-level mixed model：`Load ~ SupportLevel + RunOrder + Map + (1 + SupportLevel | Subject)`。
@@ -246,11 +246,11 @@ XDF worker 目前输出：
 - 文献与论文：只做文献知识库。上传 PDF 后生成“知识卡片”，卡片包含研究问题、方法、EEG/行为指标、主要发现、局限、可用于论文哪个章节等。AI 写作助手必须优先读取这些卡片，并用论文标题或文件名引用来源。
 - 新增文献知识卡片必须走后端 OpenAI API，不把 key 暴露到前端。长 PDF 不应只截取开头；先按 chunk 生成 evidence digest，再生成最终知识卡片。卡片需要包含中文摘要、英文摘要、one-sentence takeaway、方法/指标、主要发现、局限、与路径确认支持假设的关系、可写入 Methods/Results/Discussion 的用法、不可过度声称的边界和待核对 quote anchors。
 - XDF 原始数据：只放 LabRecorder `.xdf`、EEG 原始文件和正式实验数据。XDF 高级分析只处理这里的 EEG stream + Unity marker stream。
-- 分析脚本与输出：放 Python/MATLAB/notebook、trial_features、event_features、中间统计表和写作产物。后续 90 名被试 × 3 个路径确认支持条件 = 270 个实验文件，应走批量上传和批量提交 XDF 队列。
+- 分析脚本与输出：放 Python/MATLAB/notebook、trial_features、event_features、中间统计表和写作产物。后续 100 名被试 × 3 个路径确认支持条件 = 300 个实验文件，应走批量上传和批量提交 XDF 队列。
 - 场景平面图与导向标识配置暂时不作为主要界面模块展示，避免干扰当前文献库和 XDF 分析主线。
 - 不把真实论文 PDF、XDF、EEG 原始数据或被试数据提交到公开 GitHub repo 的 `data` 目录。公开 GitHub 只保存代码、schema、wiki 和可公开的模板；私有数据优先放 Supabase private Storage。
 - GitHub Actions 的 `SUPABASE_SERVICE_ROLE_KEY` 可以使用新版 `sb_secret_...` 或旧版 JWT `service_role`。worker 请求头需要区分两者：新版 secret key 只放 `apikey`，旧版 JWT 才放 `Authorization: Bearer ...`。
-- 文件管理界面必须以“文件为中心”呈现分析状态：XDF 文件旁边直接显示未提交、排队、运行、完成、失败、疑似卡住；任务队列支持状态筛选和进度条。270 个实验文件不能只靠一串卡片堆叠。
+- 文件管理界面必须以“文件为中心”呈现分析状态：XDF 文件旁边直接显示未提交、排队、运行、完成、失败、疑似卡住；任务队列支持状态筛选和进度条。300 个实验文件不能只靠一串卡片堆叠。
 - XDF 正式分析必须支持“被试批量任务”：同一被试的低/中/高路径确认支持 3 个 XDF run 一起提交，先逐 run 做 QC，再汇总成 subject-level support table。当前文件编码规则为 001/002/003 = P01，004/005/006 = P02，007/008/009 = P03，以此类推；Signature1/2/3 分别映射为低/中/高路径确认支持。核心组内因素是 SupportLevel；Metro/map、run order、signage version 可作为控制变量或辅助解释字段。个体差异分析需要用户额外提供被试信息表，例如 participant_id、age、sex、VR experience、空间能力、专业背景、实验顺序/分组等。
 - “数据分析与论文写作”还需要一个全样本汇总任务：读取已完成的被试批量报告，提取每名被试的 `medium - mean(low, high)` contrast，输出 n、均值、95% CI、t/p、Cohen dz 和结论口径。该汇总回答主假设；个体差异或调节结论需要额外被试信息表后再做 SupportLevel × ParticipantCovariate 交互模型。
 - 运行完成、失败、配置错误、疑似卡住的任务应该能从界面删除，避免历史错误任务堆积影响判断。
@@ -341,7 +341,7 @@ Signature 方案需要补充定义：
 
 文献与写作助手的上下文来源：
 
-- 项目快照：90 名被试 × 低/中/高路径确认支持 3 个 run，主 planned contrast 为 `medium - mean(low, high)`。
+- 项目快照：100 名被试 × 低/中/高路径确认支持 3 个 run，主 planned contrast 为 `medium - mean(low, high)`。
 - 内置 Metro Rescue 文献知识库：用于已有综述、机制、风险、分析模型和写作块。
 - 用户新增文献：通过后端 OpenAI API 生成结构化卡片后进入文献知识库；如果已经命中项目已有知识层，则不重复生成。
 - 已完成分析报告摘要：包括被试批量 XDF 报告和全样本路径确认支持 contrast 汇总。只有这里或用户明确提供的结果才能支持 Results/Discussion 的统计结论。
@@ -389,7 +389,7 @@ AI 不应该：
 
 XDF 命名与分析规则：
 
-- `lib/xdfNaming.ts` 是前端和 API 共用的 XDF 命名推断规则。实验文件 `sub001/sub002/sub003` 自动归为被试组 `P01`，`sub004/sub005/sub006` 归为 `P02`，`sub007/sub008/sub009` 归为 `P03`。不要把文件序号 `sub003` 写成被试编号，避免和 1-270 个实验文件混淆。
+- `lib/xdfNaming.ts` 是前端和 API 共用的 XDF 命名推断规则。实验文件 `sub001/sub002/sub003` 自动归为被试组 `P01`，`sub004/sub005/sub006` 归为 `P02`，`sub007/sub008/sub009` 归为 `P03`。不要把文件序号 `sub003` 写成被试编号，避免和 1-300 个实验文件混淆。
 - Signature 映射固定为：Signature1 = low route-confirmation support，Signature2 = medium route-confirmation support，Signature3 = high route-confirmation support；如果文件名没有 Signature，则三连号中的第 1/2/3 个文件作为低/中/高支持 fallback。
 - Python worker 使用相同规则写入 HTML report：单个被试报告只给方向性 contrast；显著性需要全样本 `medium - mean(low, high)` 汇总，个体差异解释需要被试信息表支持。
 
@@ -426,7 +426,7 @@ XDF 命名与分析规则：
 2. 文献矩阵：按 wayfinding / VR evacuation / EEG cognitive load 分类，并支持写作助手引用来源
 3. XDF 质控：stream 检查、session 切分、marker 完整性、EEG stream 选择
 4. EEG 分析：MNE-Python / EEGLAB 预处理脚本模板和 trial/event-level 特征表
-5. 批量实验数据：支持 90 名被试 × 3 个路径确认支持条件的 XDF 上传、排队和结果汇总
+5. 批量实验数据：支持 100 名被试 × 3 个路径确认支持条件的 XDF 上传、排队和结果汇总
 6. 写作模块：中文引言、文献综述、研究方法、结果模板、讨论与证据链
 7. 场景与标识配置：当前暂不作为主界面模块，未来确有需要再恢复
 
@@ -467,7 +467,7 @@ XDF 命名与分析规则：
 ## 2026-06-01 写作与分析界面收敛
 
 - 项目概览的“资料摘要”只保留入库文件数、文献文件数和存储容量；不再显示当前选中文件或关键词标签。
-- XDF 队列默认只展开最新任务，面板最多显示最近 3 个任务；第 2、3 个任务放在可展开历史中，避免 270 个实验任务堆满页面。
+- XDF 队列默认只展开最新任务，面板最多显示最近 3 个任务；第 2、3 个任务放在可展开历史中，避免 300 个实验任务堆满页面。
 - 文献知识库审阅只保留单篇文献结构，不再提供全局知识图谱入口。
 - 已有 47 篇 PDF 由本地 Codex 脚本整理进 `lib/literature_article_kb.json`，不是通过网站 API 生成。
 - 每篇文献统一按同一套 schema 展示：文献身份、研究问题与定位、方法与数据、主要发现、对本研究的用途、边界与不能声称、关联证据单元和引用线索。
@@ -477,7 +477,7 @@ XDF 命名与分析规则：
 
 - “文献与写作助手”中的写作区应定位为“论文写作工作台”：默认直接生成中文论文正文，而不是先给建议或证据矩阵。正文输出的第一部分必须是可进入草稿的中文学位论文段落；证据链、不能声称和待补数据放在正文之后。
 - 参考科研写作 workflow 的原则：章节写作要有目标章节、正文草稿、证据追踪和质量检查；写作助手要产出 Introduction、Methods、Analysis Plan、Results template 或 Discussion 的具体段落。
-- XDF 被试组显示统一为 `P01` 到 `P90`。`sub001` 到 `sub270` 是实验文件序号，不是 participant ID；每 3 个文件组成一名被试的低/中/高路径确认支持 run。
+- XDF 被试组显示统一为 `P01` 到 `P100`。`sub001` 到 `sub300` 是实验文件序号，不是 participant ID；每 3 个文件组成一名被试的低/中/高路径确认支持 run。
 - 文献知识库继续以单篇论文卡为核心，不做全局知识图谱。每篇文章都按同一结构展示：文献身份、研究问题与定位、单篇读论文笔记、方法与数据、主要发现、对本研究的用途、边界、关联证据和引用线索。
 - `lib/literature_article_kb.json` 当前版本为 `literature-article-kb-v4-paper-notes`。它由本地脚本 `scripts/build_literature_article_kb.mjs` 重建，不调用网页 API，也不使用 OpenAI key。
 - 单篇读论文笔记字段包括：TL;DR、problem、motivation、methodSummary、resultSummary、transferableConcepts、strengths、weaknesses、writingAngles、followUpQuestions。后续新增论文也应尽量映射到这套结构。
@@ -558,20 +558,20 @@ XDF 分析口径扩展：
 - 被试批量报告优先显示三类总览图：低/中/高路径确认支持的核心指标剖面、路径确认链指标矩阵、迟滞与准确率/确认线索关系图。
 - 全样本汇总报告新增 planned contrast forest plot，显示每个指标的 `medium - mean(low, high)`、95% CI、n 和 p 值。
 - 细节柱状图继续保留，用于追踪具体指标来源；正式写作时优先看剖面图、指标矩阵和全样本 forest plot。
-- 分析层面的被试编号统一为 `P01` 到 `P90`。原始 `sub-001` 到 `sub-270` 仍按三连号推断每名被试的低/中/高支持 run。
+- 分析层面的被试编号统一为 `P01` 到 `P100`。原始 `sub-001` 到 `sub-300` 仍按三连号推断每名被试的低/中/高支持 run。
 
 ## 2026-06-02 Batch within-subject and metadata between-participant analysis
 
 - 页面支持一次提交多个完整被试的组内三条件 XDF 批量分析。完整被试定义为同一 `Pxx` 下能识别低/中/高三个路径确认支持条件，且当前没有正在运行或已完成的同被试批量任务。
 - 全样本汇总支持可选被试信息 CSV。最小字段是 `participant_id`；推荐字段包括 `participant_id,sex,age,vr_experience,spatial_ability,run_order,counterbalance,instruction_type`。
-- 被试信息表中的编号会尽量统一为 `P01` 格式，允许 `P01`、`1`、`sub001` 等写法，但正式数据整理仍建议统一使用 `P01` 到 `P90`。
+- 被试信息表中的编号会尽量统一为 `P01` 格式，允许 `P01`、`1`、`sub001` 等写法，但正式数据整理仍建议统一使用 `P01` 到 `P100`。
 - 不提供被试信息 CSV 时，cohort report 只做全样本 planned contrast：`medium - mean(low, high)`。提供 CSV 时，worker 会按指定协变量列描述每名被试的 subject-level contrast 差异。
 - 协变量的每个水平少于 2 名被试时，报告只输出 descriptive only；2 个被试 × 3 个实验适合做 pilot 趋势检查，不能写成显著性结论。
 - 完整论文的个体差异或调节模型应以 `SupportLevel × ParticipantCovariate` 为核心，当前线上 report 的协变量表是基于每名被试 planned contrast 的快速汇总版本。
 
 ## 2026-06-02 Research workstation next layer
 
-- XDF workflow now has a fixed `P01`-`P90` matrix for the planned 270 LabRecorder files. It is separate from the research document library and only manages XDF upload and analysis state.
+- XDF workflow now has a fixed `P01`-`P100` matrix for the planned 300 LabRecorder files. It is separate from the research document library and only manages XDF upload and analysis state.
 - Every participant row expects three route-confirmation support conditions: `Signature1` / triplet position 1 = low, `Signature2` / position 2 = medium, `Signature3` / position 3 = high.
 - Formal analysis layers: single-run QC -> Unity marker behavior features -> EEG event-window features -> one-participant three-condition contrast -> cohort planned contrast -> optional participant-covariate analysis.
 - Unity marker events are now treated as a shared contract between the Unity scene and Python worker. Required events are `map_start`, `sign_readable`, `decision_point_enter`, and `evacuation_complete`. Recommended events cover audio instruction, movement start, left/right looks, scans, choice correctness, decision exit, dwell, U-turn, and backtracking.
