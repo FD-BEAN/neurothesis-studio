@@ -138,6 +138,12 @@ a {
   color: var(--green);
 }
 
+.notice.warning {
+  border-color: #e5d2a5;
+  background: #fffaf0;
+  color: #836019;
+}
+
 .auth-aside {
   padding: clamp(24px, 6vw, 58px);
   display: grid;
@@ -330,6 +336,11 @@ a {
 .file-button {
   display: inline-grid;
   place-items: center;
+}
+
+.file-button.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
 }
 
 .file-button input {
@@ -1170,6 +1181,43 @@ textarea {
 .progress-bar.warning i,
 .progress-bar.stale i {
   background: var(--coral);
+}
+
+.upload-progress-panel {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.upload-progress-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.upload-progress-head strong {
+  color: var(--green);
+  font-size: 1rem;
+}
+
+.upload-progress-head span,
+.upload-progress-panel p {
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.upload-progress-panel .progress-bar {
+  margin-top: 0;
+}
+
+.upload-progress-panel p {
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .job-actions.inline {

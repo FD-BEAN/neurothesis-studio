@@ -23,7 +23,7 @@ import {
   type DensityLevel,
 } from "@/lib/xdfNaming";
 
-type UploadState = "idle" | "uploading" | "done" | "error";
+type UploadState = "idle" | "uploading" | "done" | "warning" | "error";
 
 type AiState = {
   status: "idle" | "loading" | "done" | "error";
@@ -45,6 +45,29 @@ const XDF_FILE_ACCEPT = ".xdf";
 const EXPECTED_SUBJECT_COUNT = 90;
 const EXPECTED_RUNS_PER_SUBJECT = 3;
 const EXPECTED_XDF_COUNT = EXPECTED_SUBJECT_COUNT * EXPECTED_RUNS_PER_SUBJECT;
+const XDF_BULK_UPLOAD_CONCURRENCY = 4;
+
+type UploadProgress = {
+  total: number;
+  completed: number;
+  uploaded: number;
+  failed: number;
+  skipped: number;
+  currentFile?: string;
+} | null;
+
+type UploadBatchFailure = {
+  filename: string;
+  message: string;
+};
+
+type UploadBatchSnapshot = {
+  total: number;
+  completed: number;
+  uploaded: number;
+  failed: number;
+  currentFile?: string;
+};
 
 type H1ConditionMean = {
   level: DensityLevel;
@@ -546,6 +569,7 @@ function Workspace({
   const [uploadMessage, setUploadMessage] = useState("");
   const [xdfUploadState, setXdfUploadState] = useState<UploadState>("idle");
   const [xdfUploadMessage, setXdfUploadMessage] = useState("");
+  const [xdfUploadProgress, setXdfUploadProgress] = useState<UploadProgress>(null);
   const [writingMode, setWritingMode] = useState<WritingTaskModeId>("section-draft");
   const [writingSection, setWritingSection] = useState<WritingTargetSectionId>("introduction");
   const [writingOutputMode, setWritingOutputMode] = useState<WritingOutputModeId>("manuscript");
@@ -653,6 +677,15 @@ function Workspace({
         .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at)),
     [analysisJobs, jobViewFilter],
   );
+  const xdfUploadDisabled = xdfUploadState === "uploading";
+  const xdfFolderInputProps = {
+    type: "file",
+    multiple: true,
+    onChange: handleXdfUpload,
+    disabled: xdfUploadDisabled,
+    webkitdirectory: "",
+    directory: "",
+  } as React.InputHTMLAttributes<HTMLInputElement> & { webkitdirectory: string; directory: string };
 
   async function loadDocuments() {
     const { data, error } = await supabase
@@ -750,37 +783,91 @@ function Workspace({
   async function handleXdfUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? []);
     if (!files.length) return;
-    const nonXdfFiles = files.filter((file) => !isXdfUploadFile(file));
+    const xdfFiles = files.filter(isXdfUploadFile);
+    const skippedCount = files.length - xdfFiles.length;
 
-    if (nonXdfFiles.length) {
+    if (!xdfFiles.length) {
       setXdfUploadState("error");
-      setXdfUploadMessage("XDF 上传入口只接收 LabRecorder .xdf 文件。文献、脚本和笔记请上传到研究资料库。");
+      setXdfUploadProgress(null);
+      setXdfUploadMessage("没有识别到 .xdf 文件。可以一次选择多个 XDF，或直接选择包含 XDF 的文件夹。");
       event.target.value = "";
       return;
     }
 
     setXdfUploadState("uploading");
-    setXdfUploadMessage("");
+    setXdfUploadProgress({
+      total: xdfFiles.length,
+      completed: 0,
+      uploaded: 0,
+      failed: 0,
+      skipped: skippedCount,
+    });
+    setXdfUploadMessage(formatXdfBulkUploadMessage({ total: xdfFiles.length, completed: 0, uploaded: 0, failed: 0 }, skippedCount));
 
-    let uploaded = 0;
-    for (const file of files) {
-      try {
-        await uploadDocumentFile(file, "xdf-raw");
-      } catch (error) {
-        setXdfUploadState("error");
-        setXdfUploadMessage(`已上传 ${uploaded}/${files.length} 个 XDF；${error instanceof Error ? error.message : "上传失败"}`);
-        event.target.value = "";
-        await loadDocuments();
-        return;
-      }
+    const result = await uploadFilesConcurrently(
+      xdfFiles,
+      "xdf-raw",
+      XDF_BULK_UPLOAD_CONCURRENCY,
+      (snapshot) => {
+        setXdfUploadProgress({ ...snapshot, skipped: skippedCount });
+        setXdfUploadMessage(formatXdfBulkUploadMessage(snapshot, skippedCount));
+      },
+    );
 
-      uploaded += 1;
+    const failureText = formatUploadFailureSummary(result.failures);
+    if (result.failures.length) {
+      setXdfUploadState(result.uploaded ? "warning" : "error");
+      setXdfUploadMessage(
+        `${result.uploaded}/${xdfFiles.length} 个 XDF 已上传，${result.failures.length} 个失败。${skippedCount ? `已忽略 ${skippedCount} 个非 XDF 文件。` : ""}${failureText}`,
+      );
+    } else {
+      setXdfUploadState("done");
+      setXdfUploadMessage(
+        `${result.uploaded} 个 XDF 已批量上传到实验数据区。${skippedCount ? `已忽略 ${skippedCount} 个非 XDF 文件。` : ""}系统会按 001/002/003 三连号推断被试，并按 Signature1/2/3 推断低/中/高路径确认支持。`,
+      );
     }
 
-    setXdfUploadState("done");
-    setXdfUploadMessage(`${uploaded} 个 XDF 已上传到实验数据区。系统会按 001/002/003 三连号推断被试，并按 Signature1/2/3 推断低/中/高路径确认支持。`);
     event.target.value = "";
     await loadDocuments();
+  }
+
+  async function uploadFilesConcurrently(
+    files: File[],
+    collection: string,
+    concurrency: number,
+    onProgress: (snapshot: UploadBatchSnapshot) => void,
+  ) {
+    let nextIndex = 0;
+    let uploaded = 0;
+    const failures: UploadBatchFailure[] = [];
+    const workerCount = Math.max(1, Math.min(concurrency, files.length));
+
+    async function worker() {
+      while (nextIndex < files.length) {
+        const file = files[nextIndex];
+        nextIndex += 1;
+        try {
+          await uploadDocumentFile(file, collection);
+          uploaded += 1;
+        } catch (error) {
+          failures.push({
+            filename: file.name,
+            message: error instanceof Error ? error.message : "上传失败",
+          });
+        } finally {
+          onProgress({
+            total: files.length,
+            completed: uploaded + failures.length,
+            uploaded,
+            failed: failures.length,
+            currentFile: file.name,
+          });
+        }
+      }
+    }
+
+    await Promise.all(Array.from({ length: workerCount }, () => worker()));
+    return { uploaded, failures };
   }
 
   async function uploadDocumentFile(file: File, collection: string) {
@@ -1369,13 +1456,18 @@ function Workspace({
               <button className="secondary-button" onClick={loadAnalysisJobs}>
                 刷新任务
               </button>
-              <label className="file-button">
-                <input type="file" multiple accept={XDF_FILE_ACCEPT} onChange={handleXdfUpload} />
-                {xdfUploadState === "uploading" ? "正在上传 XDF..." : "上传 XDF"}
+              <label className={`file-button ${xdfUploadDisabled ? "is-disabled" : ""}`}>
+                <input type="file" multiple accept={XDF_FILE_ACCEPT} disabled={xdfUploadDisabled} onChange={handleXdfUpload} />
+                {xdfUploadDisabled ? "正在批量上传..." : "选择 XDF 文件"}
+              </label>
+              <label className={`file-button ${xdfUploadDisabled ? "is-disabled" : ""}`}>
+                <input {...xdfFolderInputProps} />
+                上传 XDF 文件夹
               </label>
             </div>
           </div>
           {xdfUploadMessage ? <p className={`notice ${xdfUploadState}`}>{xdfUploadMessage}</p> : null}
+          <UploadProgressPanel progress={xdfUploadProgress} state={xdfUploadState} />
           {jobMessage ? <p className="notice">{jobMessage}</p> : null}
           <div className="library-status-grid pipeline-status-grid">
             <StatusMetric label="XDF 文件" value={xdfDocuments.length} text="LabRecorder EEG + Unity marker" />
@@ -1583,6 +1675,26 @@ function StatusMetric({
       <strong>{value}</strong>
       <p>{text}</p>
     </article>
+  );
+}
+
+function UploadProgressPanel({ progress, state }: { progress: UploadProgress; state: UploadState }) {
+  if (!progress) return null;
+  const percent = progress.total ? Math.round((progress.completed / progress.total) * 100) : 0;
+  const tone = state === "error" ? "failed" : state === "warning" ? "warning" : state === "done" ? "completed" : "running";
+
+  return (
+    <div className="upload-progress-panel" aria-label="XDF 批量上传进度">
+      <div className="upload-progress-head">
+        <strong>{percent}%</strong>
+        <span>
+          已处理 {progress.completed}/{progress.total}，成功 {progress.uploaded}，失败 {progress.failed}
+          {progress.skipped ? `，忽略 ${progress.skipped}` : ""}
+        </span>
+      </div>
+      <ProgressBar value={percent} tone={tone} />
+      {state === "uploading" && progress.currentFile ? <p>最近完成：{progress.currentFile}</p> : null}
+    </div>
   );
 }
 
@@ -3831,6 +3943,24 @@ function formatBytes(size: number | null) {
   if (size === 0) return "0 KB";
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
   return `${(size / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function formatXdfBulkUploadMessage(snapshot: UploadBatchSnapshot, skippedCount: number) {
+  const skippedText = skippedCount ? `，已忽略 ${skippedCount} 个非 XDF 文件` : "";
+  if (snapshot.completed === 0) {
+    return `准备批量上传 ${snapshot.total} 个 XDF${skippedText}。`;
+  }
+  return `正在批量上传 XDF：已处理 ${snapshot.completed}/${snapshot.total}，成功 ${snapshot.uploaded}，失败 ${snapshot.failed}${skippedText}。`;
+}
+
+function formatUploadFailureSummary(failures: UploadBatchFailure[]) {
+  if (!failures.length) return "";
+  const preview = failures
+    .slice(0, 4)
+    .map((failure) => `${failure.filename}: ${failure.message}`)
+    .join("；");
+  const remaining = failures.length > 4 ? `；另有 ${failures.length - 4} 个失败未展开` : "";
+  return `失败摘要：${preview}${remaining}`;
 }
 
 function buildStoragePath(userId: string, filename: string, collection = "documents") {
