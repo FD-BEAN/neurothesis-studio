@@ -69,6 +69,19 @@ type UploadBatchSnapshot = {
   currentFile?: string;
 };
 
+type AnalysisGuideItem = {
+  field: string;
+  meaning: string;
+  method: string;
+  caveat: string;
+};
+
+type AnalysisGuideSection = {
+  title: string;
+  note: string;
+  items: AnalysisGuideItem[];
+};
+
 type H1ConditionMean = {
   level: DensityLevel;
   value: number;
@@ -134,6 +147,201 @@ const h1QcSensitivityRows: H1SensitivityRow[] = [
   { label: "严格 trial start", n: 30, contrast: "0.206", p: ".033", status: "正向且 p<.05" },
   { label: "低重复 marker 比例", n: 30, contrast: "0.237", p: ".020", status: "正向且 p<.05" },
   { label: "EEG epochs >= 20", n: 27, contrast: "0.197", p: ".070", status: "正向趋势" },
+];
+
+const analysisGuideSections: AnalysisGuideSection[] = [
+  {
+    title: "页面上的数字",
+    note: "这些数字只是当前账号里已经上传和已经创建的任务状态，不等于论文样本量。",
+    items: [
+      {
+        field: "XDF 文件",
+        meaning: "当前私有存储里识别为 .xdf 的文件数。",
+        method: "从 research_documents 文件表筛出扩展名为 .xdf 的记录。",
+        caveat: "这里可能有重复文件、旧文件或缺 marker 的文件；正式分析只用 canonical run。",
+      },
+      {
+        field: "已选择",
+        meaning: "你在被试批量分析列表里勾选的 XDF 数量。",
+        method: "前端按 selectedBatchIds 计数。",
+        caveat: "只是待提交清单，不代表已经分析。",
+      },
+      {
+        field: "进行中",
+        meaning: "还在 pending、queued 或 running 的 XDF 分析任务。",
+        method: "从 research_analysis_jobs 里按任务状态统计；超过 10 分钟没更新会被标成疑似卡住。",
+        caveat: "GitHub Actions 或 worker 没配置好时，任务可能停在需要配置。",
+      },
+      {
+        field: "已完成",
+        meaning: "worker 已经写回 completed 的 XDF 任务。",
+        method: "按任务状态统计。能不能下载 HTML，要看 result_json 里有没有 htmlReport。",
+        caveat: "旧任务可能完成了但没有 HTML，需要重新跑一次。",
+      },
+      {
+        field: "失败/需处理",
+        meaning: "失败、需要配置，或长时间没有更新的任务。",
+        method: "failed、configuration_required 和 stale 三类合并显示。",
+        caveat: "这不是数据质量结论，只是任务执行状态。",
+      },
+    ],
+  },
+  {
+    title: "XDF 文件和被试矩阵",
+    note: "这一块只解决文件组织问题：哪个文件属于哪个被试、哪个条件、能不能提交分析。",
+    items: [
+      {
+        field: "P01-P90",
+        meaning: "分析层面的被试编号。",
+        method: "sub001/sub002/sub003 归为 P01，sub004/sub005/sub006 归为 P02，以此类推。",
+        caveat: "sub001 是文件序号，不是被试编号。",
+      },
+      {
+        field: "低 / 中 / 高",
+        meaning: "同一被试的三个路径确认支持条件。",
+        method: "优先读 Signature1/2/3；读不到时按三连号位置推断。Signature1=低，Signature2=中，Signature3=高。",
+        caveat: "如果后续有正式条件表，正式条件表优先。",
+      },
+      {
+        field: "条件完整",
+        meaning: "该被试低、中、高三个 XDF 都在。",
+        method: "每个 Pxx 行分别检查 low、medium、high 是否有文件。",
+        caveat: "完整不代表质量合格；还要看 marker、trial window 和 EEG 覆盖。",
+      },
+      {
+        field: "可提交",
+        meaning: "三条件完整，而且没有正在跑或已经完成的同被试批量任务。",
+        method: "前端用文件矩阵和任务表一起判断。",
+        caveat: "重复上传同一 run 时，worker 仍会按 canonical 规则选一个主 run。",
+      },
+      {
+        field: "下载矩阵 CSV",
+        meaning: "导出 P01-P90 的文件、缺失条件、任务状态和报告可用性。",
+        method: "前端把当前筛选后的矩阵转成 CSV。",
+        caveat: "这个 CSV 是管理清单，不是统计结果表。",
+      },
+    ],
+  },
+  {
+    title: "H1 主结果数字",
+    note: "H1 只回答一个问题：中等路径确认支持下，近端路径确认迟滞是否高于低/高支持平均。",
+    items: [
+      {
+        field: "route_confirmation_hesitation_index",
+        meaning: "正式 H1 行为主指标，中文可写作近端路径确认迟滞指数。",
+        method: "由 prompt_to_first_confirmation_s、time_to_first_sign_readable_s、decision_total_look_count、decision_scan_both_count 在被试内标准化后求平均。",
+        caveat: "它不是总完成时间，也不是广义路线效率。",
+      },
+      {
+        field: "planned contrast = 0.242",
+        meaning: "中等支持相对低/高支持平均的差值。",
+        method: "每名被试先算 medium - mean(low, high)，再对被试 contrast 求均值。",
+        caveat: "这是主结果。机制指标、EEG 和正确率都放在它后面解释。",
+      },
+      {
+        field: "95% CI [0.058, 0.427]",
+        meaning: "当前样本下主 contrast 的 95% 置信区间。",
+        method: "基于 subject-level contrast 的均值和标准误计算，并另做 bootstrap 检查。",
+        caveat: "置信区间不等于个体范围。",
+      },
+      {
+        field: "p=.0118",
+        meaning: "主 contrast 大于 0 的证据强度，当前双侧检验达到常用 .05 阈值。",
+        method: "对 32 名完整被试的 subject-level contrast 做单样本检验。",
+        caveat: "不要只看 p 值；还要看方向、CI、非参数检验和敏感性。",
+      },
+      {
+        field: "17/32 个体峰值",
+        meaning: "32 名完整被试中，有 17 名在中等支持条件下迟滞最高。",
+        method: "逐个被试看 low、medium、high 三个值哪个最大。",
+        caveat: "这是形状诊断，不替代 planned contrast。",
+      },
+    ],
+  },
+  {
+    title: "行为、正确率和 EEG 字段",
+    note: "这些字段帮助解释 H1，但各自有边界。不要把它们互相替代。",
+    items: [
+      {
+        field: "prompt_to_first_confirmation_s",
+        meaning: "官方提示到首次现场确认线索之间的时间。",
+        method: "从 audio/prompt 类 marker 到第一个确认线索 marker 的时间差。",
+        caveat: "它能说明确认链缺口，但不能当成 M1 感知可靠性问卷。",
+      },
+      {
+        field: "time_to_first_sign_readable_s",
+        meaning: "trial 开始后多久第一次读到路径线索。",
+        method: "map_start 到第一个 sign_readable 的时间差。",
+        caveat: "如果 start marker 不完整，要进入 QC 敏感性分析。",
+      },
+      {
+        field: "decision_total_look_count",
+        meaning: "关键决策点左右查看的总次数。",
+        method: "统计 decision_look_left 和 decision_look_right 一类 marker。",
+        caveat: "重复查看本身可能是行为证据，不能因为次数多就随便删。",
+      },
+      {
+        field: "decision_scan_both_count",
+        meaning: "在决策点出现双侧扫描的次数。",
+        method: "统计 decision_scan_both_sides 或 worker 适配出的等价 marker。",
+        caveat: "它只表示扫描行为，不直接等同于犹豫的心理状态。",
+      },
+      {
+        field: "exit_label == A3",
+        meaning: "最终出口是否为 A3。当前实验里 A3 是唯一正确出口。",
+        method: "如果没有更细的 choice_correct，就用最终出口标签推断 final_arrival_correct。",
+        caveat: "这是最终正确性，不是每个分岔点的选择正确率。",
+      },
+      {
+        field: "decision_point_enter_frontal_theta_delta",
+        meaning: "进入关键决策点附近的额区 theta 变化，用作 M2 过程证据。",
+        method: "EEG 预处理后，在 decision_point_enter 事件窗提取频带变化。",
+        caveat: "这是神经工程过程证据，不写成医学或生物诊断结论。",
+      },
+    ],
+  },
+  {
+    title: "统计方法和报告顺序",
+    note: "报告顺序要固定，避免看哪个指标更显著就把哪个放前面。",
+    items: [
+      {
+        field: "单 run QC",
+        meaning: "先判断一个 XDF 能不能进入正式分析。",
+        method: "检查 EEG stream、Unity marker、trial window、完成 marker、事件窗数量和重复 marker。",
+        caveat: "QC 规则不能按显著性结果事后改。",
+      },
+      {
+        field: "被试内三条件表",
+        meaning: "同一名被试的 low、medium、high 放在一行。",
+        method: "先在被试内标准化，再算每个指标的 condition 值和 planned contrast。",
+        caveat: "单个被试只看方向，不报告显著性。",
+      },
+      {
+        field: "全样本 planned contrast",
+        meaning: "正式检验 H1 的主统计单位。",
+        method: "每名完整被试贡献一个 medium - mean(low, high)，再做 t、Wilcoxon、sign-flip、bootstrap 和 leave-one-subject-out。",
+        caveat: "正式论文先报告这个，再写机制。",
+      },
+      {
+        field: "组件敏感性",
+        meaning: "检查 H1 是否被某一个成分单独撑起来。",
+        method: "每次拿掉一个组成成分，重算 composite 和 planned contrast。",
+        caveat: "敏感性不是新主指标。",
+      },
+      {
+        field: "QC 敏感性",
+        meaning: "检查结果是否依赖某一个清洗阈值。",
+        method: "在更严格的 start marker、重复 marker、EEG epochs 等过滤规则下重算 H1。",
+        caveat: "如果某个严格方案变弱，先解释数据质量和样本量，不要直接换指标。",
+      },
+      {
+        field: "M1 / W 问卷",
+        meaning: "M1 是感知可靠性，W 是保护性行动指令清晰度。",
+        method: "问卷接入后，用 perceived_reliability_score 和 protective_action_instruction_clarity_score 做分段中介与调节。",
+        caveat: "当前不能把行为指标冒充问卷中介。",
+      },
+    ],
+  },
 ];
 
 type HtmlReportArtifact = {
@@ -570,6 +778,7 @@ function Workspace({
   const [xdfUploadState, setXdfUploadState] = useState<UploadState>("idle");
   const [xdfUploadMessage, setXdfUploadMessage] = useState("");
   const [xdfUploadProgress, setXdfUploadProgress] = useState<UploadProgress>(null);
+  const [showAnalysisGuide, setShowAnalysisGuide] = useState(false);
   const [writingMode, setWritingMode] = useState<WritingTaskModeId>("section-draft");
   const [writingSection, setWritingSection] = useState<WritingTargetSectionId>("introduction");
   const [writingOutputMode, setWritingOutputMode] = useState<WritingOutputModeId>("manuscript");
@@ -1446,6 +1655,9 @@ function Workspace({
               <h2>XDF 批量分析与报告</h2>
             </div>
             <div className="top-actions">
+              <button className="secondary-button" type="button" onClick={() => setShowAnalysisGuide((current) => !current)}>
+                {showAnalysisGuide ? "收起解释" : "解释字段和方法"}
+              </button>
               <button
                 className="secondary-button"
                 disabled={jobLoading || !completedSubjectBatchCount || !xdfDocuments.length}
@@ -1469,6 +1681,7 @@ function Workspace({
           {xdfUploadMessage ? <p className={`notice ${xdfUploadState}`}>{xdfUploadMessage}</p> : null}
           <UploadProgressPanel progress={xdfUploadProgress} state={xdfUploadState} />
           {jobMessage ? <p className="notice">{jobMessage}</p> : null}
+          {showAnalysisGuide ? <AnalysisMethodologyGuidePanel onClose={() => setShowAnalysisGuide(false)} /> : null}
           <div className="library-status-grid pipeline-status-grid">
             <StatusMetric label="XDF 文件" value={xdfDocuments.length} text="LabRecorder EEG + Unity marker" />
             <StatusMetric label="已选择" value={selectedBatchIds.length} text="待提交" />
@@ -1695,6 +1908,59 @@ function UploadProgressPanel({ progress, state }: { progress: UploadProgress; st
       <ProgressBar value={percent} tone={tone} />
       {state === "uploading" && progress.currentFile ? <p>最近完成：{progress.currentFile}</p> : null}
     </div>
+  );
+}
+
+function AnalysisMethodologyGuidePanel({ onClose }: { onClose: () => void }) {
+  return (
+    <section className="work-panel analysis-guide-panel" aria-label="数据分析字段和方法说明">
+      <div className="analysis-head">
+        <div>
+          <p className="eyebrow">字段和方法说明</p>
+          <h3>这些数字从哪里来，能说明什么</h3>
+        </div>
+        <button className="secondary-button" type="button" onClick={onClose}>
+          收起
+        </button>
+      </div>
+      <p className="muted analysis-guide-intro">
+        这里把页面上的数、XDF 字段和统计口径拆开写。读报告时先看 H1 主指标，再看正确率、EEG 和问卷机制。这样写是为了少一点口号，多一点可复核的解释。
+      </p>
+      <div className="analysis-guide-grid">
+        {analysisGuideSections.map((section) => (
+          <article className="analysis-guide-section" key={section.title}>
+            <div>
+              <strong>{section.title}</strong>
+              <p>{section.note}</p>
+            </div>
+            <div className="analysis-guide-table-wrap">
+              <table className="analysis-guide-table">
+                <thead>
+                  <tr>
+                    <th>字段 / 数字</th>
+                    <th>它表示什么</th>
+                    <th>怎么算</th>
+                    <th>别这样读</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {section.items.map((item) => (
+                    <tr key={`${section.title}-${item.field}`}>
+                      <td>
+                        <code>{item.field}</code>
+                      </td>
+                      <td>{item.meaning}</td>
+                      <td>{item.method}</td>
+                      <td>{item.caveat}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }
 
