@@ -101,7 +101,8 @@ def main() -> None:
             "storage_path": item.get("storage_path") or str(path),
             "size_bytes": item.get("size_bytes") or path.stat().st_size,
         }
-        cache_path = report_dir / f"{safe_stem(path.name)}.json"
+        report_key = str(doc["id"])
+        cache_path = report_dir / f"{safe_stem(report_key)}-{safe_stem(doc['filename'])}.json"
         if cache_path.exists() and not args.refresh:
             report = json.loads(cache_path.read_text(encoding="utf-8"))
             print(f"[{index}/{len(local_files)}] cache {path.name}", flush=True)
@@ -109,16 +110,16 @@ def main() -> None:
             print(f"[{index}/{len(local_files)}] analyze {path.name}", flush=True)
             report = analyze_xdf(doc, path)
             cache_path.write_text(json.dumps(to_jsonable(report), ensure_ascii=False, indent=2), encoding="utf-8")
-        report_cache[path.name] = report
+        report_cache[report_key] = report
 
         summary = extract_run_summary(doc, report)
         summary.update(qc_from_report(report))
         summary["local_path"] = str(path)
-        summary["document_id"] = doc["id"]
-        summary["is_old_version"] = "yes" if is_old_version(path.name) else "no"
-        summary["sequence_index"] = infer_sequence_index(path.name) or ""
-        summary["run_position"] = infer_run_position(path.name) or ""
-        summary["subject"] = summary.get("subject") or infer_subject_id(path.name)
+        summary["document_id"] = report_key
+        summary["is_old_version"] = "yes" if is_old_version(str(doc["filename"])) else "no"
+        summary["sequence_index"] = infer_sequence_index(str(doc["filename"])) or ""
+        summary["run_position"] = infer_run_position(str(doc["filename"])) or ""
+        summary["subject"] = summary.get("subject") or infer_subject_id(str(doc["filename"]))
         run_records.append(summary)
 
     write_json(args.out_dir / "run_summaries.json", run_records)
@@ -146,7 +147,7 @@ def main() -> None:
             }
             for row in rows
         ]
-        reports = [report_cache[row["file"]] for row in rows]
+        reports = [report_cache[str(row["document_id"])] for row in rows]
         subject_report = analyze_subject_batch({"subjectId": subject}, docs, reports)
         (subject_dir / f"{subject}.json").write_text(
             json.dumps(to_jsonable(subject_report), ensure_ascii=False, indent=2),
