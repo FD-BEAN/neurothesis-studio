@@ -28,13 +28,16 @@ from typing import Any
 
 
 SUPPORT_LEVELS = ("low", "medium", "high")
+EXPECTED_SUBJECT_COUNT = 100
+EXPECTED_RUNS_PER_SUBJECT = 3
+EXPECTED_XDF_COUNT = EXPECTED_SUBJECT_COUNT * EXPECTED_RUNS_PER_SUBJECT
 M1_SCALE = "perceived_reliability_score"
 CLOSURE_SCALE = "route_closure_manipulation_check_score"
 CONFIDENCE_SCALE = "subjective_route_confidence_score"
 W_SCALE = "protective_action_instruction_clarity_score"
 SPATIAL_SCALE = "spatial_ability_score"
 VR_DISCOMFORT_SCALE = "vr_discomfort_score"
-H1_METRIC = "route_confirmation_hesitation_index"
+H1_METRIC = "prompt_to_first_confirmation_s"
 M2_FORMAL = "decision_point_enter_formal_load_delta"
 M2_THETA = "decision_point_enter_frontal_theta_delta"
 
@@ -146,7 +149,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Score Metro Rescue questionnaire data and prepare mediation-ready tables.")
     parser.add_argument("--input", type=Path, default=Path("work/questionnaire/questionnaire_responses.csv"))
     parser.add_argument("--out-dir", type=Path, default=Path("work/questionnaire"))
-    parser.add_argument("--behavior-subjects", type=Path, default=Path("work/xdf_exploration/h1_subject_contrast_details.csv"))
+    parser.add_argument("--behavior-subjects", type=Path, default=Path("work/xdf_full_analysis/h1_subject_contrast_details.csv"))
     parser.add_argument("--eeg-subjects", type=Path, default=Path("work/eeg_mne_preprocessing/formal_eeg_subject_contrasts.csv"))
     args = parser.parse_args()
 
@@ -155,10 +158,15 @@ def main() -> None:
 
     if not args.input.exists():
         write_template(args.out_dir / "questionnaire_template.csv")
+        write_wide_template(args.out_dir / "questionnaire_wide_template.csv")
         summary = {
             "status": "template_written",
             "message": f"Questionnaire input not found: {args.input}",
+            "expected_subjects": EXPECTED_SUBJECT_COUNT,
+            "expected_runs": EXPECTED_XDF_COUNT,
+            "h1_primary_metric": H1_METRIC,
             "template": str(args.out_dir / "questionnaire_template.csv"),
+            "wide_template": str(args.out_dir / "questionnaire_wide_template.csv"),
             "codebook": str(args.out_dir / "questionnaire_codebook.csv"),
         }
         write_json(args.out_dir / "questionnaire_analysis_summary.json", summary)
@@ -187,6 +195,9 @@ def main() -> None:
         "mediation_ready_rows": len(mediation_rows),
         "behavior_subjects_merged": len(behavior_by_subject),
         "eeg_subjects_merged": len(eeg_by_subject),
+        "expected_subjects": EXPECTED_SUBJECT_COUNT,
+        "expected_runs": EXPECTED_XDF_COUNT,
+        "h1_primary_metric": H1_METRIC,
         "scale_reliability": reliability,
         "outputs": {
             "scale_scores": str(args.out_dir / "questionnaire_scale_scores.csv"),
@@ -213,7 +224,6 @@ def canonical_column_name(name: str) -> str:
         "participant": "participant_id",
         "subject": "participant_id",
         "subject_id": "participant_id",
-        "participant": "participant_id",
         "pid": "participant_id",
         "support": "condition",
         "support_level": "condition",
@@ -263,14 +273,15 @@ def canonical_column_name(name: str) -> str:
 
 
 def expand_wide_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
-    if any(normalize_condition(row.get("condition")) for row in rows):
-        return rows
-
     expanded: list[dict[str, str]] = []
     for row in rows:
+        if normalize_condition(row.get("condition")):
+            expanded.append(row)
+            continue
         for level in SUPPORT_LEVELS:
             next_row = dict(row)
             next_row["condition"] = level
+            copy_condition_specific_items(row, next_row, level)
             for source, target in [
                 (f"reliability_{level}", M1_SCALE),
                 (f"perceived_reliability_{level}", M1_SCALE),
@@ -281,6 +292,45 @@ def expand_wide_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
                     next_row[target] = row[source]
             expanded.append(next_row)
     return expanded
+
+
+def copy_condition_specific_items(source_row: dict[str, str], target_row: dict[str, str], level: str) -> None:
+    """Copy wide-format low/medium/high item columns into long-format names."""
+    aliases = condition_aliases(level)
+    for scale_spec in PER_MAP_SCALES.values():
+        for item in scale_spec["items"]:
+            for alias in aliases:
+                candidates = (
+                    f"{alias}_{item}",
+                    f"{item}_{alias}",
+                    f"{alias}_{item.replace('_item_', '_')}",
+                    f"{item.replace('_item_', '_')}_{alias}",
+                )
+                matched_value = first_present(source_row, candidates)
+                if matched_value not in (None, ""):
+                    target_row[item] = matched_value
+                    break
+    for field in ("run_order", "map_id"):
+        for alias in aliases:
+            matched_value = first_present(source_row, (f"{field}_{alias}", f"{alias}_{field}"))
+            if matched_value not in (None, ""):
+                target_row[field] = matched_value
+                break
+
+
+def condition_aliases(level: str) -> tuple[str, ...]:
+    if level == "low":
+        return ("low", "l", "condition_1", "signature1", "sig1", "support_1")
+    if level == "medium":
+        return ("medium", "mid", "m", "condition_2", "signature2", "sig2", "support_2")
+    return ("high", "h", "condition_3", "signature3", "sig3", "support_3")
+
+
+def first_present(row: dict[str, str], names: tuple[str, ...]) -> str | None:
+    for name in names:
+        if name in row:
+            return row.get(name)
+    return None
 
 
 def build_per_map_scores(rows: list[dict[str, str]]) -> list[dict[str, Any]]:
@@ -591,8 +641,27 @@ def write_json(path: Path, value: Any) -> None:
 def write_template(path: Path) -> None:
     rows = []
     for level in SUPPORT_LEVELS:
-        rows.append({column: "" for column in TEMPLATE_COLUMNS} | {"participant_id": "P03", "condition": level})
+        rows.append(
+            {column: "" for column in TEMPLATE_COLUMNS}
+            | {"participant_id": "P03", "condition": level, "run_order": str(SUPPORT_LEVELS.index(level) + 1)}
+        )
     write_csv(path, rows)
+
+
+def write_wide_template(path: Path) -> None:
+    columns = ["participant_id"]
+    for level in SUPPORT_LEVELS:
+        columns.extend([f"{level}_run_order", f"{level}_map_id"])
+        for spec in PER_MAP_SCALES.values():
+            columns.extend(f"{level}_{item}" for item in spec["items"])
+    for spec in SUBJECT_SCALES.values():
+        columns.extend(spec["items"])
+    row = {column: "" for column in columns}
+    row["participant_id"] = "P03"
+    row["low_run_order"] = "1"
+    row["medium_run_order"] = "2"
+    row["high_run_order"] = "3"
+    write_csv(path, [row])
 
 
 def write_codebook(path: Path) -> None:
@@ -600,7 +669,7 @@ def write_codebook(path: Path) -> None:
         {
             "column": "participant_id",
             "scale": "identifier",
-            "role": "P01-P100 被试编号；sub001 会被换算为 P01。",
+            "role": f"P01-P{EXPECTED_SUBJECT_COUNT:02d} 被试编号；sub001/sub002/sub003 会换算为 P01。",
             "coding": "P03",
         },
         {
@@ -608,6 +677,12 @@ def write_codebook(path: Path) -> None:
             "scale": "X",
             "role": "路径确认支持水平。",
             "coding": "low / medium / high；也接受 Signature1/2/3 或中文低/中/高。",
+        },
+        {
+            "column": H1_METRIC,
+            "scale": "Y",
+            "role": "行动迟滞主原始指标；写作时表述为“官方提示到首次现场路径确认延迟”。",
+            "coding": "seconds；来自 full XDF H1 subject contrast table。",
         },
     ]
     for scale_name, spec in {**PER_MAP_SCALES, **SUBJECT_SCALES}.items():

@@ -1,6 +1,6 @@
 # Metro Rescue 研究决策备忘录
 
-更新日期：2026-06-10
+更新日期：2026-07-05
 
 用途：这是给后续分析和写作使用的“短上下文”。如果对项目口径不确定，先读本文件，再读 `CURRENT_CONTEXT.md`、`PARALLEL_MEDIATION_MODEL_PROTOCOL.md`、`FORMAL_ANALYSIS_AND_QUESTIONNAIRE_PLAN.md` 和 `MANAGEMENT_SCIENCE_EVIDENCE_PROTOCOL.md`。
 
@@ -101,19 +101,16 @@ Signature3 = high
 Y 主指标：
 
 ```text
-route_confirmation_hesitation_index
+prompt_to_first_confirmation_s
 ```
 
-由以下成分构成：
+中文写作：
 
 ```text
-prompt_to_first_confirmation_s
-time_to_first_sign_readable_s
-decision_total_look_count
-decision_scan_both_count
+官方提示到首次现场路径确认延迟
 ```
 
-旧版 `route_decision_hesitation_index` 只作为广义路线执行效率 / 敏感性指标，不再作为 Y 主指标。
+`route_confirmation_hesitation_index` 只作为复合路径确认迟滞敏感性指标；旧版 `route_decision_hesitation_index` 只作为广义路线执行效率边界指标。
 
 M2 formal EEG 指标：
 
@@ -182,16 +179,12 @@ Accuracy_low < Accuracy_medium <= Accuracy_high
 exit_label == A3 为正确，其他出口均为错误。
 ```
 
-当前 32 名完整被试 / 96 个 canonical run 的最终路线正确性：
+当前 98 名完整被试 / 294 个 canonical run 的最终路线正确性：
 
 ```text
-low = 0.469
-medium = 0.656
-high = 0.719
-
-high - low = 0.250, 95% CI [0.067, 0.433], p = .009
-medium - low = 0.188, 95% CI [0.018, 0.357], p = .032
-high - medium = 0.062, 95% CI [-0.026, 0.151], p = .161
+low = 0.561
+medium = 0.765
+high = 0.908
 ```
 
 解释：方向符合辅助假设，支持“低支持快但不准；支持提高后正确率上升”的速度-准确性权衡解释。
@@ -201,62 +194,64 @@ high - medium = 0.062, 95% CI [-0.026, 0.151], p = .161
 H1 行为主效应：
 
 ```text
-route_confirmation_hesitation_index
-n = 32
-mean contrast = 0.242
-95% CI [0.058, 0.427]
-p = .0118
-leave-one-subject-out: 32/32 次仍 p < .05
+prompt_to_first_confirmation_s
+n = 98
+mean contrast = 7.504 秒
+95% CI [4.130, 10.878]
+p = 2.63e-5
+leave-one-subject-out: 98/98 次仍 p < .05
 ```
 
 三条件均值和相邻阶段：
 
 ```text
-low = -0.082
-medium = 0.161
-high = -0.080
+low = 7.401 秒
+medium = 12.721 秒
+high = 3.033 秒
 
-medium - low = 0.243, p = .022
-medium - high = 0.241, two-sided p = .057, directional p = .029, Wilcoxon p = .038
-high - low = 0.002, p = .987
+medium > high 的方向最稳定；low -> medium 阶段需要结合 M1 问卷解释个体差异。
+正式 H1 仍以 planned contrast 为主，不按相邻阶段单独选择结果。
 ```
 
 倒 U 形状诊断：
 
 ```text
-中等支持为三条件最高：17/32，被试比例 53.1%，随机排序基线 p = .016
-medium > low：21/32，p = .055
-medium > high：23/32，p = .010
-planned contrast > 0：23/32
+中等支持为三条件最高：45/98，被试比例 45.9%，随机排序基线 p = .006
+medium > low：51/98
+medium > high：74/98，p < .001
+planned contrast > 0：56/98
 ```
 
 地图校正 run-level 主模型：
 
 ```text
 Subject FE + Map FE:
-coef = 0.0716
-SE = 0.0227
-t = 3.148
-p = .0016
-BH q = .0164
-n = 96 runs / 32 subjects
-
-Subject FE only:
-coef = 0.0807
-p = .0179
+coef = 2.541
+SE = 0.344
+t = 7.396
+p = 1.40e-13
+n = 294 runs / 98 subjects
 ```
 
 组件敏感性：
 
 ```text
 leave-one-component-out:
-删任一组件后 4/4 个替代指数保持正向。
-2/4 个达到 p < .05。
-3/4 个达到 p < .10。
+删掉 prompt_to_first_confirmation_s 后，复合指标不再显著：
+mean contrast = -0.064
+p = .379
 
-删掉 prompt_to_first_confirmation_s 后效应明显变弱：
-mean contrast = 0.165
-p = .228
+删掉 time_to_first_sign_readable_s 后，复合指标仍显著：
+mean contrast = 0.167
+p = .029
+
+删掉 decision_total_look_count：
+mean contrast = 0.106
+p = .196
+
+删掉 decision_scan_both_count：
+mean contrast = 0.091
+p = .281
 
 解释：prompt_to_first_confirmation_s 是 H1 近端确认迟滞的核心成分。
 这不是坏事，说明主效应主要来自官方提示到现场确认线索之间的确认迟滞，而不是泛泛路线效率。
@@ -265,14 +260,12 @@ p = .228
 QC 敏感性：
 
 ```text
-all_complete: n = 32, contrast = 0.242, p = .012
-strict_start_all_runs: n = 30, contrast = 0.206, p = .033
-low_duplicate_ratio: n = 30, contrast = 0.237, p = .020
-eeg_epochs_ge_20: n = 27, contrast = 0.197, p = .070
+all_complete: n = 98, contrast = 7.504 秒, p < .001
+strict_start_all_runs: n = 93, contrast = 7.054 秒, p < .001
+low_duplicate_ratio: n = 96, contrast = 7.728 秒, p < .001
+eeg_epochs_ge_20: n = 90, contrast = 6.075 秒, p < .001
 
-4/4 个 QC 方案方向为正。
-3/4 个 QC 方案 p < .05。
-4/4 个 QC 方案 p < .10。
+4/4 个 QC 方案方向为正且 p < .05。
 ```
 
 报告展示规则：
@@ -288,10 +281,10 @@ eeg_epochs_ge_20: n = 27, contrast = 0.197, p = .070
 
 ```text
 prompt_to_first_confirmation_s
-n = 32
-mean contrast = 6.904 s
-95% CI [2.228, 11.580]
-p = .0051
+n = 98
+mean contrast = 7.504 s
+95% CI [4.130, 10.878]
+p = 2.63e-5
 ```
 
 M2 EEG 过程证据：
@@ -366,25 +359,27 @@ scripts/questionnaire_integration.py
 当前关键输出：
 
 ```text
-work/xdf_exploration/canonical_run_rows.csv
-work/xdf_exploration/h1_robustness_summary.json
-work/xdf_exploration/h1_shape_diagnostics.csv
+work/xdf_full_analysis/canonical_run_rows.csv
+work/xdf_full_analysis/h1_robustness_summary.json
+work/xdf_full_analysis/h1_shape_diagnostics.csv
 work/eeg_mne_preprocessing/formal_eeg_report.html
-work/management_science_synthesis/h1_primary_effect_report.md
-work/management_science_synthesis/h1_primary_effect_report.html
-work/management_science_synthesis/condition_means.svg
-work/management_science_synthesis/subject_spaghetti.svg
-work/management_science_synthesis/contrast_distribution.svg
-work/management_science_synthesis/management_h1_component_sensitivity.csv
-work/management_science_synthesis/management_h1_qc_sensitivity.csv
-work/management_science_synthesis/management_evidence_report.md
-work/management_science_synthesis/management_accuracy_status.csv
-work/management_science_synthesis/management_accuracy_contrasts.csv
+work/management_science_synthesis_full/h1_primary_effect_report.md
+work/management_science_synthesis_full/h1_primary_effect_report.html
+work/management_science_synthesis_full/condition_means.svg
+work/management_science_synthesis_full/subject_spaghetti.svg
+work/management_science_synthesis_full/contrast_distribution.svg
+work/management_science_synthesis_full/management_h1_component_sensitivity.csv
+work/management_science_synthesis_full/management_h1_qc_sensitivity.csv
+work/management_science_synthesis_full/management_evidence_report.md
+work/management_science_synthesis_full/management_accuracy_status.csv
+work/management_science_synthesis_full/management_accuracy_contrasts.csv
 work/questionnaire/questionnaire_template.csv
+work/questionnaire/questionnaire_wide_template.csv
 work/questionnaire/questionnaire_codebook.csv
 work/questionnaire/questionnaire_scale_scores.csv
 work/questionnaire/questionnaire_subject_covariates.csv
 work/questionnaire/questionnaire_segment_mediation_ready.csv
+work/segmented_mediation/segmented_mediation_report.md
 ```
 
 ## 12. 2026-07-05 全量 XDF 后的 H1 amendment

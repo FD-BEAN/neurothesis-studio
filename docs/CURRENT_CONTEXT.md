@@ -1133,3 +1133,78 @@ canonical 选择从 old/new 文件名优先改为 trial/QC/有效事件窗质量
 4. EEG 作为信息加工负荷中介证据。
 5. route_confirmation_hesitation_index、route_decision_hesitation_index 作为敏感性和边界，不再放在主结论之前。
 ```
+
+## 22. 2026-07-05 分段中介、W 调节与问卷接入升级
+
+本轮把问卷接入和中介分析改成可复跑流程。新增协议文档：
+
+```text
+docs/SEGMENTED_MEDIATION_AND_W_PROTOCOL.md
+```
+
+脚本更新：
+
+```text
+scripts/questionnaire_integration.py
+scripts/segmented_mediation_analysis.py
+```
+
+固定口径：
+
+```text
+Y = prompt_to_first_confirmation_s
+中文写作 = 官方提示到首次现场路径确认延迟
+M1 = perceived_reliability_score
+M2 planned = decision_point_enter_frontal_theta_delta
+M2 sensitivity = decision_point_enter_formal_load_delta
+W = protective_action_instruction_clarity_score
+```
+
+问卷脚本已从旧的 `work/xdf_exploration/h1_subject_contrast_details.csv` 改为默认读取：
+
+```text
+work/xdf_full_analysis/h1_subject_contrast_details.csv
+```
+
+后续中介-ready 表会直接合并全量 H1 主结果，而不是旧的 32 名被试探索表。
+
+问卷格式现在支持两种：
+
+```text
+1. 长表：participant_id + condition，每个被试每个地图一行。
+2. 宽表：每个被试一行，low_ / medium_ / high_ 题项分列。
+```
+
+如果真实问卷还没有整理好，脚本会生成：
+
+```text
+work/questionnaire/questionnaire_template.csv
+work/questionnaire/questionnaire_wide_template.csv
+work/questionnaire/questionnaire_codebook.csv
+```
+
+中介分析脚本的行为：
+
+```text
+有真实 questionnaire_segment_mediation_ready.csv 且完整行数足够：
+  运行 low->medium 的 M1 主导模型；
+  运行 medium->high 的 M2 主导模型；
+  运行 W 交互和 H1 planned contrast 的 W 调节检查；
+  输出 CSV/JSON/Markdown 报告。
+
+没有真实问卷或完整行数不足：
+  输出 waiting_for_questionnaire 审计报告；
+  保留当前 H1 和 EEG 证据；
+  明确不写完整中介或 W 调节已经成立。
+```
+
+输出目录：
+
+```text
+work/segmented_mediation/segmented_mediation_ready_audit.csv
+work/segmented_mediation/segmented_mediation_results.csv
+work/segmented_mediation/segmented_mediation_results.json
+work/segmented_mediation/segmented_mediation_report.md
+```
+
+当前边界仍然不变：仓库里尚未出现真实 `work/questionnaire/questionnaire_responses.csv`。所以目前可以正式写 H1、正确率辅助和 EEG M2 过程证据；完整 M1/M2 分段并行中介与 W 调节，要等问卷数据接入后再检验。

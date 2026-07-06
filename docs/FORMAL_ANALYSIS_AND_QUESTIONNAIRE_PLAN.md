@@ -1,6 +1,6 @@
 # H1、问卷与分段并行中介正式分析计划
 
-更新日期：2026-06-10
+更新日期：2026-07-05
 
 ## 1. 目的
 
@@ -20,7 +20,7 @@ W 是正式调节变量。
 
 ```text
 X：路径确认支持水平，low / medium / high
-Y：行动迟滞，route_confirmation_hesitation_index
+Y：行动迟滞，prompt_to_first_confirmation_s
 M1：感知可靠性，perceived_reliability_score
 M2：信息加工负荷，decision_point_enter_formal_load_delta / decision_point_enter_frontal_theta_delta
 W：保护性行动指令清晰度，protective_action_instruction_clarity_score
@@ -38,22 +38,22 @@ H1 主效应：
 当前 H1 证据：
 
 ```text
-route_confirmation_hesitation_index:
-n = 32
-contrast = 0.242
-95% CI [0.058, 0.427]
-p = .0118
-Wilcoxon p = .012
-sign-flip p = .012
-leave-one-subject-out = 32/32 p < .05
+prompt_to_first_confirmation_s:
+n = 98
+contrast = 7.504 秒
+95% CI [4.130, 10.878]
+p = 2.63e-5
+Wilcoxon p = .004
+sign-flip p < .001
+leave-one-subject-out = 98/98 p < .05
 ```
 
 三条件均值：
 
 ```text
-low = -0.082
-medium = 0.161
-high = -0.080
+low = 7.401 秒
+medium = 12.721 秒
+high = 3.033 秒
 ```
 
 ## 3. 问卷数据接入
@@ -74,6 +74,7 @@ work/questionnaire/questionnaire_responses.csv
 
 ```text
 work/questionnaire/questionnaire_template.csv
+work/questionnaire/questionnaire_wide_template.csv
 work/questionnaire/questionnaire_codebook.csv
 ```
 
@@ -85,6 +86,23 @@ work/questionnaire/questionnaire_subject_covariates.csv
 work/questionnaire/questionnaire_segment_mediation_ready.csv
 work/questionnaire/questionnaire_analysis_summary.json
 ```
+
+分段中介和 W 调节脚本：
+
+```text
+scripts/segmented_mediation_analysis.py
+```
+
+默认输出：
+
+```text
+work/segmented_mediation/segmented_mediation_ready_audit.csv
+work/segmented_mediation/segmented_mediation_results.csv
+work/segmented_mediation/segmented_mediation_results.json
+work/segmented_mediation/segmented_mediation_report.md
+```
+
+如果真实问卷还没接入，该脚本只写 `waiting_for_questionnaire` 审计报告，不生成中介成立结论。
 
 ### 3.1 每个地图后填写
 
@@ -259,7 +277,7 @@ high - medium = 0.062, p = .161
 10. M1/M2/W 问卷接入后的分段并行中介与调节检验
 ```
 
-不要把 `prompt_to_first_confirmation_s`、EEG theta 或正确率放在 H1 主结果之前。它们是解释机制和过程证据，不是替代主效应的指标。
+不要把 `route_confirmation_hesitation_index`、EEG theta 或正确率放在 H1 主结果之前。它们是敏感性、过程证据或辅助结果，不是替代主效应的指标。
 
 ## 8. 不能过度声称
 
