@@ -18,7 +18,8 @@ except Exception:  # pragma: no cover - optional local runtime dependency
 
 DENSITY_LEVELS = ("low", "medium", "high")
 CONTRAST_WEIGHTS = {"low": -0.5, "medium": 1.0, "high": -0.5}
-PRIMARY_METRIC = "route_confirmation_hesitation_index"
+PRIMARY_METRIC = "prompt_to_first_confirmation_s"
+COMPOSITE_METRIC = "route_confirmation_hesitation_index"
 LEGACY_METRIC = "route_decision_hesitation_index"
 PRIMARY_COMPONENTS = (
     "prompt_to_first_confirmation_s",
@@ -96,9 +97,11 @@ def main() -> None:
         "n_subjects": len(subjects),
         "rng_seed": RNG_SEED,
         "primary_metric": PRIMARY_METRIC,
+        "composite_metric": COMPOSITE_METRIC,
         "legacy_metric": LEGACY_METRIC,
         "primary_result": next((row for row in robustness_rows if row.get("metric") == PRIMARY_METRIC), None),
-        "mechanism_result": next((row for row in robustness_rows if row.get("metric") == "prompt_to_first_confirmation_s"), None),
+        "composite_result": next((row for row in robustness_rows if row.get("metric") == COMPOSITE_METRIC), None),
+        "mechanism_result": next((row for row in robustness_rows if row.get("metric") == "route_confirmation_disfluency_index"), None),
         "legacy_result": next((row for row in robustness_rows if row.get("metric") == LEGACY_METRIC), None),
         "shape_result": shape_rows[0] if shape_rows else None,
         "component_sensitivity": component_sensitivity_rows,
@@ -112,10 +115,24 @@ def build_metric_specs() -> list[dict[str, Any]]:
     return [
         {
             "name": PRIMARY_METRIC,
-            "label": "Proximal route-confirmation hesitation index",
-            "role": "primary_h1",
-            "components": PRIMARY_COMPONENTS,
+            "label": "Prompt-to-first-confirmation latency",
+            "role": "primary_h1_raw_latency",
+            "components": ("prompt_to_first_confirmation_s",),
             "value_fn": lambda row: number(row.get(PRIMARY_METRIC)),
+        },
+        {
+            "name": "log_prompt_to_first_confirmation_s",
+            "label": "Log prompt-to-first-confirmation latency",
+            "role": "primary_h1_raw_latency_sensitivity",
+            "components": ("prompt_to_first_confirmation_s",),
+            "value_fn": lambda row: log1p_value(row.get("prompt_to_first_confirmation_s")),
+        },
+        {
+            "name": COMPOSITE_METRIC,
+            "label": "Proximal route-confirmation hesitation composite",
+            "role": "composite_sensitivity",
+            "components": PRIMARY_COMPONENTS,
+            "value_fn": lambda row: number(row.get(COMPOSITE_METRIC)),
         },
         {
             "name": "h1_log_z_component_index",
@@ -132,18 +149,11 @@ def build_metric_specs() -> list[dict[str, Any]]:
             "value_fn": rank_component_placeholder,
         },
         {
-            "name": "prompt_to_first_confirmation_s",
-            "label": "Prompt-to-first-confirmation latency",
-            "role": "mechanism",
-            "components": ("prompt_to_first_confirmation_s",),
-            "value_fn": lambda row: number(row.get("prompt_to_first_confirmation_s")),
-        },
-        {
-            "name": "log_prompt_to_first_confirmation_s",
-            "label": "Log prompt-to-first-confirmation latency",
+            "name": "route_confirmation_disfluency_index",
+            "label": "Route-confirmation chain disfluency index",
             "role": "mechanism_sensitivity",
-            "components": ("prompt_to_first_confirmation_s",),
-            "value_fn": lambda row: log1p_value(row.get("prompt_to_first_confirmation_s")),
+            "components": (),
+            "value_fn": lambda row: number(row.get("route_confirmation_disfluency_index")),
         },
         {
             "name": "decision_scan_both_count",
@@ -166,10 +176,11 @@ def prioritized_robustness_rows(rows: list[dict[str, Any]]) -> list[dict[str, An
     """Keep the planned H1 result first; p-sorted mechanism rows are secondary."""
     metric_order = [
         PRIMARY_METRIC,
+        "log_prompt_to_first_confirmation_s",
+        COMPOSITE_METRIC,
         "h1_log_z_component_index",
         "h1_rank_component_index",
-        "prompt_to_first_confirmation_s",
-        "log_prompt_to_first_confirmation_s",
+        "route_confirmation_disfluency_index",
         "decision_scan_both_count",
         LEGACY_METRIC,
     ]
@@ -223,7 +234,18 @@ def build_subject_contrast_rows(subjects: dict[str, dict[str, dict[str, str]]]) 
     out: list[dict[str, Any]] = []
     for subject, by_density in subjects.items():
         row: dict[str, Any] = {"subject": subject}
-        for metric in (PRIMARY_METRIC, LEGACY_METRIC, *PRIMARY_COMPONENTS):
+        metrics = list(
+            dict.fromkeys(
+                (
+                    PRIMARY_METRIC,
+                    COMPOSITE_METRIC,
+                    "route_confirmation_disfluency_index",
+                    LEGACY_METRIC,
+                    *PRIMARY_COMPONENTS,
+                )
+            )
+        )
+        for metric in metrics:
             values = {level: number(by_density[level].get(metric)) for level in DENSITY_LEVELS}
             if all(value is not None for value in values.values()):
                 row[f"{metric}_contrast"] = planned_contrast(values)

@@ -134,50 +134,50 @@ type H1SensitivityRow = {
 };
 
 const h1ConditionMeans: H1ConditionMean[] = [
-  { level: "low", value: -0.082 },
-  { level: "medium", value: 0.161 },
-  { level: "high", value: -0.08 },
+  { level: "low", value: 7.401 },
+  { level: "medium", value: 12.721 },
+  { level: "high", value: 3.033 },
 ];
 
 const h1EvidenceCards: H1EvidenceCard[] = [
   {
     label: "H1 主 planned contrast",
-    value: "0.242",
-    detail: "95% CI [0.058, 0.427]；双侧 p=.0118；sign-flip p=.012；Wilcoxon p=.012。",
+    value: "7.504s",
+    detail: "95% CI [4.130, 10.878]；双侧 p<.001；sign-flip p<.001；Wilcoxon p=.004。",
     tone: "primary",
   },
   {
     label: "个体峰值诊断",
-    value: "17/32",
-    detail: "中等支持为个体三条件最高，binomial p=.016；medium > high 为 23/32，p=.010。",
+    value: "45/98",
+    detail: "中等支持为个体三条件最高，binomial p=.006；medium > high 为 74/98，p<.001。",
     tone: "support",
   },
   {
     label: "地图校正模型",
-    value: "p=.0016",
-    detail: "subject FE + map FE：coef=.0716，q=.0164；说明主效应不是单纯地图差异。",
+    value: "p<.001",
+    detail: "subject FE + map FE：coef=2.541，SE=.344，n=294 runs/98 subjects；说明主效应不是单纯地图差异。",
     tone: "support",
   },
   {
     label: "主指标冻结",
     value: "固定",
-    detail: "Y = route_confirmation_hesitation_index；旧版广义效率指标只做边界敏感性。",
+    detail: "Y = prompt_to_first_confirmation_s；复合迟滞指数和旧版广义效率指标只做敏感性。",
     tone: "caution",
   },
 ];
 
 const h1ComponentSensitivityRows: H1SensitivityRow[] = [
-  { label: "删除 prompt_to_first_confirmation_s", n: 32, contrast: "0.165", p: ".228", status: "正向，说明 prompt 是核心成分" },
-  { label: "删除 time_to_first_sign_readable_s", n: 32, contrast: "0.381", p: ".004", status: "正向且 p<.05" },
-  { label: "删除 decision_total_look_count", n: 32, contrast: "0.351", p: ".018", status: "正向且 p<.05" },
-  { label: "删除 decision_scan_both_count", n: 32, contrast: "0.289", p: ".052", status: "正向趋势" },
+  { label: "删除 prompt_to_first_confirmation_s", n: 98, contrast: "-0.064", p: ".379", status: "转为不显著，说明 prompt 是核心成分" },
+  { label: "删除 time_to_first_sign_readable_s", n: 98, contrast: "0.167", p: ".029", status: "正向且 p<.05" },
+  { label: "删除 decision_total_look_count", n: 98, contrast: "0.106", p: ".196", status: "正向但不显著" },
+  { label: "删除 decision_scan_both_count", n: 98, contrast: "0.091", p: ".281", status: "正向但不显著" },
 ];
 
 const h1QcSensitivityRows: H1SensitivityRow[] = [
-  { label: "完整三条件", n: 32, contrast: "0.242", p: ".012", status: "正向且 p<.05" },
-  { label: "严格 trial start", n: 30, contrast: "0.206", p: ".033", status: "正向且 p<.05" },
-  { label: "低重复 marker 比例", n: 30, contrast: "0.237", p: ".020", status: "正向且 p<.05" },
-  { label: "EEG epochs >= 20", n: 27, contrast: "0.197", p: ".070", status: "正向趋势" },
+  { label: "完整三条件", n: 98, contrast: "7.504s", p: "<.001", status: "正向且 p<.05" },
+  { label: "严格 trial start", n: 93, contrast: "7.054s", p: "<.001", status: "正向且 p<.05" },
+  { label: "低重复 marker 比例", n: 96, contrast: "7.728s", p: "<.001", status: "正向且 p<.05" },
+  { label: "EEG epochs >= 20", n: 90, contrast: "6.075s", p: "<.001", status: "正向且 p<.05" },
 ];
 
 const analysisGuideSections: AnalysisGuideSection[] = [
@@ -255,35 +255,35 @@ const analysisGuideSections: AnalysisGuideSection[] = [
   },
   {
     title: "H1 主结果数字",
-    note: "H1 只回答一个问题：中等路径确认支持下，近端路径确认迟滞是否高于低/高支持平均。",
+    note: "H1 只回答一个问题：中等路径确认支持下，官方提示到首次现场路径确认是否慢于低/高支持平均。",
     items: [
       {
-        field: "route_confirmation_hesitation_index",
-        meaning: "正式 H1 行为主指标，中文可写作近端路径确认迟滞指数。",
-        method: "由 prompt_to_first_confirmation_s、time_to_first_sign_readable_s、decision_total_look_count、decision_scan_both_count 在被试内标准化后求平均。",
-        caveat: "它不是总完成时间，也不是广义路线效率。",
+        field: "prompt_to_first_confirmation_s",
+        meaning: "正式 H1 行为主原始指标，中文可写作官方提示到首次现场路径确认延迟。",
+        method: "从 audio/prompt 类 marker 到第一个确认线索 marker 的时间差，单位为秒。",
+        caveat: "它不是总完成时间，也不等于问卷里的感知可靠性。",
       },
       {
-        field: "planned contrast = 0.242",
+        field: "planned contrast = 7.504s",
         meaning: "中等支持相对低/高支持平均的差值。",
         method: "每名被试先算 medium - mean(low, high)，再对被试 contrast 求均值。",
         caveat: "这是主结果。机制指标、EEG 和正确率都放在它后面解释。",
       },
       {
-        field: "95% CI [0.058, 0.427]",
+        field: "95% CI [4.130, 10.878]",
         meaning: "当前样本下主 contrast 的 95% 置信区间。",
         method: "基于 subject-level contrast 的均值和标准误计算，并另做 bootstrap 检查。",
         caveat: "置信区间不等于个体范围。",
       },
       {
-        field: "p=.0118",
-        meaning: "主 contrast 大于 0 的证据强度，当前双侧检验达到常用 .05 阈值。",
-        method: "对 32 名完整被试的 subject-level contrast 做单样本检验。",
+        field: "p<.001",
+        meaning: "主 contrast 大于 0 的证据强度，当前双侧检验达到常用 .001 阈值。",
+        method: "对 98 名完整被试的 subject-level contrast 做单样本检验。",
         caveat: "不要只看 p 值；还要看方向、CI、非参数检验和敏感性。",
       },
       {
-        field: "17/32 个体峰值",
-        meaning: "32 名完整被试中，有 17 名在中等支持条件下迟滞最高。",
+        field: "45/98 个体峰值",
+        meaning: "98 名完整被试中，有 45 名在中等支持条件下提示到确认延迟最高。",
         method: "逐个被试看 low、medium、high 三个值哪个最大。",
         caveat: "这是形状诊断，不替代 planned contrast。",
       },
@@ -295,9 +295,9 @@ const analysisGuideSections: AnalysisGuideSection[] = [
     items: [
       {
         field: "prompt_to_first_confirmation_s",
-        meaning: "官方提示到首次现场确认线索之间的时间。",
+        meaning: "官方提示到首次现场确认线索之间的时间，也是当前 H1 主原始指标。",
         method: "从 audio/prompt 类 marker 到第一个确认线索 marker 的时间差。",
-        caveat: "它能说明确认链缺口，但不能当成 M1 感知可靠性问卷。",
+        caveat: "它能说明行动迟滞，但不能当成 M1 感知可靠性问卷。",
       },
       {
         field: "time_to_first_sign_readable_s",
@@ -2067,7 +2067,7 @@ function H1EvidencePanel() {
         <article className="h1-chart-block">
           <div>
             <strong>三条件均值</strong>
-            <p>低支持和高支持接近，中等支持最高；正式主指标固定为近端路径确认迟滞指数。</p>
+            <p>中等支持的提示到首次确认延迟最高；正式主指标固定为官方提示到首次现场路径确认延迟。</p>
           </div>
           <H1ConditionMeanChart means={h1ConditionMeans} />
         </article>
@@ -2076,15 +2076,15 @@ function H1EvidencePanel() {
           <dl>
             <div>
               <dt>低到中</dt>
-              <dd>medium - low = 0.243，双侧 p=.022。解释为可靠性上升后继续确认变得值得，迟滞上升。</dd>
+              <dd>medium - low = 5.320s，双侧 p=.009。解释为可靠性上升后继续确认变得值得，迟滞上升。</dd>
             </div>
             <div>
               <dt>中到高</dt>
-              <dd>medium - high = 0.241，方向性 p=.029，Wilcoxon p=.038。解释为确认链闭合后负荷下降，迟滞减少。</dd>
+              <dd>medium - high = 9.688s，双侧 p&lt;.001，Wilcoxon p&lt;.001。解释为确认链闭合后负荷下降，迟滞减少。</dd>
             </div>
             <div>
               <dt>高 vs 低</dt>
-              <dd>high - low = 0.002，p=.987。该结果支持“中等峰值”而不是线性增加。</dd>
+              <dd>high - low = -4.368s，p&lt;.001。高支持比低支持更快，说明高支持已经形成更容易闭合的确认链。</dd>
             </div>
           </dl>
         </article>

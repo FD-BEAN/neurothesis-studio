@@ -386,3 +386,52 @@ work/questionnaire/questionnaire_scale_scores.csv
 work/questionnaire/questionnaire_subject_covariates.csv
 work/questionnaire/questionnaire_segment_mediation_ready.csv
 ```
+
+## 12. 2026-07-05 全量 XDF 后的 H1 amendment
+
+最新口径以 `docs/FULL_XDF_ANALYSIS_2026-07-05.md` 为准。
+
+```text
+当前已上传 XDF = 455 条记录。
+完整被试 = P03-P100，共 98 名。
+P01/P02 尚未出现在当前上传库中。
+```
+
+H1 行动迟滞主原始指标调整为：
+
+```text
+prompt_to_first_confirmation_s
+中文：官方提示到首次现场路径确认延迟
+```
+
+保留但降级为敏感性/边界的指标：
+
+```text
+route_confirmation_hesitation_index = 复合路径确认迟滞敏感性指标
+route_decision_hesitation_index = 旧版广义路线执行效率边界指标
+```
+
+核心全量结果：
+
+```text
+低支持 = 7.401 秒
+中等支持 = 12.721 秒
+高支持 = 3.033 秒
+
+planned contrast = medium - mean(low, high)
+n = 98
+mean contrast = 7.504 秒
+95% CI [4.130, 10.878]
+p = 2.63e-5
+subject FE + map FE p = 1.40e-13
+```
+
+正确率辅助结果：
+
+```text
+低支持 = 0.561
+中等支持 = 0.765
+高支持 = 0.908
+```
+
+以后写作不要再把 `route_confirmation_hesitation_index` 放在 `prompt_to_first_confirmation_s` 前面作为唯一 H1 主结果。复合指标用于解释为什么宽口径会稀释主效应。

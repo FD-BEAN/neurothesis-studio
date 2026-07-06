@@ -1048,3 +1048,88 @@ VR 不适 = vr_discomfort_score，作为 QC / 敏感性或控制变量。
 再报告正确率辅助、M2 EEG 过程证据；
 问卷接入后再检验 M1/M2 分段并行中介和 W 调节。
 ```
+
+## 21. 2026-07-05 全量 XDF 分析与 H1 主指标修订
+
+新增全量分析记录：
+
+```text
+docs/FULL_XDF_ANALYSIS_2026-07-05.md
+```
+
+本轮从 Supabase 同步并分析当前已上传的全部 XDF：
+
+```text
+455 条 XDF 记录
+294 个唯一 sequence index
+覆盖 sub-007 到 sub-300
+完整被试 P03-P100，共 98 名
+P01/P02 尚未上传或未出现在当前库中
+```
+
+关键结论：
+
+```text
+H1 行动迟滞主原始指标调整为 prompt_to_first_confirmation_s。
+中文写作：官方提示到首次现场路径确认延迟。
+route_confirmation_hesitation_index 保留为复合敏感性指标。
+route_decision_hesitation_index 仍只作为广义路线执行效率边界指标。
+```
+
+主效应结果：
+
+```text
+低支持：7.401 秒
+中等支持：12.721 秒
+高支持：3.033 秒
+
+planned contrast = medium - mean(low, high)
+n = 98
+mean contrast = 7.504 秒
+95% CI [4.130, 10.878]
+t = 4.415
+p = 2.63e-5
+dz = 0.446
+bootstrap 95% CI [4.229, 10.854]
+sign-flip permutation p = 3.33e-5
+leave-one-subject-out：98/98 次均 p<.05
+```
+
+地图校正模型：
+
+```text
+subject FE + map FE:
+coef = 2.541
+SE = 0.344
+t = 7.396
+p = 1.40e-13
+n = 294 runs / 98 subjects
+```
+
+辅助正确率：
+
+```text
+低支持：0.561
+中等支持：0.765
+高支持：0.908
+```
+
+这支持“低支持下行动快但准确率较低，高支持下确认闭合且正确率较高”的解释。
+
+算法修订：
+
+```text
+条件识别优先使用 XDF marker/metadata 中的 Signature，而不是文件序号。
+canonical 选择从 old/new 文件名优先改为 trial/QC/有效事件窗质量优先。
+重复文件记录 151 个 subject × support 单元，其中 145 个关键指标完全一致，6 个存在质量差异。
+```
+
+正式写作顺序：
+
+```text
+1. 先报告 prompt_to_first_confirmation_s 的 H1 planned contrast。
+2. 再报告三条件均值、地图固定效应、bootstrap/permutation/leave-one-out/QC 敏感性。
+3. 正确率作为辅助因变量解释速度-准确性权衡。
+4. EEG 作为信息加工负荷中介证据。
+5. route_confirmation_hesitation_index、route_decision_hesitation_index 作为敏感性和边界，不再放在主结论之前。
+```

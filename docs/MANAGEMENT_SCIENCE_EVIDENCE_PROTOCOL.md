@@ -241,3 +241,41 @@ work/management_science_synthesis/management_implications.csv
 ```text
 docs/PARALLEL_MEDIATION_MODEL_PROTOCOL.md
 ```
+
+## 8. 2026-07-05 全量 XDF amendment
+
+最新全量分析见：
+
+```text
+docs/FULL_XDF_ANALYSIS_2026-07-05.md
+```
+
+管理科学证据报告的 H1 行为主结果更新为：
+
+```text
+prompt_to_first_confirmation_s
+官方提示到首次现场路径确认延迟
+```
+
+核心结果：
+
+```text
+low = 7.401 秒
+medium = 12.721 秒
+high = 3.033 秒
+planned contrast = 7.504 秒
+95% CI [4.130, 10.878]
+p = 2.63e-5
+subject FE + map FE p = 1.40e-13
+```
+
+写作上：
+
+```text
+route_confirmation_hesitation_index = 复合敏感性指标
+route_decision_hesitation_index = 广义路线执行效率边界指标
+decision_choice_accuracy_ratio = 辅助因变量，支持速度-准确性权衡
+formal EEG = M2 信息加工负荷过程证据
+```
+
+旧段落中“近端路径确认迟滞指数显著”应改写为“官方提示到首次现场路径确认延迟显著”。复合指数不再放在主结果之前。

@@ -282,3 +282,46 @@ W 调节成立，除非问卷或实验条件模型支持。
 EEG 在关键决策点提供 M2 信息加工负荷的神经工程过程证据。
 完整 M1/M2 分段并行中介和 W 调节需要问卷数据接入后检验。
 ```
+
+## 9. 2026-07-05 H1 指标 amendment
+
+全量 XDF 分析后，正式 H1 行动迟滞主原始指标改为：
+
+```text
+prompt_to_first_confirmation_s
+```
+
+中文写作：
+
+```text
+官方提示到首次现场路径确认延迟
+```
+
+修订理由：
+
+```text
+1. 它直接测量官方提示之后个体多久完成首次现场路径确认，最贴近行动迟滞的理论定义。
+2. route_confirmation_hesitation_index 混入首次可读线索、查看次数和双侧扫描，容易受地图可见性和高支持线索数量影响。
+3. route_decision_hesitation_index 混入整段路线执行效率，不适合检验“官方确认链导致的近端迟滞”。
+```
+
+全量结果：
+
+```text
+n = 98
+low = 7.401 秒
+medium = 12.721 秒
+high = 3.033 秒
+planned contrast = 7.504 秒
+95% CI [4.130, 10.878]
+p = 2.63e-5
+```
+
+后续问卷接入时：
+
+```text
+Y = prompt_to_first_confirmation_s 的 subject-level planned contrast
+M1 = perceived_reliability_score 的 low->medium 机制
+M2 = formal EEG information-processing load 的 medium->high 机制
+route_confirmation_hesitation_index 只作为复合敏感性结果
+```

@@ -27,10 +27,10 @@ export const researchProject = {
       },
       {
         id: "Y",
-        name: "近端路径确认迟滞",
-        english: "Proximal route-confirmation hesitation",
+        name: "近端行动迟滞",
+        english: "Proximal action hesitation",
         role: "主要客观因变量",
-        dimensions: ["官方提示到首次现场确认线索时间", "首次可读线索时间", "决策点查看次数", "决策点双侧扫描次数"],
+        dimensions: ["官方提示到首次现场确认线索时间", "复合路径确认迟滞敏感性", "旧版广义路线执行效率边界指标"],
       },
       {
         id: "auxY",
@@ -168,7 +168,7 @@ export const projectWritingContext = [
   "Current theoretical framing: the core construct is a route-confirmation information chain after an official target alert. The key question is whether official target reminders and subsequent on-site confirmation cues form a continuous, traceable, and confirmable chain for action.",
   "Participants/runs: target 100 subjects, each with 3 route-confirmation support runs: low, medium, high; expected 300 XDF files.",
   "Manipulated X dimensions are cue quantity, cue continuity, key decision-point coverage, and first visible/readable cue timing. Signature1/2/3 currently map to low/medium/high support unless a later condition table says otherwise.",
-  "Primary Y is proximal route-confirmation hesitation, operationalized as route_confirmation_hesitation_index from prompt_to_first_confirmation_s, time_to_first_sign_readable_s, decision_total_look_count, and decision_scan_both_count. Legacy broad route-decision hesitation is only a sensitivity or boundary metric. Auxiliary Y: wayfinding decision accuracy; the only correct final exit is A3, so exit_label == A3 can be used as final route correctness.",
+  "Primary Y is proximal action hesitation, operationalized as prompt_to_first_confirmation_s: the latency from official prompt/alert to first on-site route-confirmation cue. route_confirmation_hesitation_index is retained as a composite sensitivity metric, and legacy broad route-decision hesitation is only a boundary metric. Auxiliary Y: wayfinding decision accuracy; the only correct final exit is A3, so exit_label == A3 can be used as final route correctness.",
   "M1: perceived information reliability, representing the rational trade-off mechanism in heuristic decision-making: whether the expected accuracy gain from official route-confirmation cues is worth the additional confirmation cost. M2: information-processing load, representing the cognitive-limitation mechanism: the load imposed by target-cue-direction integration when the confirmation chain is reliable but not closed.",
   "Moderator W is formal: protective action instruction clarity, measured by the post-all warning information content questionnaire or by the experimental clarity condition if available.",
   "Questionnaire mapping: per-map official information-chain items form M1; per-map A3-related on-site signage items are manipulation checks/confirmation-chain closure; per-map subjective correctness items are confidence auxiliary variables; post-all warning information items form W; spatial ability is a covariate; VR discomfort is QC/sensitivity.",

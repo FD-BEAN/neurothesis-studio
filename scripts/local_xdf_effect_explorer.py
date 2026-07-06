@@ -100,6 +100,8 @@ def main() -> None:
             "filename": item.get("filename") or path.name,
             "storage_path": item.get("storage_path") or str(path),
             "size_bytes": item.get("size_bytes") or path.stat().st_size,
+            "created_at": item.get("created_at") or "",
+            "notes": item.get("notes") or "",
         }
         report_key = str(doc["id"])
         cache_path = report_dir / f"{safe_stem(report_key)}-{safe_stem(doc['filename'])}.json"
@@ -116,6 +118,10 @@ def main() -> None:
         summary.update(qc_from_report(report))
         summary["local_path"] = str(path)
         summary["document_id"] = report_key
+        summary["created_at"] = doc["created_at"]
+        summary["source_notes"] = doc["notes"]
+        summary["storage_path"] = doc["storage_path"]
+        summary["size_bytes"] = doc["size_bytes"]
         summary["is_old_version"] = "yes" if is_old_version(str(doc["filename"])) else "no"
         summary["sequence_index"] = infer_sequence_index(str(doc["filename"])) or ""
         summary["run_position"] = infer_run_position(str(doc["filename"])) or ""
@@ -193,7 +199,7 @@ def main() -> None:
         "top_fixed_effect_results": top_fixed_effect_results(fixed_effects),
     }
     write_json(args.out_dir / "exploration_summary.json", summary)
-    print(json.dumps(summary, ensure_ascii=False, indent=2), flush=True)
+    print(json.dumps(summary, ensure_ascii=True, indent=2), flush=True)
 
 
 def load_manifest(path: Path) -> list[dict[str, Any]]:
@@ -279,17 +285,76 @@ def choose_canonical_runs(run_records: list[dict[str, Any]]) -> tuple[dict[str, 
             chosen = sorted(candidates, key=canonical_sort_key)[0]
             canonical[subject][density] = chosen
             if len(candidates) > 1:
-                names = ", ".join(row["file"] for row in candidates)
+                names = ", ".join(describe_candidate(row) for row in sorted(candidates, key=canonical_sort_key))
                 notes.append(f"{subject}/{density}: chose {chosen['file']} from {names}")
     return canonical, notes
 
 
-def canonical_sort_key(row: dict[str, Any]) -> tuple[int, int, int, int, str]:
+def canonical_sort_key(row: dict[str, Any]) -> tuple[Any, ...]:
+    valid_epochs = numeric(row.get("valid_event_epochs"))
+    duplicate_ratio = numeric(row.get("duplicate_marker_ratio"))
+    prompt_latency = numeric(row.get("prompt_to_first_confirmation_s"))
+    size_bytes = numeric(row.get("size_bytes"))
     old_penalty = 1 if is_old_version(str(row.get("file") or "")) else 0
-    completion_penalty = 0 if str(row.get("has_completion") or "").lower() == "yes" else 1
-    start_penalty = 0 if row.get("trial_start_present") == "yes" else 1
-    eeg_penalty = 0 if numeric(row.get("eeg_load_proxy")) is not None else 1
-    return (old_penalty, completion_penalty, start_penalty, eeg_penalty, str(row.get("file") or ""))
+    source_penalty = 0 if "source_relative_path" in str(row.get("source_notes") or "") else 1
+    return (
+        yes_penalty(row.get("has_completion")),
+        yes_penalty(row.get("trial_start_present")),
+        yes_penalty(row.get("trial_complete_present")),
+        status_penalty(row.get("qc_marker_stream")),
+        status_penalty(row.get("qc_core_events")),
+        status_penalty(row.get("qc_eeg_event_windows")),
+        0 if prompt_latency is not None else 1,
+        0 if str(row.get("map") or "") else 1,
+        0 if str(row.get("signature") or "") else 1,
+        -valid_epochs if valid_epochs is not None else 1e9,
+        duplicate_ratio if duplicate_ratio is not None else 1e9,
+        old_penalty,
+        source_penalty,
+        -created_timestamp(row.get("created_at")),
+        -size_bytes if size_bytes is not None else 1e9,
+        str(row.get("file") or ""),
+        str(row.get("document_id") or ""),
+    )
+
+
+def describe_candidate(row: dict[str, Any]) -> str:
+    document = str(row.get("document_id") or "")[:8]
+    return (
+        f"{row.get('file')}#{document}"
+        f"/start={row.get('trial_start_present')}"
+        f"/complete={row.get('trial_complete_present')}"
+        f"/epochs={row.get('valid_event_epochs')}"
+        f"/dup={row.get('duplicate_marker_ratio')}"
+        f"/old={row.get('is_old_version')}"
+    )
+
+
+def yes_penalty(value: Any) -> int:
+    return 0 if str(value or "").strip().lower() in {"yes", "true", "1", "pass", "ok", "通过"} else 1
+
+
+def status_penalty(value: Any) -> int:
+    text = str(value or "").strip().lower()
+    if text in {"通过", "pass", "ok", "yes"} or "通过" in text:
+        return 0
+    if text in {"警告", "warning", "warn"} or "警告" in text or "warn" in text:
+        return 1
+    if not text:
+        return 2
+    return 3
+
+
+def created_timestamp(value: Any) -> float:
+    text = str(value or "").strip()
+    if not text:
+        return 0.0
+    try:
+        from datetime import datetime
+
+        return datetime.fromisoformat(text.replace("Z", "+00:00")).timestamp()
+    except Exception:
+        return 0.0
 
 
 def build_grid_results(
@@ -517,10 +582,13 @@ def top_results(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     ]
     ranked.sort(key=lambda row: (float(row["p"]), -abs(float(row.get("mean_contrast") or 0.0))))
     priority_keys = [
+        ("all_complete", "prompt_to_first_confirmation_s"),
+        ("low_duplicate_ratio", "prompt_to_first_confirmation_s"),
+        ("strict_start_all_runs", "prompt_to_first_confirmation_s"),
         ("all_complete", "route_confirmation_hesitation_index"),
         ("low_duplicate_ratio", "route_confirmation_hesitation_index"),
         ("strict_start_all_runs", "route_confirmation_hesitation_index"),
-        ("all_complete", "prompt_to_first_confirmation_s"),
+        ("all_complete", "route_confirmation_disfluency_index"),
     ]
     prioritized: list[dict[str, Any]] = []
     used: set[tuple[str, str, str]] = set()
@@ -553,10 +621,12 @@ def top_fixed_effect_results(rows: list[dict[str, Any]]) -> list[dict[str, Any]]
     ranked = [row for row in rows if numeric(row.get("p")) is not None]
     ranked.sort(key=lambda row: (float(row["p"]), -abs(float(row.get("coef") or 0.0))))
     priority_keys = [
-        ("ols_subject_fe_map_fe", "raw", "route_confirmation_hesitation_index"),
-        ("ols_subject_fe", "raw", "route_confirmation_hesitation_index"),
         ("ols_subject_fe_map_fe", "raw", "prompt_to_first_confirmation_s"),
         ("ols_subject_fe", "raw", "prompt_to_first_confirmation_s"),
+        ("ols_subject_fe_map_fe", "log1p", "prompt_to_first_confirmation_s"),
+        ("ols_subject_fe_map_fe", "raw", "route_confirmation_hesitation_index"),
+        ("ols_subject_fe", "raw", "route_confirmation_hesitation_index"),
+        ("ols_subject_fe_map_fe", "raw", "route_confirmation_disfluency_index"),
     ]
     prioritized: list[dict[str, Any]] = []
     used: set[tuple[str, str, str]] = set()

@@ -173,8 +173,8 @@ METRIC_REGISTRY = {
     "route_confirmation_hesitation_index": {
         "label": "近端路径确认迟滞指数",
         "tier": "primary_behavior",
-        "role": "H1 行为主指标",
-        "report_rule": "作为 H1 近端行为主结果优先报告；聚焦官方目标提示到现场确认线索之间的延迟和主动核对行为，不纳入整段路线完成时长或导航低效事件。",
+        "role": "H1 行为主复合指标",
+        "report_rule": "作为 H1 近端行为复合结果报告；聚焦官方目标提示到现场确认线索之间的延迟和主动核对行为，不纳入整段路线完成时长或导航低效事件。",
     },
     "eeg_information_processing_load_index": {
         "label": "EEG 信息加工负荷指数",
@@ -238,9 +238,9 @@ METRIC_REGISTRY = {
     },
     "prompt_to_first_confirmation_s": {
         "label": "提示到首次确认线索",
-        "tier": "mechanism",
-        "role": "路径确认链机制指标",
-        "report_rule": "用于检查官方提醒与现场确认线索衔接；需要 audio/prompt marker 与 sign marker 同时存在。",
+        "tier": "primary_behavior",
+        "role": "H1 近端行动迟滞主原始指标",
+        "report_rule": "优先用于检验官方提示之后个体多久完成首次现场路径确认；这是最贴近行动迟滞定义的原始秒数指标，需要 audio/prompt marker 与 sign marker 同时存在。",
     },
     "sign_readable_ratio": {
         "label": "可读标识比例",
@@ -2706,6 +2706,7 @@ def format_density_coverage(rows: list[dict[str, str]]) -> str:
 
 def compute_density_planned_contrasts(rows: list[dict[str, str]]) -> tuple[list[list[str]], list[dict[str, Any]]]:
     metrics = [
+        ("prompt_to_first_confirmation_s", "prompt to first confirmation"),
         ("route_confirmation_hesitation_index", "近端路径确认迟滞指数"),
         ("route_decision_hesitation_index", "route-decision hesitation index"),
         ("route_confirmation_disfluency_index", "confirmation-chain disfluency index"),
@@ -2724,7 +2725,6 @@ def compute_density_planned_contrasts(rows: list[dict[str, str]]) -> tuple[list[
         ("decision_scan_both_count", "both-side scans"),
         ("decision_dwell_total_s", "decision dwell total"),
         ("first_action_latency_s", "first action latency"),
-        ("prompt_to_first_confirmation_s", "prompt to first confirmation"),
         ("route_confirmation_disfluency_proxy", "route confirmation disfluency proxy"),
         ("sign_readable_ratio", "readable sign ratio"),
         ("decision_point_coverage_proxy", "decision-point coverage proxy"),
@@ -2784,25 +2784,25 @@ def compute_density_planned_contrasts(rows: list[dict[str, str]]) -> tuple[list[
 
 def metric_priority(metric: str) -> tuple[int, str]:
     order = {
-        "route_confirmation_hesitation_index": 0,
-        "route_decision_hesitation_index": 1,
-        "eeg_information_processing_load_index": 2,
-        "route_confirmation_disfluency_index": 3,
-        "eeg_load_proxy": 4,
-        "decision_point_enter_eeg_load_proxy": 5,
-        "sign_readable_eeg_load_proxy": 6,
-        "theta_alpha_ratio": 7,
-        "frontal_theta_4_7": 8,
-        "posterior_alpha_8_12": 9,
-        "decision_load_proxy": 10,
-        "behavior_load_proxy": 11,
-        "navigation_inefficiency_proxy": 11,
-        "decision_total_look_count": 12,
-        "decision_look_balance_abs": 13,
-        "decision_scan_both_count": 14,
-        "decision_dwell_total_s": 15,
-        "first_action_latency_s": 16,
-        "prompt_to_first_confirmation_s": 17,
+        "prompt_to_first_confirmation_s": 0,
+        "route_confirmation_hesitation_index": 1,
+        "route_decision_hesitation_index": 2,
+        "eeg_information_processing_load_index": 3,
+        "route_confirmation_disfluency_index": 4,
+        "eeg_load_proxy": 5,
+        "decision_point_enter_eeg_load_proxy": 6,
+        "sign_readable_eeg_load_proxy": 7,
+        "theta_alpha_ratio": 8,
+        "frontal_theta_4_7": 9,
+        "posterior_alpha_8_12": 10,
+        "decision_load_proxy": 11,
+        "behavior_load_proxy": 12,
+        "navigation_inefficiency_proxy": 12,
+        "decision_total_look_count": 13,
+        "decision_look_balance_abs": 14,
+        "decision_scan_both_count": 15,
+        "decision_dwell_total_s": 16,
+        "first_action_latency_s": 17,
         "route_confirmation_disfluency_proxy": 18,
         "sign_readable_ratio": 19,
         "decision_point_coverage_proxy": 20,
@@ -2829,6 +2829,7 @@ def metric_meta(metric: str, fallback_label: str = "") -> dict[str, str]:
 
 def build_metric_plan(metrics: list[str] | None = None) -> list[dict[str, str]]:
     metric_keys = metrics or [
+        "prompt_to_first_confirmation_s",
         "route_confirmation_hesitation_index",
         "route_decision_hesitation_index",
         "eeg_information_processing_load_index",
@@ -2839,7 +2840,6 @@ def build_metric_plan(metrics: list[str] | None = None) -> list[dict[str, str]]:
         "sign_readable_eeg_load_proxy",
         "theta_alpha_ratio",
         "route_confirmation_disfluency_index",
-        "prompt_to_first_confirmation_s",
         "sign_readable_ratio",
         "decision_point_coverage_proxy",
         "decision_choice_accuracy_ratio",

@@ -24,8 +24,9 @@ from typing import Any
 import numpy as np
 
 
-H1_METRIC = "route_confirmation_hesitation_index"
-MECHANISM_METRIC = "prompt_to_first_confirmation_s"
+H1_METRIC = "prompt_to_first_confirmation_s"
+MECHANISM_METRIC = "route_confirmation_disfluency_index"
+COMPOSITE_H1_METRIC = "route_confirmation_hesitation_index"
 LEGACY_METRIC = "route_decision_hesitation_index"
 EEG_COMPOSITE = "decision_point_enter_formal_load_delta"
 EEG_THETA = "decision_point_enter_frontal_theta_delta"
@@ -212,11 +213,11 @@ def build_construct_rows(h1_summary: dict[str, Any], eeg_robustness: list[dict[s
             "status": "实验设计因素",
         },
         {
-            "construct": "近端确认负担",
+            "construct": "近端行动迟滞",
             "role": "因变量 / H1 行为主结果；报告时优先于机制和辅助结果",
             "operationalization": H1_METRIC,
             "evidence": format_primary_h1_evidence(primary),
-            "management_interpretation": "中等支持增加被试把信息支持转化为路线选择时的核对、确认和查看成本；该指标聚焦官方线索确认过程，不混入整段路线执行效率。",
+            "management_interpretation": "中等支持使被试在官方提示之后更久才完成首次现场路径确认；该指标聚焦提示后确认延迟，不混入整段路线执行效率。",
             "status": "主效应支持",
         },
         {
@@ -232,7 +233,7 @@ def build_construct_rows(h1_summary: dict[str, Any], eeg_robustness: list[dict[s
             "role": "行为机制线索；不替代 M1",
             "operationalization": MECHANISM_METRIC,
             "evidence": format_effect(mechanism, value_key="mean_contrast", p_key="p_two_sided", ci_low_key="ci95_low", ci_high_key="ci95_high"),
-            "management_interpretation": "中等支持延长官方提示到现场确认之间的间隔，说明其形成了“可依赖但未闭合”的信息链；但感知可靠性仍必须由问卷直接测量。",
+            "management_interpretation": "中等支持更可能形成“可依赖但未闭合”的确认链，表现为确认线索间隔、覆盖和连续性不够顺畅；但感知可靠性仍必须由问卷直接测量。",
             "status": "支持，但不是正式中介一",
         },
         {
@@ -1347,8 +1348,8 @@ def write_h1_markdown(path: Path, payload: dict[str, Any]) -> None:
         sections["results_paragraph"],
         "",
         "## 报告口径",
-        "- H1 主指标固定为 `route_confirmation_hesitation_index`。",
-        "- 机制线索、正确率和 EEG 只用于解释主效应，不替代主因变量。",
+        f"- H1 主指标固定为 `{H1_METRIC}`，即官方提示到首次现场路径确认的近端行动迟滞秒数。",
+        f"- `{COMPOSITE_H1_METRIC}` 保留为复合敏感性指标；机制线索、正确率和 EEG 只用于解释主效应，不替代主因变量。",
         "- 旧版 `route_decision_hesitation_index` 只作为广义路线执行效率的边界敏感性指标。",
         "- 主结果按三条件均值、planned contrast、个体峰值诊断、地图校正模型、相邻阶段和稳健性顺序报告。",
         "",
@@ -1446,8 +1447,8 @@ def write_h1_html(path: Path, payload: dict[str, Any]) -> None:
   <p>{escape(sections["results_paragraph"])}</p>
   <h2>报告口径</h2>
   <ul>
-    <li>H1 主指标固定为 <code>{escape(H1_METRIC)}</code>。</li>
-    <li>机制线索、正确率和 EEG 只用于解释主效应，不替代主因变量。</li>
+    <li>H1 主指标固定为 <code>{escape(H1_METRIC)}</code>，即官方提示到首次现场路径确认的近端行动迟滞秒数。</li>
+    <li><code>{escape(COMPOSITE_H1_METRIC)}</code> 保留为复合敏感性指标；机制线索、正确率和 EEG 只用于解释主效应，不替代主因变量。</li>
     <li>旧版 <code>{escape(LEGACY_METRIC)}</code> 只作为广义路线执行效率的边界敏感性指标。</li>
     <li>主结果按三条件均值、planned contrast、个体峰值诊断、地图校正模型、相邻阶段和稳健性顺序报告。</li>
   </ul>
